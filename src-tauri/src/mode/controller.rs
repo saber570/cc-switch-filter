@@ -1904,7 +1904,7 @@ async fn drain_legacy_backup(state: &AppState, app: &AppType) -> bool {
         }
     };
     let dir = crate::config::get_home_dir()
-        .join(".cc-switch")
+        .join(crate::identity::DATA_DIR)
         .join("backups")
         .join("proxy-live-backup");
     let stamp = chrono::Utc::now().format("%Y%m%dT%H%M%SZ");
@@ -3292,7 +3292,10 @@ mod mode_tests {
                 state.db.get_live_backup("claude").await.unwrap().is_none(),
                 "the old version would replay a leftover backup row after a downgrade"
             );
-            let drained = home.dir.path().join(".cc-switch/backups/proxy-live-backup");
+            let drained = home
+                .dir
+                .path()
+                .join(".switchplus/backups/proxy-live-backup");
             assert_eq!(
                 fs::read_dir(&drained).unwrap().count(),
                 1,
@@ -3945,7 +3948,7 @@ command = "fs-server"
         let dormant = &doc["model_providers"]["custom"];
         assert_eq!(
             dormant["base_url"].as_str(),
-            Some("http://127.0.0.1:15721/v1"),
+            Some("http://127.0.0.1:15722/v1"),
             "the dormant table points at the configured local proxy: {text}"
         );
         assert_eq!(

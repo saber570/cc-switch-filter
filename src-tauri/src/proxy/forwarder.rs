@@ -392,9 +392,18 @@ pub struct RequestForwarder {
     /// 最近一次 `forward()` 定下的出站模型名，失败时随 [`ForwardError`] 交给日志。
     /// 每次 `forward()` 开头清空，映射失败等没走到出站的尝试留 None（日志回落到请求名）。
     last_outbound_model: std::sync::Mutex<Option<String>>,
+    // Preserve only retry timing, never upstream auth/cookie headers.
+    last_retry_after: std::sync::Mutex<http::HeaderMap>,
 }
 
 impl RequestForwarder {
+    pub(crate) fn retry_after_headers(&self) -> http::HeaderMap {
+        self.last_retry_after
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+
     /// 预防式 media 降级：发送前对 text-only 模型把图片块替换为标记。
     ///
     /// 受 `enabled && request_media_fallback` 管辖；其中"启发式模型名单预测"
@@ -527,6 +536,7 @@ impl RequestForwarder {
             stack_request: false,
             failover_chain: false,
             last_outbound_model: std::sync::Mutex::new(None),
+            last_retry_after: std::sync::Mutex::new(http::HeaderMap::new()),
         }
     }
 
@@ -1460,6 +1470,10 @@ impl RequestForwarder {
     ) -> Result<(ProxyResponse, Option<String>, Option<String>), ProxyError> {
         *codex_upstream_format_out = None;
         self.set_last_outbound_model(None);
+        self.last_retry_after
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clear();
         // 使用适配器提取 base_url
         let mut base_url = adapter.extract_base_url(provider)?;
 
@@ -2937,6 +2951,17 @@ impl RequestForwarder {
 
         // 检查响应状态
         let status = response.status();
+        {
+            let mut timing = self
+                .last_retry_after
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            for name in ["retry-after", "retry-after-ms", "x-ms-retry-after-ms"] {
+                if let Some(value) = response.headers().get(name) {
+                    timing.insert(http::HeaderName::from_static(name), value.clone());
+                }
+            }
+        }
 
         if status.is_success() {
             let mut response = self
@@ -4986,6 +5011,7 @@ mod tests {
             stack_request: false,
             failover_chain: false,
             last_outbound_model: std::sync::Mutex::new(None),
+            last_retry_after: std::sync::Mutex::new(http::HeaderMap::new()),
         }
     }
 

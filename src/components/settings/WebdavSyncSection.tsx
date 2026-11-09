@@ -167,7 +167,7 @@ function buildPasswordPreservationKey(values: {
   return JSON.stringify({
     baseUrl: values.baseUrl ?? "",
     username: values.username ?? "",
-    remoteRoot: values.remoteRoot ?? "cc-switch-sync",
+    remoteRoot: values.remoteRoot ?? "switchplus-sync",
     profile: values.profile ?? "default",
   });
 }
@@ -269,7 +269,7 @@ export function WebdavSyncSection({
     baseUrl: config?.baseUrl ?? "",
     username: config?.username ?? "",
     password: config?.password ?? "",
-    remoteRoot: config?.remoteRoot ?? "cc-switch-sync",
+    remoteRoot: config?.remoteRoot ?? "switchplus-sync",
     profile: config?.profile ?? "default",
     autoSync: config?.autoSync ?? false,
   }));
@@ -286,7 +286,7 @@ export function WebdavSyncSection({
   );
   const [s3Endpoint, setS3Endpoint] = useState(s3Config?.endpoint ?? "");
   const [s3RemoteRoot, setS3RemoteRoot] = useState(
-    s3Config?.remoteRoot ?? "cc-switch-sync",
+    s3Config?.remoteRoot ?? "switchplus-sync",
   );
   const [s3Profile, setS3Profile] = useState(s3Config?.profile ?? "default");
   const [s3AutoSync, setS3AutoSync] = useState(s3Config?.autoSync ?? false);
@@ -350,7 +350,7 @@ export function WebdavSyncSection({
     setForm(() => {
       const nextBaseUrl = config.baseUrl ?? "";
       const nextUsername = config.username ?? "";
-      const nextRemoteRoot = config.remoteRoot ?? "cc-switch-sync";
+      const nextRemoteRoot = config.remoteRoot ?? "switchplus-sync";
       const nextProfile = config.profile ?? "default";
       const nextKey = buildPasswordPreservationKey({
         baseUrl: nextBaseUrl,
@@ -390,7 +390,7 @@ export function WebdavSyncSection({
     setS3AccessKeyId(s3Config.accessKeyId ?? "");
     setS3SecretAccessKey(s3Config.secretAccessKey ?? "");
     setS3Endpoint(s3Config.endpoint ?? "");
-    setS3RemoteRoot(s3Config.remoteRoot ?? "cc-switch-sync");
+    setS3RemoteRoot(s3Config.remoteRoot ?? "switchplus-sync");
     setS3Profile(s3Config.profile ?? "default");
     setS3AutoSync(s3Config.autoSync ?? false);
     setS3Enabled(s3Config.enabled ?? false);
@@ -471,7 +471,7 @@ export function WebdavSyncSection({
       username: form.username.trim(),
       // 未重新触碰密码时，提交空值让后端沿用已保存密码，表单里的值仅用于 UI 显示
       password: passwordTouched ? form.password : "",
-      remoteRoot: form.remoteRoot.trim() || "cc-switch-sync",
+      remoteRoot: form.remoteRoot.trim() || "switchplus-sync",
       profile: form.profile.trim() || "default",
       autoSync: form.autoSync,
     };
@@ -565,7 +565,7 @@ export function WebdavSyncSection({
         baseUrl: "",
         username: "",
         password: "",
-        remoteRoot: "cc-switch-sync",
+        remoteRoot: "switchplus-sync",
         profile: "default",
         autoSync: false,
       });
@@ -721,7 +721,7 @@ export function WebdavSyncSection({
       accessKeyId: s3AccessKeyId.trim(),
       secretAccessKey: s3SecretAccessKey,
       endpoint: s3Endpoint.trim() || undefined,
-      remoteRoot: s3RemoteRoot.trim() || "cc-switch-sync",
+      remoteRoot: s3RemoteRoot.trim() || "switchplus-sync",
       profile: s3Profile.trim() || "default",
     };
   }, [
@@ -985,8 +985,8 @@ export function WebdavSyncSection({
   const lastError = config?.status?.lastError?.trim();
   const showAutoSyncError =
     !!lastError && config?.status?.lastErrorSource === "auto";
-  const currentRemotePath = `/${form.remoteRoot.trim() || "cc-switch-sync"}/v2/db-v6/${form.profile.trim() || "default"}`;
-  const currentS3RemotePath = `${s3Bucket.trim() || "bucket"}/${s3RemoteRoot.trim() || "cc-switch-sync"}/v2/db-v6/${s3Profile.trim() || "default"}`;
+  const currentRemotePath = `/${form.remoteRoot.trim() || "switchplus-sync"}/v2/db-v6/${form.profile.trim() || "default"}`;
+  const currentS3RemotePath = `${s3Bucket.trim() || "bucket"}/${s3RemoteRoot.trim() || "switchplus-sync"}/v2/db-v6/${s3Profile.trim() || "default"}`;
   const remoteDbCompatDisplay = formatDbCompatVersion(
     remoteInfo?.dbCompatVersion,
   );
@@ -1121,7 +1121,7 @@ export function WebdavSyncSection({
               <Input
                 value={form.remoteRoot}
                 onChange={(e) => updateField("remoteRoot", e.target.value)}
-                placeholder="cc-switch-sync"
+                placeholder="switchplus-sync"
                 className="text-xs flex-1"
                 disabled={isLoading}
               />
@@ -1411,7 +1411,7 @@ export function WebdavSyncSection({
                   setS3RemoteRoot(e.target.value);
                   markS3Dirty();
                 }}
-                placeholder="cc-switch-sync"
+                placeholder="switchplus-sync"
                 className="text-xs flex-1"
                 disabled={isS3Loading}
               />

@@ -125,7 +125,7 @@ pub struct WebDavSyncStatus {
 }
 
 fn default_remote_root() -> String {
-    "cc-switch-sync".to_string()
+    "switchplus-sync".to_string()
 }
 fn default_profile() -> String {
     "default".to_string()
@@ -458,7 +458,7 @@ pub struct UsageDisplaySettings {
 
 /// 应用设置结构
 ///
-/// 存储设备级别设置，保存在本地 `~/.cc-switch/settings.json`，不随数据库同步。
+/// 存储设备级别设置，保存在本地 `~/.switchplus/settings.json`，不随数据库同步。
 /// 这确保了云同步场景下多设备可以独立运作。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -804,7 +804,7 @@ impl AppSettings {
         // settings.json 保留用于旧版本迁移和无数据库场景
         Some(
             crate::config::get_home_dir()
-                .join(".cc-switch")
+                .join(crate::identity::DATA_DIR)
                 .join("settings.json"),
         )
     }

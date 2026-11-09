@@ -2043,6 +2043,9 @@
     "empty": "No endpoints"
   },
   "codexConfig": {
+    "v9FilterLabel": "V9 history filter and automatic retry",
+    "v9FilterHelp": "Only applies in Route and Stack modes. Requests starting with this provider remove historical reasoning and portable item IDs, buffer each response, and deliver text and tool calls only after success. Target errors share up to 20 extra retries and a 30-minute deadline.",
+    "v9FilterNotice": "Keeps messages, tool results and current reasoning effort, but removes historical internal reasoning. Supports text summaries and CC Switch summary compaction; rejects unreadable compaction blobs, server-side encrypted compaction and server-side context references. Output is delayed and retries may increase upstream usage. Do not also run the external V9 filter.",
     "authJson": "auth.json (JSON) *",
     "authJsonPlaceholder": "{\n  \"OPENAI_API_KEY\": \"sk-your-api-key-here\"\n}",
     "authJsonHint": "Codex auth.json configuration content",
@@ -5232,5 +5235,13 @@
       "managedHint": "This account is managed in the Auth Center; the card disappears after you sign out."
     },
     "deleteSessionHint": "Delete this session in DeepSeek Harness to keep its history consistent."
+  },
+  "switchplus": {
+    "personal": "Personal build",
+    "updates": "Includes provider management, routing, summary compaction and V9 filtering. Update by merging source changes and rebuilding. Official app updates are disabled.",
+    "coexist": "Uses ~/.switchplus and proxy port 15722 by default. Quit CC Switch or other configuration managers before taking over the same client to avoid conflicting writes.",
+    "attribution": "Based on CC Switch and AgentRouter-Codex-Filter (MIT). Original copyright notices and licenses are included in the app resources.",
+    "source": "Personal repository",
+    "upstream": "Upstream CC Switch"
   }
 }

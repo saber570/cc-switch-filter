@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn recognizes_only_account_config_dirs() {
-        let data = Path::new("/data/.cc-switch");
+        let data = Path::new("/data/.switchplus");
         let id = "0123456789abcdef0123456789abcdef";
         let dir = config_dir(data, id);
         assert!(is_account_config_dir(data, &dir.to_string_lossy()));

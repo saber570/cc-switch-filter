@@ -1056,7 +1056,7 @@ export function SessionManagerPage({
           appFilter === "all"
             ? undefined
             : t("sessionManager.emptyAppHint", {
-                defaultValue: "CC Switch 读取 {{path}} 下的会话数据",
+                defaultValue: "SwitchPlus 读取 {{path}} 下的会话数据",
                 path: SESSION_SOURCE_PATHS[appFilter][0],
               })
         }
@@ -1087,7 +1087,7 @@ export function SessionManagerPage({
             >
               {t("sessionManager.helpBody", {
                 defaultValue:
-                  "CC Switch 读取各个应用保存在本机的会话记录，位置见右上角 ⋯ 里的「会话记录在哪里」。Claude Desktop 没有单独的会话记录。",
+                  "SwitchPlus 读取各个应用保存在本机的会话记录，位置见右上角 ⋯ 里的「会话记录在哪里」。Claude Desktop 没有单独的会话记录。",
               })}
             </HelpTip>
           }

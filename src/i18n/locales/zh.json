@@ -2043,6 +2043,9 @@
     "empty": "暂无端点"
   },
   "codexConfig": {
+    "v9FilterLabel": "V9 历史过滤与自动重试",
+    "v9FilterHelp": "仅在路由、聚合模式生效。从此供应商开始的请求会清理历史推理和可移除的 ID，暂存整轮响应，成功后才显示内容和执行工具；临时限流、断流等错误合计最多额外重试 20 次，总期限 30 分钟。",
+    "v9FilterNotice": "保留正文、工具结果和本轮推理强度，但丢弃历史内部推理。支持文字摘要及 CC Switch 摘要压缩；拒绝无法解读的压缩密文、服务端加密压缩和服务器上下文引用。输出会延迟，重试可能增加上游用量；不要同时启用外置 V9 过滤服务。",
     "authJson": "auth.json (JSON) *",
     "authJsonPlaceholder": "{\n  \"OPENAI_API_KEY\": \"sk-your-api-key-here\"\n}",
     "authJsonHint": "Codex auth.json 配置内容",
@@ -5232,5 +5235,13 @@
       "managedHint": "账号在授权中心管理：退出登录后这张卡会自动消失。"
     },
     "deleteSessionHint": "请在 DeepSeek Harness 中删除此会话，以保持原生历史记录一致。"
+  },
+  "switchplus": {
+    "personal": "个人自用版",
+    "updates": "保留供应商管理、路由、摘要压缩和 V9 过滤。软件更新通过合并源码后重新构建，不连接官方自动更新源。",
+    "coexist": "使用独立的数据目录 ~/.switchplus，默认代理端口 15722。接管同一个客户端前，请先退出 CC Switch 或其他配置管理软件，避免覆盖彼此的配置。",
+    "attribution": "基于 CC Switch 与 AgentRouter-Codex-Filter（MIT）修改。原作者版权与许可证保留在安装资源中。",
+    "source": "个人仓库",
+    "upstream": "上游 CC Switch"
   }
 }

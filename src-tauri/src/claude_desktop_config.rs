@@ -1713,7 +1713,7 @@ mod tests {
                 .join("Application Support")
                 .join("Claude-3p"),
         );
-        paths.device = DeviceStore::at(home.join(".cc-switch"));
+        paths.device = DeviceStore::at(home.join(crate::identity::DATA_DIR));
         paths
     }
 
@@ -2250,7 +2250,7 @@ mod tests {
         let profile: Value = read_json_file(&paths.profile_path).expect("read profile");
         assert_eq!(
             profile["inferenceGatewayBaseUrl"],
-            json!("http://127.0.0.1:15721/claude-desktop")
+            json!("http://127.0.0.1:15722/claude-desktop")
         );
         assert_eq!(profile["inferenceGatewayAuthScheme"], json!("bearer"));
         assert_eq!(profile["coworkEgressAllowedHosts"], json!(["*"]));
@@ -2284,7 +2284,7 @@ mod tests {
             let profile: Value = read_json_file(&paths.profile_path).expect("read profile");
             assert_eq!(
                 profile["inferenceGatewayBaseUrl"],
-                json!("http://127.0.0.1:15721/claude-desktop")
+                json!("http://127.0.0.1:15722/claude-desktop")
             );
             assert_eq!(
                 profile["inferenceModels"],

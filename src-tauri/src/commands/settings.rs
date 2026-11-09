@@ -325,6 +325,9 @@ pub async fn restart_app(app: AppHandle) -> Result<bool, String> {
 /// 这里把退出清理、安装和重启串在同一个后端流程中，避免依赖旧前端继续执行。
 #[tauri::command]
 pub async fn install_update_and_restart(app: AppHandle) -> Result<bool, String> {
+    if !crate::identity::APP_UPDATES_ENABLED {
+        return Err("SwitchPlus 个人版请从源码重新构建后安装更新。".into());
+    }
     let builder = app.updater_builder();
     // Windows 上 updater 以 `msiexec /passive /promptrestart` 安装 MSI。passive 没有模态框、
     // 未指定重启选项时，安装目录里有文件被占用，Windows Installer 会不经确认直接重启系统
@@ -409,6 +412,9 @@ pub async fn install_update_and_restart(app: AppHandle) -> Result<bool, String> 
 /// 升级无法解决，而不是让其反复尝试。
 #[tauri::command]
 pub async fn check_app_update_available(app: AppHandle) -> Result<Option<String>, String> {
+    if !crate::identity::APP_UPDATES_ENABLED {
+        return Ok(None);
+    }
     let updater = app
         .updater_builder()
         .build()

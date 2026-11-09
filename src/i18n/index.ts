@@ -1,5 +1,6 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import { brandTranslations } from "@/lib/brand";
 
 import en from "./locales/en.json";
 import ja from "./locales/ja.json";
@@ -86,7 +87,15 @@ const resources = {
 };
 
 i18n.use(initReactI18next).init({
-  resources,
+  resources: {
+    ...brandTranslations(resources),
+    en: {
+      translation: { ...brandTranslations(en), switchplus: en.switchplus },
+    },
+    zh: {
+      translation: { ...brandTranslations(zh), switchplus: zh.switchplus },
+    },
+  },
   lng: getInitialLanguage(), // 根据本地存储或系统语言选择默认语言
   fallbackLng: "en", // 如果缺少中文翻译则退回英文
 

@@ -7,7 +7,7 @@
 //! - **官方登录卡**：`agy --model=<显示名>`（没设模型就是 `agy`），模型只对这次会话生效。
 //!   登录凭据由 agy 自己保管（不在 `~/.gemini` 里）。
 //! - **第三方 Key 卡**：`agy --gemini_dir=<私有目录>`，私有目录在
-//!   `~/.cc-switch/agy/<供应商>/`，它的 `antigravity-cli/settings.json` 写
+//!   `~/.switchplus/agy/<供应商>/`，它的 `antigravity-cli/settings.json` 写
 //!   `modelProvider: gemini` 和模型，`config` 软链回 `~/.gemini/config`（MCP、Skills、
 //!   提示词照常共享）；Key 和地址只经子进程环境传入。
 //!

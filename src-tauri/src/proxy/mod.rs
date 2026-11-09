@@ -8,6 +8,7 @@ pub mod cache_injector;
 pub mod circuit_breaker;
 mod classifier_guard;
 pub(crate) mod codex_quota_protection;
+pub(crate) mod codex_v9_filter;
 pub(crate) mod content_encoding;
 pub mod copilot_optimizer;
 pub mod error;

@@ -206,7 +206,7 @@ pub fn maybe_migrate_codex_provider_template_bucket(
 /// 没有 openai 线程就跳过；读不到 state DB 时退回「每个 Codex 目录只全扫一次」。
 /// custom 桶里官方与第三方会话无法区分，自动逻辑绝不反向搬回；
 /// 用户可在关闭开关时选择按备份账本精确还原（见 `restore_codex_official_history_from_backups`）。
-/// 迁移前 jsonl / state DB 均备份到 `~/.cc-switch/backups/codex-official-history-unify-v1/`。
+/// 迁移前 jsonl / state DB 均备份到 `~/.switchplus/backups/codex-official-history-unify-v1/`。
 pub fn maybe_migrate_codex_official_history_to_unified_bucket(
 ) -> Result<CodexHistoryProviderBucketMigrationOutcome, AppError> {
     if !crate::settings::unify_codex_session_history() {

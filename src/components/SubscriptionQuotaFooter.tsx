@@ -34,7 +34,7 @@ interface SubscriptionQuotaViewProps {
   refetch: () => unknown;
   /**
    * 用于 `subscription.expiredHint` 的 {tool} 插值（CLI 命令名）；解耦了 hook 的 appId。
-   * 不传＝账号由 CC Switch 自管（Codex / xAI OAuth），没有 CLI 命令可跑，提示改为去授权中心重新登录
+   * 不传＝账号由 SwitchPlus 自管（Codex / xAI OAuth），没有 CLI 命令可跑，提示改为去授权中心重新登录
    */
   appIdForExpiredHint?: string;
   inline?: boolean;
