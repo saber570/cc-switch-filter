@@ -19,7 +19,8 @@
 - 整轮 SSE 暂存到 `response.completed` 再交付，保留成功响应里的推理。
   失败尝试中的文本和工具调用不会交给客户端；不可重试的失败只交付错误事件。
   `response.incomplete` 原样返回且不重放。
-- 临时限流最多额外 20 次；断流/超时/已识别 ALB HTML 400 共用 10 次；
+- 临时限流（包括 `gateway_concurrency_limit` 网关并发限制，HTTP 400/429 或 SSE 错误事件）
+  共用最多额外 20 次重试；断流/超时/已识别 ALB HTML 400 共用 10 次；
   无可用渠道 10 次；Azure 资源归属错误 5 次。各类总计最多额外 20 次，
   总期限 30 分钟，读取静默超时 120 秒。服务端 Retry-After 是等待下限。
 - 等待时每 15 秒发送 V9 的空 `response.in_progress` 保活，输出数组为空，

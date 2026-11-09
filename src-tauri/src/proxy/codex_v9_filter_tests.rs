@@ -190,6 +190,104 @@ fn only_retries_target_errors_and_honors_server_delay() {
 }
 
 #[tokio::test]
+async fn gateway_concurrency_retries_http_and_sse_without_failed_output() {
+    for mode in ["http400", "http429", "error", "response.failed"] {
+        let mut calls = 0;
+        let response = run(
+            || {
+                calls += 1;
+                let attempt = calls;
+                async move {
+                    let error = json!({"code":"gateway_concurrency_limit","message":"Gateway concurrency limit reached"});
+                    Ok(if attempt > 2 {
+                        sse(&[json!({"type":"response.completed","response":{"output":[{"text":"recovered"}]}})])
+                    } else if mode.starts_with("http") {
+                        Response::builder()
+                            .status(if mode == "http400" { 400 } else { 429 })
+                            .header("content-type", "application/json")
+                            .body(Body::from(json!({"error":error}).to_string()))
+                            .unwrap()
+                    } else {
+                        sse(&[
+                            json!({"type":"response.output_item.added","item":{"type":"function_call","name":"never_execute"}}),
+                            if mode == "error" { json!({"type":"error","code":error["code"],"message":error["message"]}) }
+                            else { json!({"type":"response.failed","response":{"error":error}}) }
+                        ])
+                    })
+                }
+            },
+            Duration::from_secs(5), IDLE, LIMIT, false,
+        ).await;
+        let body = text(response).await;
+        assert_eq!(calls, 3, "{mode}");
+        assert!(body.contains("response.completed"), "{mode}");
+        assert!(body.contains("recovered"), "{mode}");
+        for discarded in [
+            "never_execute",
+            "gateway_concurrency_limit",
+            "response.failed",
+            "event: error",
+        ] {
+            assert!(!body.contains(discarded), "{mode}: {discarded}");
+        }
+    }
+}
+
+#[tokio::test]
+async fn gateway_concurrency_shares_rate_budget_and_preserves_permanent_errors() {
+    let mut calls = 0;
+    let response = run(
+        || {
+            calls += 1;
+            let code = if calls % 2 == 1 {
+                "gateway_concurrency_limit"
+            } else {
+                "rate_limit_exceeded"
+            };
+            async move { Ok(sse(&[json!({"type":"error","code":code})])) }
+        },
+        Duration::from_secs(5),
+        IDLE,
+        LIMIT,
+        false,
+    )
+    .await;
+    let body = text(response).await;
+    assert_eq!(calls, 21);
+    assert_eq!(body.matches("event: error").count(), 1);
+    assert!(body.contains("gateway_concurrency_limit"));
+    assert!(!body.contains("response.completed"));
+
+    for error in [
+        json!({"code":"gateway_concurrency_limit","message":"Account quota exhausted"}),
+        json!({"code":"invalid_api_key","message":"Gateway concurrency limit reached"}),
+        json!({"code":"server_error","message":"Gateway concurrency limit reached"}),
+    ] {
+        let mut calls = 0;
+        let response = run(
+            || {
+                calls += 1;
+                let error = error.clone();
+                async move {
+                    Ok(sse(&[
+                        json!({"type":"response.failed","response":{"error":error}}),
+                    ]))
+                }
+            },
+            Duration::from_secs(5),
+            IDLE,
+            LIMIT,
+            false,
+        )
+        .await;
+        assert!(text(response)
+            .await
+            .contains(error["code"].as_str().unwrap()));
+        assert_eq!(calls, 1);
+    }
+}
+
+#[tokio::test]
 async fn failed_partial_tool_calls_are_discarded_before_retry() {
     let count = Arc::new(AtomicUsize::new(0));
     let calls = count.clone();

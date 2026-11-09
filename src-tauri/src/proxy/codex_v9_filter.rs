@@ -218,9 +218,13 @@ fn classify(value: &Value) -> Option<Kind> {
     {
         return Some(Kind::Resource);
     }
+    // Gateway concurrency throttling shares the rate-limit backoff and budget.
     if matches!(
         code,
-        "rate_limit_exceeded" | "rate_limit_error" | "too_many_requests"
+        "rate_limit_exceeded"
+            | "rate_limit_error"
+            | "too_many_requests"
+            | "gateway_concurrency_limit"
     ) || lower.contains("exceeded token rate limit")
         || (lower.contains("rate limit exceeded")
             && ["your requests", "token", "requests per minute"]
