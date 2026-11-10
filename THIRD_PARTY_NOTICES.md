@@ -4,6 +4,10 @@ SwitchPlus is a personal derivative of [CC Switch](https://github.com/farion1231
 The original CC Switch copyright and full MIT license are preserved in the bundled root `LICENSE`.
 
 The V9 compatibility mode in `src-tauri/src/proxy/codex_v9_filter.rs` is adapted from [AgentRouter-Codex-Filter](https://github.com/alexcarterio/AgentRouter-Codex-Filter), revision `6622651` (V9).
+Selected error-classification, HTTP error-envelope and SSE compatibility fixes
+were subsequently adapted from revision `bb256cc590c9cf35c77691867b2253f1b93d418d`
+(V12.2). SwitchPlus retains its full-response buffering, proactive history
+filtering, gateway concurrency retries, and portable summary-compaction support.
 
 MIT License
 

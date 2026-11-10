@@ -168,7 +168,12 @@ async fn codex_v9_compaction_roundtrips_and_replays_across_provider_protocols() 
 
 #[tokio::test]
 async fn codex_v9_setting_filters_and_retries_through_real_http_forwarder() {
-    for enabled in [false, true] {
+    for (enabled, error_code) in [
+        (false, "stream_incomplete"),
+        (true, "stream_incomplete"),
+        (true, "server_error"),
+        (true, "bad_response"),
+    ] {
         let seen = Arc::new(Mutex::new(Vec::<Value>::new()));
         let records = seen.clone();
         let app = axum::Router::new().route("/v1/responses", axum::routing::post(move |Json(body): Json<Value>| {
@@ -178,7 +183,7 @@ async fn codex_v9_setting_filters_and_retries_through_real_http_forwarder() {
                 calls.push(body);
                 let events = if calls.len() == 1 {
                     vec![json!({"type":"response.output_item.added","item":{"type":"function_call","name":"never_run"}}),
-                        json!({"type":"response.failed","response":{"error":{"code":"stream_incomplete"}}})]
+                        json!({"type":"response.failed","response":{"error":{"code":error_code}}})]
                 } else { vec![json!({"type":"response.completed","response":{"id":"resp_ok","status":"completed","output":[]}})] };
                 let text = events.into_iter().map(|event| format!("event: {}\ndata: {event}\n\n",event["type"].as_str().unwrap())).collect::<String>();
                 ([("content-type","text/event-stream")],text)
@@ -245,6 +250,7 @@ async fn codex_v9_setting_filters_and_retries_through_real_http_forwarder() {
             assert!(!text.contains("never_run"));
             assert!(text.contains("resp_ok"));
             for call in calls.iter() {
+                assert_eq!(call["model"], "test-model");
                 assert_eq!(call["input"].as_array().unwrap().len(), 1);
                 assert!(call["input"][0].get("id").is_none());
                 assert_eq!(call["reasoning"]["effort"], "high");

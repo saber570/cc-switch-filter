@@ -178,41 +178,70 @@ impl Kind {
     }
 }
 
-fn classify(value: &Value) -> Option<Kind> {
-    let reported = value
+fn reported_error(value: &Value) -> Option<&Value> {
+    value
         .get("error")
-        .or_else(|| value.pointer("/response/error"));
-    if value["type"] == "response.failed"
-        && reported.is_none_or(|e| {
-            e.is_null()
-                || ["code", "type", "message"]
-                    .iter()
-                    .all(|k| e.get(*k).is_none_or(|v| v.is_null() || v == ""))
+        .filter(|v| !v.is_null())
+        .or_else(|| value.pointer("/response/error").filter(|v| !v.is_null()))
+}
+
+fn non_retryable_business(value: &Value) -> bool {
+    let error = reported_error(value).unwrap_or(value);
+    let codes = ["code", "type"].map(|key| error[key].as_str().unwrap_or("").to_ascii_lowercase());
+    let lower = format!(
+        "{} {} {}",
+        codes[0],
+        codes[1],
+        error["message"].as_str().unwrap_or("")
+    )
+    .to_lowercase();
+    ["quota", "budget", "billing", "balance", "credit", "spend"]
+        .iter()
+        .any(|s| lower.contains(s))
+        || codes.iter().any(|code| {
+            matches!(
+                code.as_str(),
+                "invalid_api_key"
+                    | "authentication_error"
+                    | "permission_denied"
+                    | "unauthorized"
+                    | "forbidden"
+            )
         })
+}
+
+fn high_demand(message: &str) -> bool {
+    message
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_ascii_lowercase()
+        .contains("currently experiencing high demand")
+}
+
+fn classify(value: &Value) -> Option<Kind> {
+    classify_event(value, value["type"].as_str().unwrap_or(""))
+}
+
+fn classify_event(value: &Value, event: &str) -> Option<Kind> {
+    // Check both original business fields before treating `type` as an SSE event.
+    if non_retryable_business(value) {
+        return None;
+    }
+    let error = reported_error(value).unwrap_or(value);
+    let code = match &error["code"] {
+        Value::String(code) if !code.is_empty() => code.to_ascii_lowercase(),
+        Value::Number(code) => code.to_string(),
+        _ => error["type"].as_str().unwrap_or("").to_ascii_lowercase(),
+    };
+    let message = error["message"].as_str().unwrap_or("");
+    if event == "response.failed"
+        && (code.is_empty() || code == "response.failed")
+        && message.is_empty()
     {
         return Some(Kind::Transport);
     }
-    let error = reported.unwrap_or(value);
-    let code = error["code"]
-        .as_str()
-        .or_else(|| error["type"].as_str())
-        .unwrap_or("");
-    let message = error["message"].as_str().unwrap_or("");
-    let lower = format!("{code} {message}").to_lowercase();
-    if ["quota", "budget", "billing", "balance", "credit", "spend"]
-        .iter()
-        .any(|s| lower.contains(s))
-        || matches!(
-            code,
-            "invalid_api_key"
-                | "authentication_error"
-                | "permission_denied"
-                | "unauthorized"
-                | "forbidden"
-        )
-    {
-        return None;
-    }
+    let lower = message.to_lowercase();
     if message.contains("The requested item was created under a different Azure OpenAI resource.")
         && message.contains("Use the same resource that created the item to access it.")
     {
@@ -220,8 +249,10 @@ fn classify(value: &Value) -> Option<Kind> {
     }
     // Gateway concurrency throttling shares the rate-limit backoff and budget.
     if matches!(
-        code,
-        "rate_limit_exceeded"
+        code.as_str(),
+        "429"
+            | "rate_limit"
+            | "rate_limit_exceeded"
             | "rate_limit_error"
             | "too_many_requests"
             | "gateway_concurrency_limit"
@@ -234,7 +265,7 @@ fn classify(value: &Value) -> Option<Kind> {
         return Some(Kind::Rate);
     }
     if matches!(
-        code,
+        code.as_str(),
         "stream_incomplete"
             | "stream_disconnected"
             | "upstream_idle_timeout"
@@ -245,6 +276,7 @@ fn classify(value: &Value) -> Option<Kind> {
     ) || lower.contains("stream closed before response.completed")
         || lower.contains("idle timeout waiting for sse")
         || lower.contains("stream disconnected before completion")
+        || high_demand(message)
     {
         return Some(Kind::Transport);
     }
@@ -254,6 +286,9 @@ fn classify(value: &Value) -> Option<Kind> {
         || lower.contains("no available channel")
     {
         return Some(Kind::Availability);
+    }
+    if matches!(code.as_str(), "bad_response" | "server_error") {
+        return Some(Kind::Transport);
     }
     None
 }
@@ -272,6 +307,9 @@ fn http_kind(status: StatusCode, data: &[u8]) -> Option<Kind> {
     }
     let text = String::from_utf8_lossy(data);
     let value = serde_json::from_slice::<Value>(data).unwrap_or(Value::Null);
+    if matches!(status.as_u16(), 401 | 403) || non_retryable_business(&value) {
+        return None;
+    }
     let message = if value.is_null() {
         text.as_ref()
     } else if value["error"]["code"] == "cc_switch_upstream_error" {
@@ -286,8 +324,55 @@ fn http_kind(status: StatusCode, data: &[u8]) -> Option<Kind> {
         (Some(k @ Kind::Resource), 400)
         | (Some(k @ Kind::Rate), 400 | 429)
         | (Some(k @ Kind::Availability), 503)
-        | (Some(k @ Kind::Transport), 502 | 504) => Some(k),
+        | (Some(k @ Kind::Transport), 400..=599) => Some(k),
+        _ if status.is_server_error() || (value.is_null() && high_demand(&text)) => {
+            Some(Kind::Transport)
+        }
         _ => None,
+    }
+}
+
+// Parse all legal SSE line endings without changing the bytes delivered to the
+// client or the shared parser used by unrelated protocol adapters.
+#[derive(Default)]
+struct FilterSseBuffer {
+    frames: SseBuffer,
+    previous_cr: bool,
+}
+
+impl FilterSseBuffer {
+    fn push_bytes(&mut self, chunk: &[u8]) {
+        if !self.previous_cr && !chunk.contains(&b'\r') {
+            self.frames.push_bytes(chunk);
+            return;
+        }
+        let mut normalized = Vec::with_capacity(chunk.len());
+        for &byte in chunk {
+            if self.previous_cr {
+                normalized.push(b'\n');
+                self.previous_cr = false;
+                if byte == b'\n' {
+                    continue;
+                }
+            }
+            if byte == b'\r' {
+                self.previous_cr = true;
+            } else {
+                normalized.push(byte);
+            }
+        }
+        self.frames.push_bytes(&normalized);
+    }
+
+    fn finish(&mut self) {
+        if self.previous_cr {
+            self.frames.push_bytes(b"\n");
+            self.previous_cr = false;
+        }
+    }
+
+    fn next_block(&mut self) -> Option<&str> {
+        self.frames.next_block()
     }
 }
 
@@ -391,11 +476,12 @@ async fn collect(response: Response, limit: usize, idle: Duration) -> Attempt {
         parts.headers.remove(header);
     }
     let mut bytes = BytesMut::new();
-    let mut frames = SseBuffer::new();
+    let mut frames = FilterSseBuffer::default();
     loop {
-        let chunk = match tokio::time::timeout(idle, stream.next()).await {
-            Ok(Some(Ok(chunk))) => chunk,
+        let (chunk, ended) = match tokio::time::timeout(idle, stream.next()).await {
+            Ok(Some(Ok(chunk))) => (chunk, false),
             Ok(None) if !sse => break,
+            Ok(None) => (Bytes::new(), true),
             _ => return transport_failure(),
         };
         if bytes.len().saturating_add(chunk.len()) > limit {
@@ -412,6 +498,9 @@ async fn collect(response: Response, limit: usize, idle: Duration) -> Attempt {
             continue;
         }
         frames.push_bytes(&chunk);
+        if ended {
+            frames.finish();
+        }
         while let Some(frame) = frames.next_block() {
             let data = frame
                 .lines()
@@ -430,10 +519,23 @@ async fn collect(response: Response, limit: usize, idle: Duration) -> Attempt {
                 .to_owned();
             match event.as_str() {
                 "error" | "response.failed" => {
+                    let retry = if matches!(parts.status.as_u16(), 401 | 403) {
+                        None
+                    } else {
+                        classify_event(&value, &event)
+                    };
                     if let Some(obj) = value.as_object_mut() {
+                        // Preserve a top-level business type when the protocol
+                        // requires the outgoing `type` to name the SSE event.
+                        if !obj.contains_key("code") {
+                            if let Some(kind) = obj.get("type").and_then(Value::as_str) {
+                                if kind != "error" && kind != "response.failed" {
+                                    obj.insert("code".into(), json!(kind));
+                                }
+                            }
+                        }
                         obj.insert("type".into(), event.into());
                     }
-                    let retry = classify(&value);
                     // Even when retries are exhausted, do not release partial tool
                     // calls from a failed attempt. Only forward its failure event.
                     let terminal = format!(
@@ -454,6 +556,60 @@ async fn collect(response: Response, limit: usize, idle: Duration) -> Attempt {
                 }
                 _ => {}
             }
+        }
+        if ended {
+            return transport_failure();
+        }
+    }
+    if parts.status.is_success() {
+        let value = serde_json::from_slice::<Value>(&bytes).unwrap_or(Value::Null);
+        let textual_error = value.is_null() && high_demand(&String::from_utf8_lossy(&bytes));
+        let failed = reported_error(&value).is_some()
+            || value["status"] == "failed"
+            || value["response"]["status"] == "failed"
+            || value["type"] == "error"
+            || value["type"] == "response.failed"
+            || textual_error;
+        if failed {
+            let retry = if textual_error {
+                Some(Kind::Transport)
+            } else {
+                classify_event(
+                    &value,
+                    if value["status"] == "failed" || value["response"]["status"] == "failed" {
+                        "response.failed"
+                    } else {
+                        value["type"].as_str().unwrap_or("")
+                    },
+                )
+            };
+            let detail = reported_error(&value).unwrap_or(&value);
+            // An HTTP 200 error envelope can contain partial output. Deliver
+            // only its error fields, including when retry limits are exhausted.
+            let mut error = serde_json::Map::new();
+            for key in ["code", "type", "message", "param"] {
+                if let Some(field) = detail.get(key) {
+                    error.insert(key.into(), field.clone());
+                }
+            }
+            if error.is_empty() {
+                error.insert("code".into(), json!("upstream_failed_without_details"));
+                error.insert(
+                    "message".into(),
+                    json!("Upstream returned a failed response without error details."),
+                );
+            }
+            parts.status = StatusCode::BAD_GATEWAY;
+            parts
+                .headers
+                .insert("content-type", "application/json".parse().unwrap());
+            return Attempt {
+                response: Response::from_parts(
+                    parts,
+                    Body::from(json!({"error":error}).to_string()),
+                ),
+                retry,
+            };
         }
     }
     let retry = if parts.status.is_client_error() || parts.status.is_server_error() {

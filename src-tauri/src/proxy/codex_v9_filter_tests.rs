@@ -261,7 +261,7 @@ async fn gateway_concurrency_shares_rate_budget_and_preserves_permanent_errors()
     for error in [
         json!({"code":"gateway_concurrency_limit","message":"Account quota exhausted"}),
         json!({"code":"invalid_api_key","message":"Gateway concurrency limit reached"}),
-        json!({"code":"server_error","message":"Gateway concurrency limit reached"}),
+        json!({"code":"invalid_request_error","message":"Gateway concurrency limit reached"}),
     ] {
         let mut calls = 0;
         let response = run(
@@ -435,4 +435,259 @@ async fn deadline_and_client_cancellation_drop_inflight_work() {
     )
     .await;
     assert!(text(result).await.contains("request_deadline"));
+}
+
+fn http_response(status: u16, body: impl Into<Body>) -> Response {
+    Response::builder()
+        .status(status)
+        .header("content-type", "application/json")
+        .body(body.into())
+        .unwrap()
+}
+
+#[tokio::test]
+async fn v12_http_wrappers_gateway_failures_and_200_error_envelopes_recover() {
+    let disconnect = json!({"error":{"code":"cc_switch_upstream_error","message":"stream disconnected before completion: stream closed before response.completed"}}).to_string();
+    let cases = [
+        (400, disconnect.clone()),
+        (500, disconnect.clone()),
+        (502, disconnect),
+        (
+            502,
+            json!({"error":{"code":"cc_switch_upstream_error","message":"Internal server error"}})
+                .to_string(),
+        ),
+        (
+            503,
+            json!({"error":{"message":"Upstream unavailable"}}).to_string(),
+        ),
+        (504, "<html>Gateway timeout</html>".into()),
+        (429, json!({"error":{"code":429}}).to_string()),
+        (400, json!({"error":{"code":"rate_limit"}}).to_string()),
+        (
+            200,
+            json!({"error":{"code":"server_error"},"output":[{"name":"never_execute"}]})
+                .to_string(),
+        ),
+        (
+            200,
+            json!({"status":"failed","error":{"code":"bad_response"}}).to_string(),
+        ),
+        (
+            200,
+            json!({"type":"response.failed","response":{"error":null}}).to_string(),
+        ),
+        (
+            200,
+            json!({"response":{"status":"failed","error":{"code":"gateway_concurrency_limit"}}})
+                .to_string(),
+        ),
+        (
+            200,
+            "We're currently\n experiencing high demand. Please retry.".into(),
+        ),
+    ];
+    for (status, payload) in cases {
+        let mut attempts = 0;
+        let response = run(
+            || {
+                attempts += 1;
+                let attempt = attempts;
+                let payload = payload.clone();
+                async move {
+                    Ok(if attempt == 1 {
+                        http_response(status, payload)
+                    } else {
+                        sse(&[json!({"type":"response.completed","response":{"output":[]}})])
+                    })
+                }
+            },
+            Duration::from_secs(5),
+            IDLE,
+            LIMIT,
+            false,
+        )
+        .await;
+        let body = text(response).await;
+        assert_eq!(attempts, 2, "{status}: {payload}");
+        assert!(body.contains("response.completed"));
+        assert!(!body.contains("never_execute"));
+    }
+}
+
+#[tokio::test]
+async fn v12_sse_errors_retry_without_releasing_earlier_text_or_tools() {
+    for error in [
+        json!({"code":"server_error"}),
+        json!({"code":"bad_response"}),
+        json!({"code":"RATE_LIMIT"}),
+        json!({"code":429}),
+        json!({"message":"We're currently experiencing high demand."}),
+    ] {
+        let mut attempts = 0;
+        let response = run(|| {
+            attempts += 1;
+            let attempt = attempts; let error = error.clone();
+            async move { Ok(if attempt == 1 { sse(&[
+                json!({"type":"response.output_text.delta","delta":"discard_partial"}),
+                json!({"type":"response.output_item.done","item":{"type":"function_call","name":"never_execute"}}),
+                json!({"type":"response.failed","response":{"error":error}}),
+            ]) } else { sse(&[json!({"type":"response.completed","response":{"output":[]}})]) }) }
+        }, Duration::from_secs(5), IDLE, LIMIT, false).await;
+        let body = text(response).await;
+        assert_eq!(attempts, 2, "{error}");
+        assert!(body.contains("response.completed"));
+        assert!(!body.contains("discard_partial"));
+        assert!(!body.contains("never_execute"));
+    }
+}
+
+#[tokio::test]
+async fn v12_permanent_business_errors_win_over_transient_codes_and_sse_names() {
+    for error in [
+        json!({"code":"server_error","type":"authentication_error","message":"Denied"}),
+        json!({"code":"cc_switch_forward_failed","type":"insufficient_quota","message":"Exhausted"}),
+        json!({"code":"invalid_api_key","message":"currently experiencing high demand"}),
+        json!({"type":"permission_denied","message":"stream disconnected before completion"}),
+    ] {
+        for mode in ["http200", "http502", "error", "response.failed", "nested"] {
+            let mut attempts = 0;
+            let response = run(
+                || {
+                    attempts += 1;
+                    let error = error.clone();
+                    async move {
+                        Ok(if mode.starts_with("http") {
+                            http_response(
+                                if mode == "http200" { 200 } else { 502 },
+                                json!({"error":error,"output":[{"name":"never_execute"}]})
+                                    .to_string(),
+                            )
+                        } else if mode == "nested" {
+                            sse(&[json!({"type":"response.failed","response":{"error":error}})])
+                        } else {
+                            Response::builder()
+                                .header("content-type", "text/event-stream")
+                                .body(Body::from(format!("event: {mode}\ndata: {error}\n\n")))
+                                .unwrap()
+                        })
+                    }
+                },
+                Duration::from_secs(5),
+                IDLE,
+                LIMIT,
+                false,
+            )
+            .await;
+            let body = text(response).await;
+            assert_eq!(attempts, 1, "{mode}: {error}");
+            assert!(!body.contains("response.completed"));
+            if mode == "http200" {
+                assert!(!body.contains("never_execute"));
+            }
+        }
+    }
+    for status in [401, 403] {
+        assert_eq!(
+            http_kind(
+                StatusCode::from_u16(status).unwrap(),
+                br#"{"error":{"code":"server_error"}}"#
+            ),
+            None
+        );
+    }
+    assert_eq!(
+        http_kind(
+            StatusCode::BAD_REQUEST,
+            br#"{"error":{"code":"invalid_request_error","message":"Invalid model"}}"#
+        ),
+        None
+    );
+}
+
+#[tokio::test]
+async fn v12_200_failures_exhaust_transport_budget_without_fake_completion() {
+    let mut attempts = 0;
+    let response = run(
+        || {
+            attempts += 1;
+            async {
+                Ok(http_response(
+                    200,
+                    json!({"status":"failed","error":{"code":"server_error"},
+            "output":[{"type":"function_call","name":"never_execute"}]})
+                    .to_string(),
+                ))
+            }
+        },
+        Duration::from_secs(5),
+        IDLE,
+        LIMIT,
+        false,
+    )
+    .await;
+    assert_eq!(attempts, 11);
+    assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    let body = text(response).await;
+    assert!(body.contains("server_error"));
+    assert!(!body.contains("never_execute"));
+    assert!(!body.contains("completed"));
+}
+
+#[tokio::test]
+async fn v12_successful_json_and_quoted_error_text_are_preserved() {
+    let payload = json!({"status":"completed","error":null,"output":[{"type":"message","content":[{
+        "type":"output_text","text":"The error says currently experiencing high demand; response.failed is just text."
+    }]}]}).to_string();
+    let attempt = collect(http_response(200, payload.clone()), LIMIT, IDLE).await;
+    assert_eq!(attempt.retry, None);
+    assert_eq!(attempt.response.status(), StatusCode::OK);
+    assert_eq!(text(attempt.response).await, payload);
+}
+
+#[tokio::test]
+async fn v12_sse_line_endings_chunk_boundaries_and_event_names_are_parsed() {
+    for ending in ["\n", "\r\n", "\r"] {
+        let raw = [
+            "data: {\"untyped\":true}".to_owned(),
+            "event:response.output_text.delta\ndata:{\"delta\":\"中文 response.failed response.completed\"}".to_owned(),
+            "event:response.completed\ndata:{\"response\":{\"status\":\"completed\"}}".to_owned(),
+        ].join("\n\n") + "\n\n";
+        let raw = raw.replace('\n', ending);
+        for chunk_size in [1, 2, 7, raw.len()] {
+            let chunks = raw
+                .as_bytes()
+                .chunks(chunk_size)
+                .map(|b| Ok::<_, std::io::Error>(Bytes::copy_from_slice(b)))
+                .collect::<Vec<_>>();
+            let response = Response::builder()
+                .header("content-type", "text/event-stream")
+                .body(Body::from_stream(futures::stream::iter(chunks)))
+                .unwrap();
+            let attempt = collect(response, LIMIT, IDLE).await;
+            assert_eq!(attempt.retry, None, "{ending:?}: {chunk_size}");
+            assert_eq!(text(attempt.response).await, raw);
+        }
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn v12_error_envelope_after_heartbeat_remains_an_error() {
+    let response = handle(true, || async {
+        tokio::time::sleep(Duration::from_secs(16)).await;
+        Ok(http_response(
+            200,
+            json!({"error":{"code":"invalid_api_key"},
+            "output":[{"name":"never_execute"}]})
+            .to_string(),
+        ))
+    })
+    .await
+    .unwrap();
+    let body = text(response).await;
+    assert!(body.contains("response.in_progress"));
+    assert!(body.contains("event: error"));
+    assert!(body.contains("invalid_api_key"));
+    assert!(!body.contains("response.completed"));
+    assert!(!body.contains("never_execute"));
 }
