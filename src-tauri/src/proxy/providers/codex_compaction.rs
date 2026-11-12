@@ -8,7 +8,7 @@
 //!
 //! 第三方模型产不出 OpenAI 的密文，所以这里把它当普通摘要模型用：禁止发起新的工具调用
 //! （工具定义保留，历史里的调用条目还引用着它们）、在末尾追加
-//! Codex 自己的压缩提示词，再把摘要正文包成 `ccswitch-compaction-v1:` + base64 放进
+//! Codex 自己的压缩提示词，再把摘要正文包成 `switchplus-compaction-v1:` + base64 放进
 //! `encrypted_content`。以后 Codex 在历史里回放这个条目时：
 //! - 发往 Chat / Anthropic 转换：解回摘要正文，作为用户消息；解不开的（别家的密文）
 //!   转换后的格式装不下，换成一句说明，不再静默丢弃。
@@ -22,10 +22,10 @@ use bytes::Bytes;
 use futures::stream::{Stream, StreamExt};
 use serde_json::{json, Value};
 
-pub(crate) const CCSWITCH_COMPACTION_PREFIX: &str = "ccswitch-compaction-v1:";
+pub(crate) const CCSWITCH_COMPACTION_PREFIX: &str = "switchplus-compaction-v1:";
 
 /// CC Switch 自己包装进 `encrypted_content` 的内容都以它开头，官方后端一律解不开。
-const CCSWITCH_ENVELOPE_PREFIX: &str = "ccswitch-";
+const CCSWITCH_ENVELOPE_PREFIX: &str = "switchplus-";
 
 /// 与 codex-rs `prompts/templates/compact/prompt.md` 一致（Codex 本地压缩用的提示词）。
 pub(crate) const COMPACT_PROMPT: &str = "You are performing a CONTEXT CHECKPOINT COMPACTION. Create a handoff summary for another LLM that will resume the task.
@@ -80,7 +80,7 @@ pub(crate) fn decode_compaction_summary(encrypted_content: &str) -> Option<Strin
     String::from_utf8(bytes).ok()
 }
 
-fn is_ccswitch_envelope(encrypted_content: &str) -> bool {
+fn is_switchplus_envelope(encrypted_content: &str) -> bool {
     encrypted_content.starts_with(CCSWITCH_ENVELOPE_PREFIX)
 }
 
@@ -305,7 +305,7 @@ pub(crate) fn strip_mismatched_item_id(item: &mut Value, item_type: &str) -> boo
 ///
 /// 纯官方的线程里这些情况都不会出现，请求一个字节都不变（prompt cache 前缀不受影响）；
 /// 同一段混合历史每轮清理结果相同，缓存前缀也稳定。
-pub(crate) fn scrub_ccswitch_state_for_official(body: &mut Value) -> bool {
+pub(crate) fn scrub_switchplus_state_for_official(body: &mut Value) -> bool {
     let stored = body.get("store").and_then(Value::as_bool) == Some(true);
     let Some(items) = body.get_mut("input").and_then(Value::as_array_mut) else {
         return false;
@@ -328,7 +328,7 @@ pub(crate) fn scrub_ccswitch_state_for_official(body: &mut Value) -> bool {
 
         if item_type == "reasoning" {
             let foreign = match compaction_encrypted_content(&item) {
-                Some(encrypted_content) => is_ccswitch_envelope(encrypted_content),
+                Some(encrypted_content) => is_switchplus_envelope(encrypted_content),
                 None => !stored,
             };
             if foreign {
@@ -668,7 +668,7 @@ mod tests {
             ]
         });
         let before = body.clone();
-        assert!(!scrub_ccswitch_state_for_official(&mut body));
+        assert!(!scrub_switchplus_state_for_official(&mut body));
         assert_eq!(body, before);
     }
 
@@ -679,14 +679,14 @@ mod tests {
             "input": [
                 { "type": "reasoning", "id": "rs_resp_chat", "summary": [{ "type": "summary_text", "text": "t" }] },
                 { "type": "reasoning", "id": "rs_resp_msg_0", "summary": [],
-                  "encrypted_content": "ccswitch-anthropic-thinking-v1:abc" },
+                  "encrypted_content": "switchplus-anthropic-thinking-v1:abc" },
                 { "type": "message", "id": "resp_msg_01_msg_0", "role": "assistant",
                   "content": [{ "type": "output_text", "text": "hi" }] },
                 { "type": "compaction", "id": "cmp_2", "encrypted_content": encode_compaction_summary("done so far") },
                 { "type": "message", "role": "user", "content": "next" }
             ]
         });
-        assert!(scrub_ccswitch_state_for_official(&mut body));
+        assert!(scrub_switchplus_state_for_official(&mut body));
         let input = body["input"].as_array().unwrap();
         assert_eq!(input.len(), 3);
         assert!(input[0].get("id").is_none());

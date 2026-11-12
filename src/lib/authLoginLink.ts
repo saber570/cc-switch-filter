@@ -9,7 +9,7 @@ import { toast } from "@/lib/toast";
  * （用独立浏览器环境管多个账号时，不让登录混进系统默认浏览器）。
  * 只是本机的界面偏好，记在 localStorage，不进 settings.json、不随云同步；读不到时按默认（打开）。
  */
-const STORAGE_KEY = "cc-switch.authCenter.openBrowser";
+const STORAGE_KEY = "switchplus.authCenter.openBrowser";
 
 const listeners = new Set<() => void>();
 

@@ -32,7 +32,7 @@ const TEMPLATE_TYPE_OFFICIAL_SUBSCRIPTION: &str = "official_subscription";
 /// Copilot 用量结果的单位（`commands::provider` 的 `COPILOT_UNIT_PREMIUM`）：Credits（接口里仍叫 premium_interactions）。
 const COPILOT_UNIT_PREMIUM: &str = "requests";
 
-pub const TRAY_ID: &str = "cc-switch";
+pub const TRAY_ID: &str = "switchplus";
 
 /// 进托盘的应用，顺序和侧栏一致。累加式应用没有「当前供应商」，不进托盘。
 pub const TRAY_APPS: [AppType; 5] = [
@@ -189,11 +189,11 @@ impl TrayTexts {
     pub fn from_language(language: &str) -> Self {
         match language {
             "en" => Self {
-                show_main: "Open CC Switch",
+                show_main: "Open SwitchPlus",
                 open_website: "Open official website",
                 lightweight_mode: "Lightweight mode",
-                quit: "Quit CC Switch",
-                quit_stops_routing: "Quit CC Switch (stops the routing service)",
+                quit: "Quit SwitchPlus",
+                quit_stops_routing: "Quit SwitchPlus (stops the routing service)",
                 projects_label: "Projects",
                 no_project_label: "No project",
                 header_direct: "Direct",
@@ -214,8 +214,8 @@ impl TrayTexts {
                 problem_attach_failed:
                     "{app}: {mode} couldn't reconnect at startup; back to direct",
                 problem_switch_failed: "{app} didn't switch: {reason}",
-                problem_more: "{count} more issues — open CC Switch to see them",
-                tooltip_problem: "CC Switch · Needs attention: {problem}",
+                problem_more: "{count} more issues — open SwitchPlus to see them",
+                tooltip_problem: "SwitchPlus · Needs attention: {problem}",
                 feedback_switched: "{app} switched to {name}. Restart {app} to apply",
                 feedback_stack_default:
                     "{app}'s default provider is now {name}. Restart {app} to apply",
@@ -248,11 +248,11 @@ impl TrayTexts {
             // 在有人翻译前显示英文，而不是让所有改托盘的提交都必须补土耳其语。
             "tr" => {
                 let mut texts = Self::from_language("en");
-                texts.show_main = "CC Switch'i aç";
+                texts.show_main = "SwitchPlus'i aç";
                 texts.open_website = "Resmî web sitesini aç";
                 texts.lightweight_mode = "Hafif mod";
-                texts.quit = "CC Switch'ten çık";
-                texts.quit_stops_routing = "CC Switch'ten çık (yönlendirme hizmeti durur)";
+                texts.quit = "SwitchPlus'ten çık";
+                texts.quit_stops_routing = "SwitchPlus'ten çık (yönlendirme hizmeti durur)";
                 texts.projects_label = "Projeler";
                 texts.no_project_label = "Proje yok";
                 texts.header_direct = "Doğrudan";
@@ -272,8 +272,8 @@ impl TrayTexts {
                 texts.problem_service_down = "Yönlendirme hizmeti çalışmıyor (port {port})";
                 texts.problem_attach_failed = "{app}: {mode} başlangıçta yeniden bağlanamadı; doğrudan bağlantıya dönüldü";
                 texts.problem_switch_failed = "{app} geçiş yapamadı: {reason}";
-                texts.problem_more = "{count} sorun daha var — görmek için CC Switch'i açın";
-                texts.tooltip_problem = "CC Switch · İlgilenilmesi gerekiyor: {problem}";
+                texts.problem_more = "{count} sorun daha var — görmek için SwitchPlus'i açın";
+                texts.tooltip_problem = "SwitchPlus · İlgilenilmesi gerekiyor: {problem}";
                 texts.feedback_switched = "{app}, {name} sağlayıcısına geçti. Uygulamak için {app} uygulamasını yeniden başlatın";
                 texts.feedback_stack_default = "{app} için varsayılan sağlayıcı artık {name}. Uygulamak için {app} uygulamasını yeniden başlatın";
                 texts.feedback_profile = "{name} projesi {app} uygulamasına uygulandı";
@@ -301,11 +301,11 @@ impl TrayTexts {
                 texts
             }
             "ja" => Self {
-                show_main: "CC Switch を開く",
+                show_main: "SwitchPlus を開く",
                 open_website: "公式サイトを開く",
                 lightweight_mode: "軽量モード",
-                quit: "CC Switch を終了",
-                quit_stops_routing: "CC Switch を終了（ルーティングサービスが停止します）",
+                quit: "SwitchPlus を終了",
+                quit_stops_routing: "SwitchPlus を終了（ルーティングサービスが停止します）",
                 projects_label: "プロジェクト",
                 no_project_label: "プロジェクトを使用しない",
                 header_direct: "直接接続",
@@ -326,8 +326,8 @@ impl TrayTexts {
                 problem_attach_failed: "{app}：前回の{mode}に再接続できず、直接接続に戻りました",
                 problem_switch_failed: "{app} を切り替えられませんでした：{reason}",
                 problem_more:
-                    "ほかに {count} 件の問題があります。CC Switch を開いて確認してください",
-                tooltip_problem: "CC Switch · 対応が必要：{problem}",
+                    "ほかに {count} 件の問題があります。SwitchPlus を開いて確認してください",
+                tooltip_problem: "SwitchPlus · 対応が必要：{problem}",
                 feedback_switched:
                     "{app} を {name} に切り替えました。反映するには {app} を再起動してください",
                 feedback_stack_default: "{app} のデフォルトのプロバイダーを {name} に変更しました。反映するには {app} を再起動してください",
@@ -357,11 +357,11 @@ impl TrayTexts {
                 quota_used: false,
             },
             "zh-TW" => Self {
-                show_main: "開啟 CC Switch",
+                show_main: "開啟 SwitchPlus",
                 open_website: "開啟官方網站",
                 lightweight_mode: "輕量模式",
-                quit: "退出 CC Switch",
-                quit_stops_routing: "退出 CC Switch（路由服務會停止）",
+                quit: "退出 SwitchPlus",
+                quit_stops_routing: "退出 SwitchPlus（路由服務會停止）",
                 projects_label: "專案",
                 no_project_label: "不使用專案",
                 header_direct: "直連",
@@ -381,8 +381,8 @@ impl TrayTexts {
                 problem_service_down: "路由服務沒在執行（連接埠 {port}）",
                 problem_attach_failed: "{app}：上次的{mode}沒能接上，已回到直連",
                 problem_switch_failed: "{app} 沒切換成功：{reason}",
-                problem_more: "還有 {count} 個問題，開啟 CC Switch 查看",
-                tooltip_problem: "CC Switch · 需要處理：{problem}",
+                problem_more: "還有 {count} 個問題，開啟 SwitchPlus 查看",
+                tooltip_problem: "SwitchPlus · 需要處理：{problem}",
                 feedback_switched: "{app} 已切換到 {name}，重新啟動 {app} 後生效",
                 feedback_stack_default: "{app} 的預設供應商改為 {name}，重新啟動 {app} 後生效",
                 feedback_profile: "已把專案「{name}」套用到 {app}",
@@ -411,11 +411,11 @@ impl TrayTexts {
                 quota_used: false,
             },
             _ => Self {
-                show_main: "打开 CC Switch",
+                show_main: "打开 SwitchPlus",
                 open_website: "打开官方网站",
                 lightweight_mode: "轻量模式",
-                quit: "退出 CC Switch",
-                quit_stops_routing: "退出 CC Switch（路由服务会停止）",
+                quit: "退出 SwitchPlus",
+                quit_stops_routing: "退出 SwitchPlus（路由服务会停止）",
                 projects_label: "项目",
                 no_project_label: "不使用项目",
                 header_direct: "直连",
@@ -435,8 +435,8 @@ impl TrayTexts {
                 problem_service_down: "路由服务没在运行（端口 {port}）",
                 problem_attach_failed: "{app}：上次的{mode}没能接上，已回到直连",
                 problem_switch_failed: "{app} 没切换成功：{reason}",
-                problem_more: "还有 {count} 个问题，打开 CC Switch 查看",
-                tooltip_problem: "CC Switch · 需要处理：{problem}",
+                problem_more: "还有 {count} 个问题，打开 SwitchPlus 查看",
+                tooltip_problem: "SwitchPlus · 需要处理：{problem}",
                 feedback_switched: "{app} 已切换到 {name}，重启 {app} 后生效",
                 feedback_stack_default: "{app} 的默认供应商改为 {name}，重启 {app} 后生效",
                 feedback_profile: "已把项目「{name}」用到 {app}",
@@ -2562,7 +2562,7 @@ fn icon_with_problem_dot(icon: &Image<'_>, template: bool) -> Image<'static> {
 /// 悬停提示：平时 `CC Switch`，出问题时 `CC Switch · 需要处理：<问题区第一条>`。额度不算问题。
 fn tray_tooltip(texts: &TrayTexts, problems: &[TrayProblem]) -> String {
     match problems.first() {
-        None => "CC Switch".to_string(),
+        None => "SwitchPlus".to_string(),
         Some(problem) => truncate_chars(
             &fill(
                 texts.tooltip_problem,
@@ -3137,7 +3137,7 @@ pub fn handle_tray_menu_event(app: &tauri::AppHandle, event_id: &str) {
     match event_id {
         "show_main" => show_main_window(app),
         "open_website" => {
-            if let Err(e) = app.opener().open_url("https://ccswitch.io", None::<String>) {
+            if let Err(e) = app.opener().open_url("https://github.com/saber570/cc-switch-filter", None::<String>) {
                 log::error!("打开官方网站失败: {e}");
             }
         }
@@ -3424,7 +3424,7 @@ mod tests {
 
     #[test]
     fn tray_id_is_unique_to_app() {
-        assert_eq!(TRAY_ID, "cc-switch");
+        assert_eq!(TRAY_ID, "switchplus");
         assert_ne!(TRAY_ID, "main");
     }
 
@@ -4375,7 +4375,7 @@ mod tests {
         assert_eq!(
             texts_of(&menu),
             [
-                "打开 CC Switch",
+                "打开 SwitchPlus",
                 "---",
                 "Claude Code · Kimi For Coding",
                 "Grok Build · 添加供应商…",
@@ -4383,7 +4383,7 @@ mod tests {
                 "轻量模式",
                 "---",
                 "打开官方网站",
-                "退出 CC Switch",
+                "退出 SwitchPlus",
             ]
         );
         assert!(matches!(&menu[3], TrayEntry::Item { id, .. } if id == "nav:add:grokbuild"));
@@ -4561,15 +4561,15 @@ mod tests {
             None,
         )]));
         let mut apps = [desktop];
-        let problems = [TrayProblem::ServiceDown { port: 15721 }];
+        let problems = [TrayProblem::ServiceDown { port: 15731 }];
         mark_attention(&mut apps, &problems);
         let menu = model(&problems, &apps);
-        assert_eq!(text_of(&menu[0]), "路由服务没在运行（端口 15721）");
+        assert_eq!(text_of(&menu[0]), "路由服务没在运行（端口 15731）");
         assert!(
             matches!(&menu[0], TrayEntry::Item { id, enabled: true, .. } if id == "nav:settings:routing")
         );
         assert_eq!(text_of(&menu[1]), "---");
-        assert_eq!(text_of(&menu[2]), "打开 CC Switch");
+        assert_eq!(text_of(&menu[2]), "打开 SwitchPlus");
         assert_eq!(
             text_of(&menu[4]),
             "Claude Desktop · 路由 · Kimi For Coding · 需要处理"
@@ -4582,7 +4582,7 @@ mod tests {
     #[test]
     fn problem_area_keeps_two_rows_then_says_how_many_more() {
         let problems = [
-            TrayProblem::ServiceDown { port: 15721 },
+            TrayProblem::ServiceDown { port: 15731 },
             TrayProblem::AttachFailed {
                 app: AppType::Claude,
                 stack: false,
@@ -4596,9 +4596,9 @@ mod tests {
         assert_eq!(
             texts_of(&menu[..4]),
             [
-                "路由服务没在运行（端口 15721）",
+                "路由服务没在运行（端口 15731）",
                 "Claude Code：上次的路由没能接上，已回到直连",
-                "还有 1 个问题，打开 CC Switch 查看",
+                "还有 1 个问题，打开 SwitchPlus 查看",
                 "---"
             ]
         );
@@ -4742,11 +4742,11 @@ mod tests {
                 other => panic!("last entry is not quit: {other:?}"),
             }
         };
-        assert_eq!(quit_text(&zh(), false), "退出 CC Switch");
-        assert_eq!(quit_text(&zh(), true), "退出 CC Switch（路由服务会停止）");
+        assert_eq!(quit_text(&zh(), false), "退出 SwitchPlus");
+        assert_eq!(quit_text(&zh(), true), "退出 SwitchPlus（路由服务会停止）");
         assert_eq!(
             quit_text(&en(), true),
-            "Quit CC Switch (stops the routing service)"
+            "Quit SwitchPlus (stops the routing service)"
         );
         for language in ["zh", "zh-TW", "en", "ja", "tr"] {
             let texts = TrayTexts::from_language(language);
@@ -4772,9 +4772,9 @@ mod tests {
 
     #[test]
     fn tooltip_names_the_first_problem_and_is_plain_otherwise() {
-        assert_eq!(tray_tooltip(&zh(), &[]), "CC Switch");
+        assert_eq!(tray_tooltip(&zh(), &[]), "SwitchPlus");
         let problems = [
-            TrayProblem::ServiceDown { port: 15721 },
+            TrayProblem::ServiceDown { port: 15731 },
             TrayProblem::SwitchFailed {
                 app: AppType::Codex,
                 reason: "boom".to_string(),
@@ -4782,7 +4782,7 @@ mod tests {
         ];
         assert_eq!(
             tray_tooltip(&zh(), &problems),
-            "CC Switch · 需要处理：路由服务没在运行（端口 15721）"
+            "SwitchPlus · 需要处理：路由服务没在运行（端口 15731）"
         );
         let long = [TrayProblem::SwitchFailed {
             app: AppType::Codex,
@@ -4859,7 +4859,7 @@ mod tests {
     #[test]
     fn feedback_row_is_a_grey_line_after_the_problems() {
         let status = MenuStatus {
-            problems: vec![TrayProblem::ServiceDown { port: 15721 }],
+            problems: vec![TrayProblem::ServiceDown { port: 15731 }],
             feedback: Some(TrayFeedback::Switched {
                 app: AppType::Codex,
                 name: "DeepSeek".to_string(),
@@ -4870,10 +4870,10 @@ mod tests {
         assert_eq!(
             texts_of(&menu[..4]),
             [
-                "路由服务没在运行（端口 15721）",
+                "路由服务没在运行（端口 15731）",
                 "Codex 已切换到 DeepSeek，重启 Codex 后生效",
                 "---",
-                "打开 CC Switch",
+                "打开 SwitchPlus",
             ]
         );
         assert!(matches!(&menu[1], TrayEntry::Item { enabled: false, .. }));
@@ -4891,7 +4891,7 @@ mod tests {
             [
                 "Codex 的默认供应商改为 Kimi For Coding，重启 Codex 后生效",
                 "---",
-                "打开 CC Switch",
+                "打开 SwitchPlus",
             ]
         );
         assert_eq!(
@@ -4998,9 +4998,9 @@ mod tests {
         // Claude Code 重新进入路由：「退回直连」的问题行消失。
         let rerouted = [(AppType::Claude, false), (AppType::Codex, true)];
         assert_eq!(
-            collect_problems(Some(15721), &rerouted),
+            collect_problems(Some(15731), &rerouted),
             [
-                TrayProblem::ServiceDown { port: 15721 },
+                TrayProblem::ServiceDown { port: 15731 },
                 TrayProblem::SwitchFailed {
                     app: AppType::Codex,
                     reason: "boom".to_string()

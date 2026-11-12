@@ -2675,9 +2675,9 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     websiteUrl: "https://platform.minimax.cn",
     apiKeyUrl: "https://platform.minimax.cn/subscribe/token-plan",
     // `minimax` / `minimax-cn` are Hermes built-ins that shadow custom_providers
-    providerKey: "cc-switch-minimax",
+    providerKey: "switchplus-minimax",
     settingsConfig: {
-      name: "cc-switch-minimax",
+      name: "switchplus-minimax",
       base_url: "https://api.minimax.cn/v1",
       api_key: "",
       api_mode: "chat_completions",
@@ -2697,7 +2697,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     icon: "minimax",
     iconColor: "#FF6B6B",
     suggestedDefaults: {
-      model: { default: "MiniMax-M3.1-Flash", provider: "cc-switch-minimax" },
+      model: { default: "MiniMax-M3.1-Flash", provider: "switchplus-minimax" },
     },
   },
   {
@@ -2706,9 +2706,9 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     regionKey: "intl",
     websiteUrl: "https://platform.minimax.io",
     apiKeyUrl: "https://platform.minimax.io/subscribe/coding-plan",
-    providerKey: "cc-switch-minimax-en",
+    providerKey: "switchplus-minimax-en",
     settingsConfig: {
-      name: "cc-switch-minimax-en",
+      name: "switchplus-minimax-en",
       base_url: "https://api.minimax.io/v1",
       api_key: "",
       api_mode: "chat_completions",
@@ -2730,7 +2730,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     suggestedDefaults: {
       model: {
         default: "MiniMax-M3.1-Flash",
-        provider: "cc-switch-minimax-en",
+        provider: "switchplus-minimax-en",
       },
     },
   },

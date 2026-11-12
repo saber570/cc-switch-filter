@@ -5,12 +5,12 @@ import { useState } from "react";
  * 只是界面偏好，不进 settings.json、不随云同步。读不到、写不了（隐私模式）或值认不出时按默认值。
  */
 export const USAGE_CHOICE_KEYS = {
-  tab: "cc-switch.usage.tab",
-  range: "cc-switch.usage.rangePreset",
+  tab: "switchplus.usage.tab",
+  range: "switchplus.usage.rangePreset",
   /** 指标条选中的指标（趋势图和热力图共用） */
-  trendMetric: "cc-switch.usage.trendMetric",
+  trendMetric: "switchplus.usage.trendMetric",
   /** 请求日志每页几条 */
-  logPageSize: "cc-switch.usage.logPageSize",
+  logPageSize: "switchplus.usage.logPageSize",
 } as const;
 
 /** 请求日志每页条数的可选值（存成字符串，和其他记下的选择一样） */

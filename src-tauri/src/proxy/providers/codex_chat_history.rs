@@ -249,7 +249,7 @@ impl CodexChatHistoryInner {
         calls: Vec<(String, Value)>,
     ) -> usize {
         // Upstreams that omit the chat id all map to the same response id
-        // (`resp_ccswitch`); keep each session's calls under its own key.
+        // (`resp_switchplus`); keep each session's calls under its own key.
         let response_key = if self
             .responses
             .get(response_id)
@@ -1202,7 +1202,7 @@ mod tests {
 
     #[tokio::test]
     async fn shared_fallback_response_id_stays_per_session() {
-        // Non-streaming chat responses without an id all become `resp_ccswitch`.
+        // Non-streaming chat responses without an id all become `resp_switchplus`.
         let history = CodexChatHistoryStore::default();
         for (scope, call_id, reasoning) in [
             ("session_a", "call_a", "A reasoning"),
@@ -1210,7 +1210,7 @@ mod tests {
         ] {
             history
                 .record_response(
-                    &json!({"id": "resp_ccswitch", "output": [numbered_call(call_id, reasoning)]}),
+                    &json!({"id": "resp_switchplus", "output": [numbered_call(call_id, reasoning)]}),
                     Some(scope),
                 )
                 .await;
@@ -1227,7 +1227,7 @@ mod tests {
 
         // previous_response_id must not reach the other session's calls either.
         let mut request = replayed_history("call_a");
-        request["previous_response_id"] = json!("resp_ccswitch");
+        request["previous_response_id"] = json!("resp_switchplus");
         assert_eq!(
             history
                 .enrich_request(&mut request, Some("session_b"))
@@ -1235,7 +1235,7 @@ mod tests {
             0
         );
         let mut request = replayed_history("call_a");
-        request["previous_response_id"] = json!("resp_ccswitch");
+        request["previous_response_id"] = json!("resp_switchplus");
         assert_eq!(
             history
                 .enrich_request(&mut request, Some("session_a"))

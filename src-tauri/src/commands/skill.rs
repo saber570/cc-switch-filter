@@ -2,7 +2,7 @@
 //!
 //! v3.10.0+ 统一管理架构：
 //! - 支持三应用开关（Claude/Codex/Gemini）
-//! - SSOT 存储在 ~/.cc-switch/skills/
+//! - SSOT 存储在 ~/.switchplus/skills/
 
 use super::run_db_task;
 use crate::app_config::{AppType, InstalledSkill, UnmanagedSkill};
@@ -229,13 +229,13 @@ fn cc_switch_skills_dir() -> std::path::PathBuf {
 
 /// 「存储与同步」里显示的 CC Switch 目录路径
 #[tauri::command]
-pub async fn get_cc_switch_skills_dir() -> Result<String, String> {
+pub async fn get_switchplus_skills_dir() -> Result<String, String> {
     Ok(cc_switch_skills_dir().to_string_lossy().to_string())
 }
 
 /// 在系统文件管理器里打开 CC Switch 目录下的 Skills 目录（不存在就先建）
 #[tauri::command]
-pub async fn open_cc_switch_skills_dir(handle: AppHandle) -> Result<bool, String> {
+pub async fn open_switchplus_skills_dir(handle: AppHandle) -> Result<bool, String> {
     let dir = cc_switch_skills_dir();
     if !dir.exists() {
         std::fs::create_dir_all(&dir).map_err(|e| format!("创建目录失败: {e}"))?;

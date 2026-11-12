@@ -327,7 +327,7 @@ export const ClaudeOfficialSection: React.FC<ClaudeOfficialSectionProps> = ({
         othersRemain={accounts.length > 1}
         note={t("authCenter.claude.removeNote", {
           defaultValue:
-            "只删除 CC Switch 为这个账号保存的登录，不会让它在其他地方退出；Claude Code 现在的登录（~/.claude）不受影响。绑定它的卡片会改用 Claude Code 现在的登录。",
+            "只删除 SwitchPlus 为这个账号保存的登录，不会让它在其他地方退出；Claude Code 现在的登录（~/.claude）不受影响。绑定它的卡片会改用 Claude Code 现在的登录。",
         })}
         pending={isRemovingAccount}
         onConfirm={confirmRemove}

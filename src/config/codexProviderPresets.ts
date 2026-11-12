@@ -1772,7 +1772,7 @@ requires_openai_auth = true`,
     // 官方目录虽声明 freeform，无真机验证前按保守口径，不引入 400 风险）
     apiFormat: "openai_responses",
     // 档位/上下文/模态照抄官方 models.json：glm-5.3 low/high/max 默认 max；
-    // glm-5-turbo 官方档位为空、默认 max——cc-switch 表达不了空档位（回落会得到
+    // glm-5-turbo 官方档位为空、默认 max——switchplus 表达不了空档位（回落会得到
     // 模板 none/high，none 在原生直连下没有转换层兜底、会原样发给严格网关），
     // 按官方默认收成单档 max。两模型为纯文本、并行工具调用 true。
     // glm-5.3-flash 例外：官方 Codex models.json 尚未收录（2026-09-26 核对），

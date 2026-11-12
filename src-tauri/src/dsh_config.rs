@@ -975,7 +975,7 @@ fn initialize_profiles_and_commit<T>(
         return commit();
     }
     let profiles = target_paths();
-    let receipt = data_dir().join(".cc-switch-profile-sync.json");
+    let receipt = data_dir().join(".switchplus-profile-sync.json");
     let parse_receipt = |text: &str| -> Result<Vec<String>, AppError> {
         if text.trim().is_empty() {
             Ok(vec![])
@@ -1140,10 +1140,10 @@ fn diverged_provider_error(
     AppError::localized(
         "dsh.provider_diverged",
         format!(
-            "供应商 '{id}' 在 profile '{other}' 里的内容与 '{source}' 不同；CC Switch 只认得 '{source}' 的那份，改写会覆盖你在 DeepSeek Harness 里对 '{other}' 做的修改。请先在 DeepSeek Harness 里把两者改成一致，或手动编辑 profiles/{other}/cordis.patch.yml。"
+            "供应商 '{id}' 在 profile '{other}' 里的内容与 '{source}' 不同；SwitchPlus 只认得 '{source}' 的那份，改写会覆盖你在 DeepSeek Harness 里对 '{other}' 做的修改。请先在 DeepSeek Harness 里把两者改成一致，或手动编辑 profiles/{other}/cordis.patch.yml。"
         ),
         format!(
-            "Provider '{id}' differs between the '{other}' and '{source}' profiles; CC Switch only knows the '{source}' copy, so writing would discard your changes in '{other}'. Make them identical in DeepSeek Harness, or edit profiles/{other}/cordis.patch.yml directly."
+            "Provider '{id}' differs between the '{other}' and '{source}' profiles; SwitchPlus only knows the '{source}' copy, so writing would discard your changes in '{other}'. Make them identical in DeepSeek Harness, or edit profiles/{other}/cordis.patch.yml directly."
         ),
     )
 }
@@ -1306,7 +1306,7 @@ fn native_provider(
             .filter(|key| !key.trim().is_empty())
         {
             let reference = format!(
-                "CC_SWITCH_DSH_{}",
+                "SWITCHPLUS_DSH_{}",
                 id.replace('-', "_").to_ascii_uppercase()
             );
             let mut credentials = credential_document_from(credentials_text)?;
@@ -1542,7 +1542,7 @@ fn mcp_edit(text: &str, id: &str, spec: Option<&Value>) -> Result<String, AppErr
             .as_ref()
             .and_then(|entry| entry["id"].as_str())
             .map(str::to_owned)
-            .unwrap_or_else(|| format!("cc-switch-mcp-{id}"));
+            .unwrap_or_else(|| format!("switchplus-mcp-{id}"));
         if existing.is_some()
             && existing
                 .as_ref()
@@ -1550,7 +1550,7 @@ fn mcp_edit(text: &str, id: &str, spec: Option<&Value>) -> Result<String, AppErr
                 .is_none()
         {
             return Err(AppError::Config(
-                "Assign an id to this native MCP entry before editing it in CC Switch".into(),
+                "Assign an id to this native MCP entry before editing it in SwitchPlus".into(),
             ));
         }
         let id_matches = plugin_entries(&all_entries)
@@ -1644,7 +1644,7 @@ mod tests {
     const FACTORY_PROFILE: &str = "# Your patch layer for this dsh profile, applied after every bundle layer:\n# a top-level YAML array of loader patch entries (id-targeted config\n# overrides, disables, and insert lists; `!!js` expressions allowed).\n[]\n";
 
     fn editor_config() -> Value {
-        json!({"name":"Gateway","api":"openai-responses","options":{"baseURL":"https://gateway.example/v1","apiKey":"test-value","headers":{"X-Client":"cc-switch"}},"models":{"test-model":{"name":"Model","limit":{"context":100000,"output":1000},"modalities":{"input":["text","image"],"output":["text"]},"reasoningEfforts":{"off":null,"high":"high"},"compat":{"supportsStore":false}}}})
+        json!({"name":"Gateway","api":"openai-responses","options":{"baseURL":"https://gateway.example/v1","apiKey":"test-value","headers":{"X-Client":"switchplus"}},"models":{"test-model":{"name":"Model","limit":{"context":100000,"output":1000},"modalities":{"input":["text","image"],"output":["text"]},"reasoningEfforts":{"off":null,"high":"high"},"compat":{"supportsStore":false}}}})
     }
 
     #[test]
@@ -1732,7 +1732,7 @@ mod tests {
         // create a plugin absent from the bundle's existing entry list.
         let plugins = entries[0]["insert"].as_sequence().unwrap();
         assert_eq!(plugins.len(), 1);
-        assert_eq!(plugins[0]["id"], "cc-switch-mcp-test");
+        assert_eq!(plugins[0]["id"], "switchplus-mcp-test");
         assert_eq!(plugins[0]["name"], "@deepseek-ai/dsh-mcp-client");
         assert_eq!(plugins[0]["config"]["serverName"], "test");
         assert_eq!(plugins[0]["config"]["transport"], "streamable-http");
@@ -1776,7 +1776,7 @@ mod tests {
             let original_document: Yaml = serde_yaml::from_str(&original).unwrap();
             assert!(get_providers_from(&path, &credentials).unwrap().is_empty());
             // Existing providers also remain readable without a stored ref.
-            fs::write(&path, "- id: llm-pi-ai\n  config:\n    providers:\n      native: {apiKeyEnv: CC_SWITCH_DSH_TEST_MISSING_REF, models: []}\n").unwrap();
+            fs::write(&path, "- id: llm-pi-ai\n  config:\n    providers:\n      native: {apiKeyEnv: SWITCHPLUS_DSH_TEST_MISSING_REF, models: []}\n").unwrap();
             assert_eq!(get_providers_from(&path, &credentials).unwrap().len(), 1);
             assert_eq!(read_text(&credentials).unwrap(), original);
             save_paths_and_commit(
@@ -1790,7 +1790,7 @@ mod tests {
             .unwrap();
             let saved = credential_document(&credentials).unwrap();
             assert_eq!(saved["records"], original_document["records"]);
-            assert_eq!(saved["refs"]["CC_SWITCH_DSH_GATEWAY"], "test-value");
+            assert_eq!(saved["refs"]["SWITCHPLUS_DSH_GATEWAY"], "test-value");
             assert_eq!(
                 get_providers_from(&path, &credentials).unwrap()["gateway"]["options"]["apiKey"],
                 "test-value"
@@ -1975,7 +1975,7 @@ mod tests {
             assert_eq!(read_text(&path).unwrap(), group);
         }
         // A tagged top-level entry can't be edited, but removing it rewrites nothing else.
-        let own = "- id: cc-switch-mcp-github\n  name: '@deepseek-ai/dsh-mcp-client'\n  config: {serverName: github, transport: stdio, command: node, env: {TOKEN: !!js process.env.TOKEN}}\n";
+        let own = "- id: switchplus-mcp-github\n  name: '@deepseek-ai/dsh-mcp-client'\n  config: {serverName: github, transport: stdio, command: node, env: {TOKEN: !!js process.env.TOKEN}}\n";
         fs::write(&path, own).unwrap();
         assert!(sync_mcp_file_and_commit(&path, "github", Some(&spec), || Ok(())).is_err());
         assert_eq!(read_text(&path).unwrap(), own);
@@ -1987,7 +1987,7 @@ mod tests {
     fn mcp_rejects_plugin_id_collisions_and_rolls_back_failed_commit() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("cordis.patch.yml");
-        let original = "- id: cc-switch-mcp-test\n  name: unrelated-plugin\n";
+        let original = "- id: switchplus-mcp-test\n  name: unrelated-plugin\n";
         fs::write(&path, original).unwrap();
         assert!(
             sync_mcp_file_and_commit(&path, "test", Some(&json!({"command":"node"})), || Ok(()))
@@ -2158,7 +2158,7 @@ mod tests {
         for name in ["web", "desktop", "headless"] {
             assert!(profile_text(root, name)
                 .unwrap()
-                .contains("apiKeyEnv: CC_SWITCH_DSH_GATEWAY"));
+                .contains("apiKeyEnv: SWITCHPLUS_DSH_GATEWAY"));
         }
         assert_eq!(profile_text(root, "sdk").unwrap(), FACTORY_PROFILE);
         assert!(root.join("profiles/desktop/cordis.patch.yml").exists());
@@ -2216,7 +2216,7 @@ mod tests {
 
         // The single file really holds both, written once each.
         let text = profile_text(root, "web").unwrap();
-        assert_eq!(text.matches("apiKeyEnv: CC_SWITCH_DSH_GATEWAY").count(), 1);
+        assert_eq!(text.matches("apiKeyEnv: SWITCHPLUS_DSH_GATEWAY").count(), 1);
         assert_eq!(text.matches("serverName: fetch").count(), 1);
         assert!(!root.join("profiles/web/cordis.patch.yml.lock").exists());
 
@@ -2365,7 +2365,7 @@ mod tests {
         let _home = DshHome::new();
         let providers = IndexMap::from([("gateway".into(), editor_config())]);
         let servers = IndexMap::from([("fetch".into(), json!({"command":"node"}))]);
-        let receipt = data_dir().join(".cc-switch-profile-sync.json");
+        let receipt = data_dir().join(".switchplus-profile-sync.json");
         let result = initialize_profiles_and_commit(&providers, &servers, || {
             Err::<(), _>(AppError::Database("injected".into()))
         });
@@ -2404,7 +2404,7 @@ mod tests {
         .unwrap();
         let providers = IndexMap::from([("gateway".into(), editor_config())]);
         initialize_profiles(&providers, &IndexMap::new()).unwrap();
-        assert!(data_dir().join(".cc-switch-profile-sync.json").exists());
+        assert!(data_dir().join(".switchplus-profile-sync.json").exists());
         for name in ["web", "desktop"] {
             assert!(get_providers_from(&profile_path(name), &credentials_path())
                 .unwrap()
@@ -2444,7 +2444,7 @@ mod tests {
         assert_eq!(profile_text(root, "desktop").unwrap(), tagged);
         assert!(!fs::read_to_string(&credentials)
             .unwrap()
-            .contains("CC_SWITCH_DSH_GATEWAY"));
+            .contains("SWITCHPLUS_DSH_GATEWAY"));
         assert!(!root.join("profiles/web/cordis.patch.yml.lock").exists());
         assert!(!root.join(".credentials.yaml.lock").exists());
     }
@@ -2678,7 +2678,7 @@ mod tests {
             .as_object_mut()
             .unwrap()
             .remove("apiKey");
-        env_backed["apiKeyEnv"] = json!("CC_SWITCH_TEST_ENV_ONLY_KEY");
+        env_backed["apiKeyEnv"] = json!("SWITCHPLUS_TEST_ENV_ONLY_KEY");
         set_provider("local", env_backed).unwrap();
         assert!(credentials_rows(&profile_text(root, "headless").unwrap()).is_empty());
     }

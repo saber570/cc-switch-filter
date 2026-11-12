@@ -220,7 +220,7 @@ describe("PPIO provider presets", () => {
     const pi = getPpioPreset(piProviderPresets)!;
     expect(pi).toMatchObject({
       ...ppioBrandFields,
-      providerKey: "cc-switch-ppio",
+      providerKey: "switchplus-ppio",
       settingsConfig: {
         name: "PPIO",
         baseUrl: ppioOpenAiEndpoint,

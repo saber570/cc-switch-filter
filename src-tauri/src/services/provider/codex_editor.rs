@@ -173,7 +173,7 @@ pub fn view(
 
 /// 还没填 Key 的行按「填了 Key」投影时用的占位 Key。只出现在内存里的投影中：显示前、存行
 /// 前都去掉，从不写盘。
-const PENDING_KEY: &str = "cc-switch-editor-pending-key";
+const PENDING_KEY: &str = "switchplus-editor-pending-key";
 
 /// `settings` 换上占位 Key（没有 `auth` 就补一个）。
 fn with_pending_key(settings: &Value) -> Option<Value> {
@@ -608,7 +608,7 @@ mod tests {
         });
         let edited = json!({
             "auth": { "OPENAI_API_KEY": "sk-new" },
-            "config": "approval_policy = \"never\"\nmodel_provider = \"custom\"\nmodel = \"gpt-b\"\n\n[model_providers.custom]\nname = \"Relay\"\nbase_url = \"https://new.example/v1\"\n"
+            "config": "approval_policy = \"never\"\nmodel_provider = \"switchplus\"\nmodel = \"gpt-b\"\n\n[model_providers.switchplus]\nname = \"Relay\"\nbase_url = \"https://new.example/v1\"\n"
         });
         let plan = plan_save(
             Some(&stored),

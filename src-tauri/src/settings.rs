@@ -125,7 +125,7 @@ pub struct WebDavSyncStatus {
 }
 
 fn default_remote_root() -> String {
-    "cc-switch-sync".to_string()
+    "switchplus-sync".to_string()
 }
 fn default_profile() -> String {
     "default".to_string()
@@ -321,7 +321,7 @@ pub struct LocalMigrations {
     /// 这样重新开启能把"关闭期间"落入 openai 桶的官方会话补迁进来。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub codex_official_history_unify_v1: Option<CodexOfficialHistoryUnifyMigration>,
-    /// 旧版官方路由桶（`cc-switch-official`）迁回 openai 桶的标记，按 Codex 目录生效。
+    /// 旧版官方路由桶（`switchplus-official`）迁回 openai 桶的标记，按 Codex 目录生效。
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub codex_legacy_official_history_bucket_v1: Option<CodexLegacyOfficialHistoryBucketMigration>,
     /// 官方额度保护改成默认开启的一次性迁移：旧版每次保存都把 `enabled: false` 整块写进
@@ -458,7 +458,7 @@ pub struct UsageDisplaySettings {
 
 /// 应用设置结构
 ///
-/// 存储设备级别设置，保存在本地 `~/.cc-switch/settings.json`，不随数据库同步。
+/// 存储设备级别设置，保存在本地 `~/.switchplus/settings.json`，不随数据库同步。
 /// 这确保了云同步场景下多设备可以独立运作。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -804,7 +804,7 @@ impl AppSettings {
         // settings.json 保留用于旧版本迁移和无数据库场景
         Some(
             crate::config::get_home_dir()
-                .join(".cc-switch")
+                .join(".switchplus")
                 .join("settings.json"),
         )
     }
@@ -992,6 +992,8 @@ fn load_settings_from_path(path: &Path) -> LoadedSettings {
 
 /// 文件不存在时返回 `None`；其它 I/O 错误重试几次仍失败才返回。
 fn read_settings_bytes(path: &Path) -> std::io::Result<Option<Vec<u8>>> {
+    crate::identity::ensure_read_allowed(path)
+        .map_err(|error| std::io::Error::new(std::io::ErrorKind::PermissionDenied, error.to_string()))?;
     let mut attempt = 1;
     loop {
         match fs::read(path) {

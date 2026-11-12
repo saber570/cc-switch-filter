@@ -106,7 +106,7 @@ describe("useManagedAuth", () => {
     const { settingsApi } = await import("@/lib/api");
     vi.mocked(copyText).mockClear();
     vi.mocked(settingsApi.openExternal).mockClear();
-    window.localStorage.setItem("cc-switch.authCenter.openBrowser", "0");
+    window.localStorage.setItem("switchplus.authCenter.openBrowser", "0");
     apiMocks.authPollForAccount.mockResolvedValue(null);
     apiMocks.authStartLogin.mockResolvedValue({
       provider: "claude_official",
@@ -138,7 +138,7 @@ describe("useManagedAuth", () => {
     expect(settingsApi.openExternal).not.toHaveBeenCalled();
     act(() => result.current.cancelAuth());
     unmount();
-    window.localStorage.removeItem("cc-switch.authCenter.openBrowser");
+    window.localStorage.removeItem("switchplus.authCenter.openBrowser");
   });
 
   it("copies only the link, not the device code, when the browser is not to be opened", async () => {
@@ -146,7 +146,7 @@ describe("useManagedAuth", () => {
     const { settingsApi } = await import("@/lib/api");
     vi.mocked(copyText).mockClear();
     vi.mocked(settingsApi.openExternal).mockClear();
-    window.localStorage.setItem("cc-switch.authCenter.openBrowser", "0");
+    window.localStorage.setItem("switchplus.authCenter.openBrowser", "0");
     apiMocks.authPollForAccount.mockRejectedValue(new Error("pending"));
     apiMocks.authStartLogin.mockResolvedValue({
       provider: "codex_oauth",
@@ -178,7 +178,7 @@ describe("useManagedAuth", () => {
     expect(settingsApi.openExternal).not.toHaveBeenCalled();
     act(() => result.current.cancelAuth());
     unmount();
-    window.localStorage.removeItem("cc-switch.authCenter.openBrowser");
+    window.localStorage.removeItem("switchplus.authCenter.openBrowser");
   });
 
   beforeEach(() => {

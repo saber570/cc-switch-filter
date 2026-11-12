@@ -73,7 +73,7 @@ pub fn assert_config_dir(data_dir: &Path, dir: &Path) -> Result<(), AppError> {
     }
     if !dir.starts_with(accounts_root(data_dir)) {
         return Err(AppError::Message(format!(
-            "账号目录不在 CC Switch 的账号根下: {}",
+            "账号目录不在 SwitchPlus 的账号根下: {}",
             dir.display()
         )));
     }
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn recognizes_only_account_config_dirs() {
-        let data = Path::new("/data/.cc-switch");
+        let data = Path::new("/data/.switchplus");
         let id = "0123456789abcdef0123456789abcdef";
         let dir = config_dir(data, id);
         assert!(is_account_config_dir(data, &dir.to_string_lossy()));
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn rejects_unsafe_config_dirs() {
-        let data = std::env::temp_dir().join("cc-switch-layout-test");
+        let data = std::env::temp_dir().join("switchplus-layout-test");
         let data = data.as_path();
         let good = config_dir(data, "0123456789abcdef0123456789abcdef");
         assert!(assert_config_dir(data, &good).is_ok());

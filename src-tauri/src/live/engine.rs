@@ -24,7 +24,7 @@ use super::patch::{LivePatch, LiveWriteError};
 
 /// 这台设备自己的状态目录：`live-state.json` 和首写备份都放在这里。
 ///
-/// 路径固定为 `get_home_dir()/.cc-switch`，和 `settings.json` 一样不跟随配置目录
+/// 路径固定为 `get_home_dir()/.switchplus`，和 `settings.json` 一样不跟随配置目录
 /// 覆盖：覆盖目录可能指向网盘同步目录，而写前意图和备份都是这台设备的事实。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeviceStore {
@@ -33,7 +33,7 @@ pub struct DeviceStore {
 
 impl DeviceStore {
     pub fn for_device() -> Self {
-        Self::at(crate::config::get_home_dir().join(".cc-switch"))
+        Self::at(crate::config::get_home_dir().join(".switchplus"))
     }
 
     pub fn at(root: impl Into<PathBuf>) -> Self {
@@ -92,6 +92,10 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 
 /// 读当前字节；文件不存在返回 `None`，其他读取错误照报。
 pub fn read_current(path: &Path) -> Result<Option<Vec<u8>>, LiveWriteError> {
+    crate::identity::ensure_read_allowed(path).map_err(|error| LiveWriteError::Io {
+        path: path.to_path_buf(),
+        source: std::io::Error::new(ErrorKind::PermissionDenied, error.to_string()),
+    })?;
     match fs::read(path) {
         Ok(bytes) => Ok(Some(bytes)),
         Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),

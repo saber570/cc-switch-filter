@@ -26,7 +26,7 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashSet};
 
-pub(crate) const ANTHROPIC_THINKING_ENCRYPTED_PREFIX: &str = "ccswitch-anthropic-thinking-v1:";
+pub(crate) const ANTHROPIC_THINKING_ENCRYPTED_PREFIX: &str = "switchplus-anthropic-thinking-v1:";
 const TOOL_SEARCH_PROXY_NAME: &str = "tool_search";
 
 /// Maps Codex's reasoning.effort to the token budget for Anthropic thinking.
@@ -1307,7 +1307,7 @@ pub(crate) fn anthropic_response_to_responses_with_context(
 
     let id = body.get("id").and_then(|i| i.as_str()).unwrap_or("");
     let response_id = if id.is_empty() {
-        "resp_ccswitch".to_string()
+        "resp_switchplus".to_string()
     } else if id.starts_with("resp_") {
         id.to_string()
     } else {
@@ -2833,7 +2833,7 @@ mod tests {
             .filter_map(|block| block.get("text").and_then(Value::as_str))
             .all(|text| !text.contains("STRING_IMAGE_SENTINEL")));
         let serialized = response.to_string();
-        assert!(serialized.contains("[cc-switch: omitted 20000 bytes]"));
+        assert!(serialized.contains("[switchplus: omitted 20000 bytes]"));
         assert!(!serialized.contains(&"A".repeat(64)));
     }
 

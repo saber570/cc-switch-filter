@@ -511,7 +511,7 @@ fn row_facts(db: &Database) -> Result<RowFacts, AppError> {
             .get("model_provider")
             .and_then(Item::as_str)
             .map(str::trim)
-            .filter(|id| !id.is_empty() && *id != ROUTE_ID);
+            .filter(|id| id.starts_with("switchplus-") && *id != ROUTE_ID);
         if let Some((id, base_url)) = selector.and_then(|id| Some((id, base_url_of(id)?))) {
             facts.retired.push(KnownTable {
                 id: id.to_string(),
@@ -525,7 +525,7 @@ fn row_facts(db: &Database) -> Result<RowFacts, AppError> {
             .filter(|url| !url.is_empty())
         {
             facts.retired.push(KnownTable {
-                id: "cc-switch".to_string(),
+                id: "switchplus".to_string(),
                 base_url,
             });
         }
@@ -1437,19 +1437,19 @@ mod tests {
         assert!(is_proxy_base_url(
             "http://127.0.0.1:15721/v1",
             "127.0.0.1",
-            15721
+            15731
         ));
         assert!(is_proxy_base_url(
             "http://127.0.0.1:15721/v1",
             "0.0.0.0",
-            15721
+            15731
         ));
         assert!(!is_proxy_base_url(
             "http://127.0.0.1:10531/v1",
             "127.0.0.1",
-            15721
+            15731
         ));
-        assert!(is_proxy_base_url("http://[::1]:15721/v1", "::", 15721));
+        assert!(is_proxy_base_url("http://[::1]:15721/v1", "::", 15731));
         // 端口 0：系统分配的端口，只核对主机和路径。
         assert!(is_proxy_base_url(
             "http://127.0.0.1:54321/v1",

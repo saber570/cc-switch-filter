@@ -282,19 +282,19 @@ export const skillsApi = {
 
   /** 迁移 Skill 存储位置 */
   async migrateStorage(
-    target: "cc_switch" | "unified",
+    target: "switch_plus" | "unified",
   ): Promise<MigrationResult> {
     return await invoke("migrate_skill_storage", { target });
   },
 
   /** CC Switch 目录下放 Skill 主副本的路径（改过配置目录就是改后的） */
-  async getCcSwitchSkillsDir(): Promise<string> {
-    return await invoke("get_cc_switch_skills_dir");
+  async getSwitchPlusSkillsDir(): Promise<string> {
+    return await invoke("get_switchplus_skills_dir");
   },
 
   /** 在文件管理器里打开 CC Switch 目录下的 Skills 目录 */
-  async openCcSwitchSkillsDir(): Promise<void> {
-    await invoke("open_cc_switch_skills_dir");
+  async openSwitchPlusSkillsDir(): Promise<void> {
+    await invoke("open_switchplus_skills_dir");
   },
 
   /** 在文件管理器里打开某个已安装 Skill 的目录 */

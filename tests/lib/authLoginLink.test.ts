@@ -8,7 +8,7 @@ import {
 
 describe("authLoginLink", () => {
   afterEach(() => {
-    window.localStorage.removeItem("cc-switch.authCenter.openBrowser");
+    window.localStorage.removeItem("switchplus.authCenter.openBrowser");
   });
 
   it("opens the browser by default and remembers when it is turned off", () => {
@@ -23,7 +23,7 @@ describe("authLoginLink", () => {
     act(() => writeAuthOpenBrowser(true));
     expect(result.current).toBe(true);
     expect(
-      window.localStorage.getItem("cc-switch.authCenter.openBrowser"),
+      window.localStorage.getItem("switchplus.authCenter.openBrowser"),
     ).toBeNull();
   });
 });

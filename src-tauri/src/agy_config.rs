@@ -7,7 +7,7 @@
 //! - **官方登录卡**：`agy --model=<显示名>`（没设模型就是 `agy`），模型只对这次会话生效。
 //!   登录凭据由 agy 自己保管（不在 `~/.gemini` 里）。
 //! - **第三方 Key 卡**：`agy --gemini_dir=<私有目录>`，私有目录在
-//!   `~/.cc-switch/agy/<供应商>/`，它的 `antigravity-cli/settings.json` 写
+//!   `~/.switchplus/agy/<供应商>/`，它的 `antigravity-cli/settings.json` 写
 //!   `modelProvider: gemini` 和模型，`config` 软链回 `~/.gemini/config`（MCP、Skills、
 //!   提示词照常共享）；Key 和地址只经子进程环境传入。
 //!
@@ -454,8 +454,8 @@ pub(crate) fn remove_legacy_launcher() -> Result<bool, AppError> {
 mod legacy {
     use super::*;
 
-    pub(super) const WRAPPER_MARK: &str = "cc-switch-agy-wrapper";
-    pub(super) const PATH_MARK: &str = "cc-switch agy wrapper";
+    pub(super) const WRAPPER_MARK: &str = "switchplus-agy-wrapper";
+    pub(super) const PATH_MARK: &str = "switchplus agy wrapper";
 
     pub(super) fn remove(agy_dir: &Path, home: &Path) -> Result<bool, AppError> {
         let bin_dir = agy_dir.join("bin");
@@ -611,8 +611,8 @@ mod integration_tests {
     impl HomeGuard {
         fn new() -> Self {
             let dir = tempfile::tempdir().unwrap();
-            let previous = std::env::var_os("CC_SWITCH_TEST_HOME");
-            std::env::set_var("CC_SWITCH_TEST_HOME", dir.path());
+            let previous = std::env::var_os("SWITCHPLUS_TEST_HOME");
+            std::env::set_var("SWITCHPLUS_TEST_HOME", dir.path());
             crate::settings::reload_settings().unwrap();
             Self(dir, previous)
         }
@@ -624,8 +624,8 @@ mod integration_tests {
         fn drop(&mut self) {
             failpoint::crash_at(None);
             match self.1.take() {
-                Some(value) => std::env::set_var("CC_SWITCH_TEST_HOME", value),
-                None => std::env::remove_var("CC_SWITCH_TEST_HOME"),
+                Some(value) => std::env::set_var("SWITCHPLUS_TEST_HOME", value),
+                None => std::env::remove_var("SWITCHPLUS_TEST_HOME"),
             }
             let _ = crate::settings::reload_settings();
         }

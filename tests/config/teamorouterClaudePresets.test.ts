@@ -76,7 +76,7 @@ describe("TeamoRouter Claude presets", () => {
   it("uses a distinct Pi provider key and an Anthropic root", () => {
     const gpt = find(piProviderPresets, "TeamoRouter");
     const preset = find(piProviderPresets, "TeamoRouter Claude");
-    expect(preset.providerKey).toBe("cc-switch-teamo-router-claude");
+    expect(preset.providerKey).toBe("switchplus-teamo-router-claude");
     expect(preset.providerKey).not.toBe(gpt.providerKey);
     expect(preset.settingsConfig.api).toBe("anthropic-messages");
     expect(preset.settingsConfig.baseUrl).toBe("https://api.teamorouter.com");

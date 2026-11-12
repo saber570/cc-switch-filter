@@ -27,7 +27,7 @@ pub struct Provider {
     /// 备注信息
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
-    /// 供应商元数据（不写入 live 配置，仅存于 ~/.cc-switch/config.json）
+    /// 供应商元数据（不写入 live 配置，仅存于 ~/.switchplus/config.json）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub meta: Option<ProviderMeta>,
     /// 图标名称（如 "openai", "anthropic"）
@@ -933,11 +933,11 @@ impl UniversalProvider {
 
         // 生成 Codex 的 config.toml 内容
         let config_toml = format!(
-            r#"model_provider = "custom"
+            r#"model_provider = "switchplus"
 model = "{model}"
 model_reasoning_effort = "{reasoning_effort}"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = "NewAPI"
 base_url = "{codex_base_url}"
 wire_api = "responses"
@@ -1752,7 +1752,7 @@ mod tests {
 
     #[test]
     fn resolve_credentials_pi_never_sends_key_references_literally() {
-        for reference in ["$CC_SWITCH_TEST_UNSET_8822", "!echo sk-from-command"] {
+        for reference in ["$SWITCHPLUS_TEST_UNSET_8822", "!echo sk-from-command"] {
             let p = provider_with(json!({
                 "baseUrl": "https://api.example.com/v1",
                 "apiKey": reference,

@@ -22,7 +22,7 @@ export function showCodexUnifyMigrationFinished(
     toast.error(
       t("notifications.codexHistorySplit.migrationFailed", {
         defaultValue:
-          "迁入旧会话失败：{{error}}。下次启动 CC Switch 会自动重试",
+          "迁入旧会话失败：{{error}}。下次启动 SwitchPlus 会自动重试",
         error: payload.error,
       }),
       { duration: 10000, closeButton: true },

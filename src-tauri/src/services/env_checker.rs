@@ -222,7 +222,7 @@ mod tests {
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn inherited_process_env_is_not_reported_on_unix() {
-        const VAR: &str = "ANTHROPIC_CC_SWITCH_INHERITED_PROBE";
+        const VAR: &str = "ANTHROPIC_SWITCHPLUS_INHERITED_PROBE";
         std::env::set_var(VAR, "https://api.anthropic.com");
         let conflicts = check_env_conflicts("claude");
         std::env::remove_var(VAR);

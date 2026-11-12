@@ -33,7 +33,7 @@ vi.mock("@/lib/toast", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-const STORAGE_KEY = "cc-switch:terminal:recent-dirs";
+const STORAGE_KEY = "switchplus:terminal:recent-dirs";
 const provider = {
   id: "p1",
   name: "Relay",
@@ -187,16 +187,16 @@ describe("OpenTerminalDialog", () => {
       skipPermissions: true,
     });
     expect(
-      window.localStorage.getItem("cc-switch:terminal:skip-permissions:claude"),
+      window.localStorage.getItem("switchplus:terminal:skip-permissions:claude"),
     ).toBe("1");
     expect(
-      window.localStorage.getItem("cc-switch:terminal:skip-permissions:agy"),
+      window.localStorage.getItem("switchplus:terminal:skip-permissions:agy"),
     ).toBeNull();
   });
 
   it("prefills the remembered skip-permissions choice", () => {
     window.localStorage.setItem(
-      "cc-switch:terminal:skip-permissions:claude",
+      "switchplus:terminal:skip-permissions:claude",
       "1",
     );
     renderDialog();
@@ -224,16 +224,16 @@ describe("OpenTerminalDialog", () => {
       extraArgs: '--debug --append-system-prompt "be brief"',
     });
     expect(
-      window.localStorage.getItem("cc-switch:terminal:extra-args:claude"),
+      window.localStorage.getItem("switchplus:terminal:extra-args:claude"),
     ).toBe('--debug --append-system-prompt "be brief"');
     expect(
-      window.localStorage.getItem("cc-switch:terminal:extra-args:codex"),
+      window.localStorage.getItem("switchplus:terminal:extra-args:codex"),
     ).toBeNull();
   });
 
   it("prefills the remembered extra arguments", () => {
     window.localStorage.setItem(
-      "cc-switch:terminal:extra-args:claude",
+      "switchplus:terminal:extra-args:claude",
       "--debug",
     );
     renderDialog();

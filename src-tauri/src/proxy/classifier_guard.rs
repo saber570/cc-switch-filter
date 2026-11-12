@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-pub(super) const CLASSIFIER_LOOP_MESSAGE: &str = "CC Switch stopped this request after three consecutive tool-result turns reported an unavailable auto-mode safety classifier. No upstream request was sent. Fix the classifier model mapping or balance, then send a new user message to resume. Tool permission checks remain required.";
+pub(super) const CLASSIFIER_LOOP_MESSAGE: &str = "SwitchPlus stopped this request after three consecutive tool-result turns reported an unavailable auto-mode safety classifier. No upstream request was sent. Fix the classifier model mapping or balance, then send a new user message to resume. Tool permission checks remain required.";
 
 pub(super) fn classifier_retry_loop(body: &Value) -> bool {
     if body

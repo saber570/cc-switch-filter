@@ -6240,7 +6240,7 @@ mod tests {
                 "0.10",
             )?;
             conn.execute(
-                "UPDATE proxy_request_logs SET request_model = 'ccswitch-live-alpha'
+                "UPDATE proxy_request_logs SET request_model = 'switchplus-live-alpha'
                  WHERE request_id = 'proxy'",
                 [],
             )?;
@@ -6249,7 +6249,7 @@ mod tests {
                 "session-alias",
                 "codex",
                 "_codex_session",
-                "ccswitch-live-alpha",
+                "switchplus-live-alpha",
                 "codex_session",
                 10_001,
                 19_472,

@@ -1,7 +1,7 @@
 //! Codex 的投影：供应商行 → `config.toml` 的关键字段和独有字段。
 //!
 //! 行的形状是 `{auth, config}`（`config` 是 TOML 文本）。投影只取关键字段，第三方路由
-//! 一律写成 `[model_providers.custom]`：行里用别的 id（`deepseek`）、旧形态的顶层
+//! 一律写成 `[model_providers.switchplus]`：行里用别的 id（`deepseek`）、旧形态的顶层
 //! `openai_base_url` 或顶层 `base_url`、旧版留下的保留 id 表（`[model_providers.openai]`），
 //! 都在这里归一。
 //! 行里其余内容（旧版回填进来的 MCP、projects、插件）不投影，归用户和 Codex。
@@ -20,14 +20,14 @@ use crate::live::patch::toml::{same_value, shape_error, TomlDocPatch};
 use crate::live::patch::LiveWriteError;
 
 /// CC Switch 写入的路由表 id。
-pub const ROUTE_ID: &str = "custom";
+pub const ROUTE_ID: &str = "switchplus";
 /// 旧版代理官方路由写的表 id。会话按选中的 id 分桶，它让代理下的官方会话自成一桶，
 /// 表一删就 resume 不了，新版不再写；live 里留着的只清理。
-pub const OFFICIAL_PROXY_ROUTE_ID: &str = "cc-switch-official";
+pub const OFFICIAL_PROXY_ROUTE_ID: &str = "switchplus-official";
 /// 把内置 openai 改道到别的地址的顶层键。
 const OPENAI_BASE_URL: &str = "openai_base_url";
 /// CC Switch 生成的模型目录文件名。
-pub const CATALOG_FILENAME: &str = "cc-switch-model-catalog.json";
+pub const CATALOG_FILENAME: &str = "switchplus-model-catalog.json";
 pub use super::claude::PROXY_TOKEN_PLACEHOLDER;
 /// `web_search` 的禁用值。
 pub const WEB_SEARCH_DISABLED: &str = "disabled";
@@ -46,8 +46,8 @@ const RESERVED_TABLE_IDS: &[&str] = &["openai", "ollama", "lmstudio"];
 /// 不写 `model_provider` 时 Codex 用的内置 provider。
 const DEFAULT_PROVIDER_ID: &str = "openai";
 const BEDROCK_IDS: &[&str] = &["amazon-bedrock", "amazon-bedrock-runtime"];
-/// 旧版把顶层 `openai_base_url` 归一成的表 id（`cc-switch`、`cc-switch-2`…）。
-const LEGACY_REROUTE_ID: &str = "cc-switch";
+/// 旧版把顶层 `openai_base_url` 归一成的表 id（`switchplus`、`switchplus-2`…）。
+const LEGACY_REROUTE_ID: &str = "switchplus-legacy";
 
 /// 顶层的关键字段里，直接取行里值的那几个（选路、凭据、模型目录指针另算）。
 pub(crate) const ROW_TOP_FIELDS: &[&str] = &[
@@ -91,7 +91,7 @@ pub fn requires_openai_auth(auth: RouteAuth, login_on_disk: bool) -> bool {
 pub enum Route {
     /// 官方：不写选路，走 Codex 内置的 openai（统一会话历史时另写官方镜像表）。
     Official,
-    /// 第三方：写成 `[model_providers.custom]`。`table` 已带上 Key，`requires_openai_auth`
+    /// 第三方：写成 `[model_providers.switchplus]`。`table` 已带上 Key，`requires_openai_auth`
     /// 在写入时按 [`requires_openai_auth`] 现算。
     Custom { table: Table, auth: RouteAuth },
     /// 选中 Codex 内置的其他 provider（ollama、lmstudio、bedrock），bedrock 可以带覆盖表。
@@ -565,7 +565,7 @@ fn is_cc_switch_catalog(value: &str) -> bool {
     Path::new(value).file_name().and_then(|name| name.to_str()) == Some(CATALOG_FILENAME)
 }
 
-/// cc-switch 接管 `model_catalog_json` 时写入的指针值。
+/// switchplus 接管 `model_catalog_json` 时写入的指针值。
 ///
 /// 新版 Codex 在解析自定义权限档位（如校验 `default_permissions`）时会重读
 /// config.toml，并把该字段按绝对路径反序列化——裸相对文件名在那里被拒
@@ -757,7 +757,7 @@ impl CodexConfigPatch {
             .ok_or_else(|| shape_error(path, &["model_providers".to_string()]))?;
 
         // 旧版留下的保留 id 表会让 Codex 整份拒绝加载：能证明是 CC Switch 写的删掉，
-        // 其余按原样改名成 cc-switch-N（不知道用户在乎其中哪些键）。
+        // 其余按原样改名成 switchplus-N（不知道用户在乎其中哪些键）。
         for id in RESERVED_TABLE_IDS {
             let Some(item) = providers.get(id) else {
                 continue;
@@ -1182,7 +1182,7 @@ mod tests {
         let doc = apply_catalog("", Path::new("/home/user/.codex/config.toml"));
         assert_eq!(
             catalog_pointer(&doc),
-            "/home/user/.codex/cc-switch-model-catalog.json"
+            "/home/user/.codex/switchplus-model-catalog.json"
         );
     }
 
@@ -1209,7 +1209,7 @@ mod tests {
         let doc = apply_catalog("", Path::new(r"C:\Users\user\.codex\config.toml"));
         assert_eq!(
             catalog_pointer(&doc),
-            r"C:\Users\user\.codex\cc-switch-model-catalog.json"
+            r"C:\Users\user\.codex\switchplus-model-catalog.json"
         );
     }
 
@@ -1224,9 +1224,9 @@ mod tests {
     #[test]
     #[cfg(unix)]
     fn switching_away_removes_an_absolute_catalog_pointer() {
-        // 归属判定按文件名比较：绝对形态的指针同样被认成 cc-switch 的，
+        // 归属判定按文件名比较：绝对形态的指针同样被认成 switchplus 的，
         // 切到没有目录的供应商时照删（live 里两种形态都可能留下）。
-        let live = "model_catalog_json = \"/home/user/.codex/cc-switch-model-catalog.json\"\n";
+        let live = "model_catalog_json = \"/home/user/.codex/switchplus-model-catalog.json\"\n";
         let doc = apply(RouteWrite::Default, live);
         assert!(doc.get(MODEL_CATALOG_JSON).is_none());
     }
@@ -1242,8 +1242,8 @@ mod tests {
 
     #[test]
     fn the_official_proxy_route_stays_in_the_built_in_openai_bucket() {
-        // 旧版写的 cc-switch-official 表删掉；第三方留下的 custom 表改成休眠形态。
-        let live = "model_provider = \"cc-switch-official\"\nopenai_base_url = \"https://stale.example/v1\"\nmodel = \"gpt-5.5\"\n\n[model_providers.cc-switch-official]\nname = \"OpenAI\"\nbase_url = \"http://127.0.0.1:15721/v1\"\nrequires_openai_auth = true\n\n[model_providers.custom]\nname = \"custom\"\nbase_url = \"https://relay.example/v1\"\nexperimental_bearer_token = \"sk-relay\"\n";
+        // 旧版写的 switchplus-official 表删掉；第三方留下的 custom 表改成休眠形态。
+        let live = "model_provider = \"switchplus-official\"\nopenai_base_url = \"https://stale.example/v1\"\nmodel = \"gpt-5.5\"\n\n[model_providers.switchplus-official]\nname = \"OpenAI\"\nbase_url = \"http://127.0.0.1:15721/v1\"\nrequires_openai_auth = true\n\n[model_providers.switchplus]\nname = \"custom\"\nbase_url = \"https://relay.example/v1\"\nexperimental_bearer_token = \"sk-relay\"\n";
         let doc = apply(official_proxy(false), live);
         assert!(doc.get("model_provider").is_none(), "{doc}");
         assert_eq!(doc["openai_base_url"].as_str(), Some(PROXY));

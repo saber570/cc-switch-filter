@@ -386,7 +386,7 @@ describe("OpenCodeFormFields", () => {
   it("passes a User-Agent provider header as the model fetch user agent", async () => {
     vi.mocked(fetchModelsForConfig).mockResolvedValue([]);
     renderOpenCodeForm({
-      headers: { "User-Agent": "cc-switch-test" },
+      headers: { "User-Agent": "switchplus-test" },
     });
 
     fireEvent.click(
@@ -399,8 +399,8 @@ describe("OpenCodeFormFields", () => {
       "sk-test",
       undefined,
       undefined,
-      "cc-switch-test",
-      { requestHeaders: { "User-Agent": "cc-switch-test" } },
+      "switchplus-test",
+      { requestHeaders: { "User-Agent": "switchplus-test" } },
     );
   });
 

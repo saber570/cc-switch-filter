@@ -467,7 +467,7 @@ mod tests {
     fn codex_failover_swaps_in_the_targets_own_model_when_it_does_not_serve_the_request() {
         let minimax = codex_provider(
             "MiniMax",
-            json!({"config": "model = \"MiniMax-M3\"\nmodel_provider = \"custom\"\n"}),
+            json!({"config": "model = \"MiniMax-M3\"\nmodel_provider = \"switchplus\"\n"}),
         );
         let body = json!({"model": "kimi-k3", "input": []});
         let result = map_codex_failover_model(body, &minimax);

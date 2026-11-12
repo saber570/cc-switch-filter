@@ -356,8 +356,8 @@ mod tests {
         fs::write(&path, "defaultModel: minimax/MiniMax-M3\ncustom_provider:\n  existing:\n    name: Keep\nminimax_api:\n  apiKey: keep-secret\nunknown: [a, b]\n").unwrap();
         let before = read(&path).unwrap();
         let provider = json!({"api":"anthropic-messages","options":{"baseURL":"https://api.minimaxi.com/anthropic","apiKey":"test-key"},"models":{"MiniMax-M3":{}}});
-        validate_provider("cc-switch-minimax", &provider).unwrap();
-        update(&path, "cc-switch-minimax", Some(provider)).unwrap();
+        validate_provider("switchplus-minimax", &provider).unwrap();
+        update(&path, "switchplus-minimax", Some(provider)).unwrap();
         let after = read(&path).unwrap();
         for field in ["defaultModel", "minimax_api", "unknown"] {
             assert_eq!(before[field], after[field]);
@@ -366,7 +366,7 @@ mod tests {
             before["custom_provider"]["existing"],
             after["custom_provider"]["existing"]
         );
-        update(&path, "cc-switch-minimax", None).unwrap();
+        update(&path, "switchplus-minimax", None).unwrap();
         assert_eq!(before, read(&path).unwrap());
     }
     #[test]
@@ -401,7 +401,7 @@ mod tests {
             assert_eq!(read(&path).unwrap()[field], "custom_provider:chosen/model");
         }
     }
-    /// Run alone with an isolated CC_SWITCH_TEST_HOME and MCODE_TEST_API_KEY.
+    /// Run alone with an isolated SWITCHPLUS_TEST_HOME and MCODE_TEST_API_KEY.
     #[test]
     #[ignore = "requires an isolated home and a real API key"]
     fn mcode_provider_lifecycle() {
@@ -410,13 +410,13 @@ mod tests {
             services::provider::ProviderService, store::AppState,
         };
         use std::sync::Arc;
-        let home = std::env::var("CC_SWITCH_TEST_HOME").expect("Set an isolated home");
+        let home = std::env::var("SWITCHPLUS_TEST_HOME").expect("Set an isolated home");
         assert!(Some(PathBuf::from(&home)) != dirs::home_dir());
         let key = std::env::var("MCODE_TEST_API_KEY").expect("Set a real API key");
         let state = AppState::new(Arc::new(Database::memory().unwrap()));
         let config = json!({"name":"MCode validation", "kind":"custom", "enabled":true, "api":"openai-completions", "options":{"baseURL":"https://api.minimaxi.com/v1","apiKey":key},"models":{"MiniMax-M3":{"name":"MiniMax-M3"}}});
         let mut provider = Provider::with_id(
-            "cc-switch-validation".into(),
+            "switchplus-validation".into(),
             "MCode validation".into(),
             config,
             None,
@@ -515,9 +515,9 @@ mod capability_tests {
     use std::sync::Arc;
 
     #[test]
-    #[ignore = "runs alone in an isolated CC_SWITCH_TEST_HOME; prepares real MCode validation"]
+    #[ignore = "runs alone in an isolated SWITCHPLUS_TEST_HOME; prepares real MCode validation"]
     fn mcode_capability_lifecycle() {
-        let home = std::env::var("CC_SWITCH_TEST_HOME").expect("isolated home");
+        let home = std::env::var("SWITCHPLUS_TEST_HOME").expect("isolated home");
         assert_ne!(Some(PathBuf::from(&home)), dirs::home_dir());
         let db = Arc::new(Database::memory().unwrap());
         let state = AppState::new(db.clone());
@@ -526,7 +526,7 @@ mod capability_tests {
         let original = json!({"extension":42,"mcpServers":{"keep":{"type":"sse","url":"https://example.com/sse","enabled":false}}});
         fs::write(&mcp_path, original.to_string()).unwrap();
         let server = McpServer {
-            id: "cc-switch-validation".into(),
+            id: "switchplus-validation".into(),
             name: "Validation".into(),
             server: json!({"type":"stdio","command":std::env::var("MCODE_TEST_NODE").unwrap(),"args":[std::env::var("MCODE_TEST_MCP_SERVER").unwrap()]}),
             apps: McpApps {
@@ -607,15 +607,15 @@ mod capability_tests {
         assert_eq!(fs::read_to_string(&path).unwrap(), original_instructions);
         let skill_dir = SkillService::get_ssot_dir()
             .unwrap()
-            .join("cc-switch-validation");
+            .join("switchplus-validation");
         fs::create_dir_all(&skill_dir).unwrap();
-        fs::write(skill_dir.join("SKILL.md"),"---\nname: cc-switch-validation\ndescription: Use when asked to validate the CC Switch MCode integration.\n---\nCall the cc-switch-validation MCP tool validation_proof. Write its exact result into mcp-proof.txt. Write SKILL-INSTRUCTION-OK into skill-proof.txt. Fix the project bug and run its test.\n").unwrap();
-        SkillService::sync_to_app_dir("cc-switch-validation", &AppType::Mcode).unwrap();
+        fs::write(skill_dir.join("SKILL.md"),"---\nname: switchplus-validation\ndescription: Use when asked to validate the CC Switch MCode integration.\n---\nCall the switchplus-validation MCP tool validation_proof. Write its exact result into mcp-proof.txt. Write SKILL-INSTRUCTION-OK into skill-proof.txt. Fix the project bug and run its test.\n").unwrap();
+        SkillService::sync_to_app_dir("switchplus-validation", &AppType::Mcode).unwrap();
         assert!(data_dir()
-            .join("skills/cc-switch-validation/SKILL.md")
+            .join("skills/switchplus-validation/SKILL.md")
             .exists());
-        SkillService::remove_from_app("cc-switch-validation", &AppType::Mcode).unwrap();
-        assert!(!data_dir().join("skills/cc-switch-validation").exists());
-        SkillService::sync_to_app_dir("cc-switch-validation", &AppType::Mcode).unwrap();
+        SkillService::remove_from_app("switchplus-validation", &AppType::Mcode).unwrap();
+        assert!(!data_dir().join("skills/switchplus-validation").exists());
+        SkillService::sync_to_app_dir("switchplus-validation", &AppType::Mcode).unwrap();
     }
 }

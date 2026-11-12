@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 use tempfile::{Builder, NamedTempFile};
 
-const CC_SWITCH_SQL_EXPORT_HEADER: &str = "-- CC Switch SQLite 导出";
+const SWITCHPLUS_SQL_EXPORT_HEADER: &str = "-- CC Switch SQLite 导出";
 
 /// Bound combined INSERT batches while still amortizing statement parsing.
 /// A row larger than this cap is emitted alone because it cannot be split.
@@ -282,14 +282,14 @@ impl Database {
 
     fn validate_cc_switch_sql_export(sql: &str) -> Result<(), AppError> {
         let trimmed = sql.trim_start();
-        if trimmed.starts_with(CC_SWITCH_SQL_EXPORT_HEADER) {
+        if trimmed.starts_with(SWITCHPLUS_SQL_EXPORT_HEADER) {
             return Ok(());
         }
 
         Err(AppError::localized(
             "backup.sql.invalid_format",
-            "仅支持导入由 CC Switch 导出的 SQL 备份文件。",
-            "Only SQL backups exported by CC Switch are supported.",
+            "仅支持导入由 SwitchPlus 导出的 SQL 备份文件。",
+            "Only SQL backups exported by SwitchPlus are supported.",
         ))
     }
 
@@ -508,7 +508,7 @@ impl Database {
     where
         F: FnOnce(&Path, &Path) -> Result<(), AppError>,
     {
-        let db_path = get_app_config_dir().join("cc-switch.db");
+        let db_path = get_app_config_dir().join("switchplus.db");
         if !db_path.exists() {
             return Ok(None);
         }
@@ -529,7 +529,7 @@ impl Database {
         // discovery and retention only see the final path after the complete
         // SQLite image has been atomically published.
         let mut temp_path = Builder::new()
-            .prefix(".cc-switch-backup-")
+            .prefix(".switchplus-backup-")
             .suffix(".tmp")
             .tempfile_in(&backup_dir)
             .map_err(|e| AppError::io(&backup_dir, e))?
@@ -694,8 +694,8 @@ impl Database {
             let names = missing.join(", ");
             return Err(AppError::localized(
                 "backup.sql.invalid_schema",
-                format!("导入的 SQL 缺少 CC Switch 必需表：{names}"),
-                format!("The imported SQL is missing required CC Switch tables: {names}"),
+                format!("导入的 SQL 缺少 SwitchPlus 必需表：{names}"),
+                format!("The imported SQL is missing required SwitchPlus tables: {names}"),
             ));
         }
         Ok(())
@@ -1192,14 +1192,14 @@ mod tests {
     impl TestHomeGuard {
         fn new() -> Self {
             let temp_dir = tempfile::tempdir().expect("create isolated test home");
-            let previous_test_home = std::env::var_os("CC_SWITCH_TEST_HOME");
-            std::env::set_var("CC_SWITCH_TEST_HOME", temp_dir.path());
+            let previous_test_home = std::env::var_os("SWITCHPLUS_TEST_HOME");
+            std::env::set_var("SWITCHPLUS_TEST_HOME", temp_dir.path());
             // Prevent the Windows legacy-HOME fallback without mutating HOME:
             // an existing default DB keeps get_app_config_dir() anchored under
-            // CC_SWITCH_TEST_HOME and makes import exercise its safety backup.
-            let config_dir = temp_dir.path().join(".cc-switch");
+            // SWITCHPLUS_TEST_HOME and makes import exercise its safety backup.
+            let config_dir = temp_dir.path().join(".switchplus");
             std::fs::create_dir_all(&config_dir).expect("create isolated config directory");
-            std::fs::File::create(config_dir.join("cc-switch.db"))
+            std::fs::File::create(config_dir.join("switchplus.db"))
                 .expect("create isolated database sentinel");
             let guard = Self {
                 previous_test_home,
@@ -1222,8 +1222,8 @@ mod tests {
     impl Drop for TestHomeGuard {
         fn drop(&mut self) {
             match self.previous_test_home.as_ref() {
-                Some(previous) => std::env::set_var("CC_SWITCH_TEST_HOME", previous),
-                None => std::env::remove_var("CC_SWITCH_TEST_HOME"),
+                Some(previous) => std::env::set_var("SWITCHPLUS_TEST_HOME", previous),
+                None => std::env::remove_var("SWITCHPLUS_TEST_HOME"),
             }
         }
     }
@@ -1262,13 +1262,13 @@ mod tests {
         for (label, template) in cases {
             let target = test_home
                 .path()
-                .join(format!("cc-switch-authorizer-{label}.sqlite"));
+                .join(format!("switchplus-authorizer-{label}.sqlite"));
 
             // 合法的导出头 + 越界语句。头部校验只比前缀，这份输入过得了它，
             // 真正拦下来的必须是 authorizer。
             let malicious = format!(
                 "{}\n{}\n",
-                super::CC_SWITCH_SQL_EXPORT_HEADER,
+                super::SWITCHPLUS_SQL_EXPORT_HEADER,
                 template.replace("{path}", &target.to_string_lossy().replace('\'', "''"))
             );
 
@@ -1447,14 +1447,14 @@ mod tests {
 
         let header_only = format!(
             "{}\nPRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\nCOMMIT;\n",
-            super::CC_SWITCH_SQL_EXPORT_HEADER
+            super::SWITCHPLUS_SQL_EXPORT_HEADER
         );
         let error = target
             .import_sql_string(&header_only)
             .expect_err("缺少原始 schema 的文件必须被拒绝");
         assert!(
-            error.to_string().contains("required CC Switch tables")
-                || error.to_string().contains("CC Switch 必需表"),
+            error.to_string().contains("required SwitchPlus tables")
+                || error.to_string().contains("SwitchPlus 必需表"),
             "应由原始 schema 校验拒绝，实际错误: {error}"
         );
 
@@ -1563,7 +1563,7 @@ mod tests {
 
         let invalid_sql = format!(
             "{}\nBEGIN TRANSACTION;\nCREATE TABLE partial (id INTEGER);\nTHIS IS NOT SQL;\n",
-            super::CC_SWITCH_SQL_EXPORT_HEADER
+            super::SWITCHPLUS_SQL_EXPORT_HEADER
         );
         assert!(target.import_sql_string(&invalid_sql).is_err());
 
@@ -1599,7 +1599,7 @@ mod tests {
         let exported = source.export_sql_string()?;
         let truncated = exported
             .strip_suffix("COMMIT;\nPRAGMA foreign_keys=ON;\n")
-            .expect("CC Switch export should end with a committed transaction");
+            .expect("SwitchPlus export should end with a committed transaction");
 
         let target = Database::memory()?;
         {
@@ -1647,7 +1647,7 @@ mod tests {
              INSERT INTO skills (key, installed, installed_at)
              VALUES ('claude:legacy-skill', 1, 1700000000);
              COMMIT;\nPRAGMA foreign_keys=ON;\n",
-            super::CC_SWITCH_SQL_EXPORT_HEADER,
+            super::SWITCHPLUS_SQL_EXPORT_HEADER,
             crate::database::tests::V3_8_SCHEMA_V1_SQL,
         );
 
@@ -2510,7 +2510,7 @@ mod tests {
                 entry
                     .file_name()
                     .to_string_lossy()
-                    .starts_with(".cc-switch-backup-")
+                    .starts_with(".switchplus-backup-")
             })
             .count();
         assert_eq!(

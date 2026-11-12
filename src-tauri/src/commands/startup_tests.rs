@@ -19,8 +19,8 @@ pub(super) struct TestHome {
 impl TestHome {
     pub(super) fn new() -> Self {
         let directory = tempfile::tempdir().unwrap();
-        let previous = std::env::var_os("CC_SWITCH_TEST_HOME");
-        std::env::set_var("CC_SWITCH_TEST_HOME", directory.path());
+        let previous = std::env::var_os("SWITCHPLUS_TEST_HOME");
+        std::env::set_var("SWITCHPLUS_TEST_HOME", directory.path());
         let native_overrides = [
             ("KIMI_CODE_HOME", ".kimi-code"),
             ("MINIMAX_DATA_DIR", ".minimax"),
@@ -51,8 +51,8 @@ impl Drop for TestHome {
             }
         }
         match &self.previous {
-            Some(value) => std::env::set_var("CC_SWITCH_TEST_HOME", value),
-            None => std::env::remove_var("CC_SWITCH_TEST_HOME"),
+            Some(value) => std::env::set_var("SWITCHPLUS_TEST_HOME", value),
+            None => std::env::remove_var("SWITCHPLUS_TEST_HOME"),
         }
         let _ = crate::settings::reload_settings();
     }

@@ -12,8 +12,8 @@ import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 export type Density = "comfortable" | "compact";
 
-export const DENSITY_STORAGE_KEY = "cc-switch-density";
-export const ZOOM_STORAGE_KEY = "cc-switch-zoom";
+export const DENSITY_STORAGE_KEY = "switchplus-density";
+export const ZOOM_STORAGE_KEY = "switchplus-zoom";
 export const DEFAULT_DENSITY: Density = "compact";
 export const ZOOM_LEVELS = [0.9, 1, 1.1, 1.25] as const;
 export type ZoomLevel = (typeof ZOOM_LEVELS)[number];

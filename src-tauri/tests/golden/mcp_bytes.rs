@@ -96,11 +96,11 @@ fn codex_config_mcp_projection_bytes() {
     write_home_file(
         CODEX_CONFIG,
         r#"# personal settings
-model_provider = "custom"
+model_provider = "switchplus"
 model = "gpt-5"
 approval_policy = "on-request"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = "custom"
 base_url = "https://api.example.com/v1"
 wire_api = "responses"
@@ -163,7 +163,7 @@ fn codex_third_party(id: &str, base_url: &str, key: &str) -> cc_switch_lib::Prov
         json!({
             "auth": { "OPENAI_API_KEY": key },
             "config": format!(
-                "model_provider = \"custom\"\nmodel = \"gpt-5\"\n\n[model_providers.custom]\nname = \"custom\"\nbase_url = \"{base_url}\"\nwire_api = \"responses\"\n"
+                "model_provider = \"switchplus\"\nmodel = \"gpt-5\"\n\n[model_providers.switchplus]\nname = \"custom\"\nbase_url = \"{base_url}\"\nwire_api = \"responses\"\n"
             )
         }),
         None,

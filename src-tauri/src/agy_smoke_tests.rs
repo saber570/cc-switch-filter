@@ -7,8 +7,8 @@ struct RestoreHome(Option<std::ffi::OsString>);
 impl Drop for RestoreHome {
     fn drop(&mut self) {
         match self.0.take() {
-            Some(value) => std::env::set_var("CC_SWITCH_TEST_HOME", value),
-            None => std::env::remove_var("CC_SWITCH_TEST_HOME"),
+            Some(value) => std::env::set_var("SWITCHPLUS_TEST_HOME", value),
+            None => std::env::remove_var("SWITCHPLUS_TEST_HOME"),
         }
         let _ = crate::settings::reload_settings();
     }
@@ -51,8 +51,8 @@ async fn agy_live_provider_skill_session_and_tokens() {
     let settings: Value = serde_json::from_slice(&fs::read(config).unwrap()).unwrap();
     let temp = tempfile::tempdir().unwrap();
     let home = temp.path();
-    let _restore = RestoreHome(std::env::var_os("CC_SWITCH_TEST_HOME"));
-    std::env::set_var("CC_SWITCH_TEST_HOME", home);
+    let _restore = RestoreHome(std::env::var_os("SWITCHPLUS_TEST_HOME"));
+    std::env::set_var("SWITCHPLUS_TEST_HOME", home);
     crate::settings::reload_settings().unwrap();
     fs::create_dir_all(home.join("workspace")).unwrap();
     let db = Arc::new(Database::memory().unwrap());

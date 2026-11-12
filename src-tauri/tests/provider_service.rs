@@ -643,7 +643,7 @@ wire_api = "responses"
         "enabling takeover should point Codex config.toml at the local proxy"
     );
     assert!(
-        config_after_takeover.contains("PROXY_MANAGED"),
+        config_after_takeover.contains("SWITCHPLUS_PROXY_MANAGED"),
         "enabling takeover should move the proxy placeholder into config.toml"
     );
     assert!(
@@ -670,7 +670,7 @@ wire_api = "responses"
         "disabling takeover should restore the selected DeepSeek live config"
     );
     assert!(
-        !restored_config.contains("PROXY_MANAGED"),
+        !restored_config.contains("SWITCHPLUS_PROXY_MANAGED"),
         "restored live config must not keep the proxy placeholder"
     );
 }
@@ -926,7 +926,7 @@ openai_base_url = "https://relay.example/v1"
         "the top-level reroute must be rewritten away; got:\n{live_config}"
     );
     assert!(
-        live_config.contains("[model_providers.custom]")
+        live_config.contains("[model_providers.switchplus]")
             && live_config.contains("base_url = \"https://relay.example/v1\"")
             && live_config.contains("experimental_bearer_token = \"third-party-key\""),
         "routing and key must move into the custom provider table; got:\n{live_config}"
@@ -991,7 +991,7 @@ experimental_bearer_token = "config-carried-key"
         "the top-level reroute must be rewritten away; got:\n{live_config}"
     );
     assert!(
-        live_config.contains("[model_providers.custom]"),
+        live_config.contains("[model_providers.switchplus]"),
         "the custom provider table must be created; got:\n{live_config}"
     );
     assert_eq!(
@@ -1048,7 +1048,7 @@ openai_base_url = "https://relay.example/v1"
         std::fs::read_to_string(cc_switch_lib::get_codex_config_path()).expect("read config.toml");
     assert!(
         !live_config.contains("openai_base_url")
-            && live_config.contains("[model_providers.custom]")
+            && live_config.contains("[model_providers.switchplus]")
             && live_config.contains("experimental_bearer_token = \"third-party-key\""),
         "routing and key must move into the custom provider table; got:\n{live_config}"
     );
@@ -1068,10 +1068,10 @@ fn provider_service_switch_codex_preserved_login_rejects_keyless_official_auth_f
     let _home = ensure_test_home();
     enable_codex_official_auth_preservation();
 
-    let header_auth_with_fallback = r#"model_provider = "custom"
+    let header_auth_with_fallback = r#"model_provider = "switchplus"
 model = "gpt-5.4"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = "Custom"
 base_url = "https://relay.example/v1"
 wire_api = "responses"
@@ -1152,10 +1152,10 @@ fn provider_service_switch_codex_preserved_login_allows_keyless_header_auth_prov
     let _home = ensure_test_home();
     enable_codex_official_auth_preservation();
 
-    let header_auth_config = r#"model_provider = "custom"
+    let header_auth_config = r#"model_provider = "switchplus"
 model = "gpt-5.4"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = "Custom"
 base_url = "https://relay.example/v1"
 wire_api = "responses"
@@ -2016,7 +2016,7 @@ model = "deepseek-chat"
 name = "DeepSeek"
 base_url = "http://127.0.0.1:15721/v1"
 wire_api = "responses"
-experimental_bearer_token = "PROXY_MANAGED"
+experimental_bearer_token = "SWITCHPLUS_PROXY_MANAGED"
 "#;
     write_codex_live_atomic(&oauth_auth, Some(proxy_live_config))
         .expect("seed taken-over Codex live config");
@@ -2081,7 +2081,7 @@ wire_api = "responses"
         std::fs::read_to_string(cc_switch_lib::get_codex_config_path()).expect("read config.toml");
     assert!(
         live_config.contains("https://new.deepseek.example/v1")
-            && !live_config.contains("PROXY_MANAGED"),
+            && !live_config.contains("SWITCHPLUS_PROXY_MANAGED"),
         "a direct switch replaces leftover proxy placeholders: {live_config}"
     );
     let old_row = state
@@ -2093,7 +2093,7 @@ wire_api = "responses"
         !old_row
             .settings_config
             .to_string()
-            .contains("PROXY_MANAGED"),
+            .contains("SWITCHPLUS_PROXY_MANAGED"),
         "leftover placeholders must not be backfilled into the outgoing provider"
     );
 }
@@ -2210,7 +2210,7 @@ fn switch_packycode_gemini_updates_security_selected_type() {
     ProviderService::switch(&state, AppType::Gemini, "packy-gemini")
         .expect("switching to PackyCode Gemini should succeed");
 
-    // Gemini security settings are written to ~/.gemini/settings.json, not ~/.cc-switch/settings.json
+    // Gemini security settings are written to ~/.gemini/settings.json, not ~/.switchplus/settings.json
     let settings_path = home.join(".gemini").join("settings.json");
     assert!(
         settings_path.exists(),
@@ -2265,7 +2265,7 @@ fn packycode_partner_meta_triggers_security_flag_even_without_keywords() {
     ProviderService::switch(&state, AppType::Gemini, "packy-meta")
         .expect("switching to partner meta provider should succeed");
 
-    // Gemini security settings are written to ~/.gemini/settings.json, not ~/.cc-switch/settings.json
+    // Gemini security settings are written to ~/.gemini/settings.json, not ~/.switchplus/settings.json
     let settings_path = home.join(".gemini").join("settings.json");
     assert!(
         settings_path.exists(),
@@ -2985,7 +2985,7 @@ fn recover_from_crash_without_backup_cleans_placeholder_instead_of_writing_it_ba
     let taken_over_live = json!({
         "env": {
             "ANTHROPIC_BASE_URL": "http://127.0.0.1:15721",
-            "ANTHROPIC_AUTH_TOKEN": "PROXY_MANAGED"
+            "ANTHROPIC_AUTH_TOKEN": "SWITCHPLUS_PROXY_MANAGED"
         }
     });
     let settings_path = get_claude_settings_path();
@@ -3022,7 +3022,7 @@ fn recover_from_crash_without_backup_cleans_placeholder_instead_of_writing_it_ba
     let env = live_after.get("env").cloned().unwrap_or_else(|| json!({}));
     assert_ne!(
         env.get("ANTHROPIC_AUTH_TOKEN").and_then(|v| v.as_str()),
-        Some("PROXY_MANAGED"),
+        Some("SWITCHPLUS_PROXY_MANAGED"),
         "recovery must not write the placeholder back to live"
     );
     assert!(
@@ -3094,7 +3094,7 @@ fn switch_writes_credential_files_owner_only() {
                 "Relay".to_string(),
                 json!({
                     "auth": { "OPENAI_API_KEY": "sk-relay" },
-                    "config": "model_provider = \"custom\"\n\n[model_providers.custom]\nname = \"Relay\"\nbase_url = \"https://relay.example/v1\"\nwire_api = \"responses\"\n"
+                    "config": "model_provider = \"switchplus\"\n\n[model_providers.switchplus]\nname = \"Relay\"\nbase_url = \"https://relay.example/v1\"\nwire_api = \"responses\"\n"
                 }),
                 None,
             ),
@@ -3228,7 +3228,7 @@ fn claude_editor_global_settings_reach_account_dirs() {
     );
 
     // 本机账号表里有一个账号，目录已经建好
-    let app_dir = home.join(".cc-switch");
+    let app_dir = home.join(".switchplus");
     let local_id = "0123456789abcdef0123456789abcdef";
     let config_dir = app_dir
         .join("claude-accounts")
@@ -3672,7 +3672,7 @@ fn claude_editor_never_leaves_the_row_and_live_apart() {
     let (row, base) = open_claude_editor(&state, "a");
     let mut edited = base.clone();
     edited["env"]["ANTHROPIC_AUTH_TOKEN"] = json!("sk-new");
-    let db = rusqlite::Connection::open(home.join(".cc-switch/cc-switch.db")).expect("open db");
+    let db = rusqlite::Connection::open(home.join(".switchplus/switchplus.db")).expect("open db");
     db.execute_batch(
         "CREATE TRIGGER fail_edit BEFORE UPDATE OF settings_config ON providers \
          BEGIN SELECT RAISE(ABORT, 'injected save failure'); END;",

@@ -17,7 +17,7 @@ fn get_macos_app_bundle_path(exe_path: &std::path::Path) -> Option<std::path::Pa
 
 /// 初始化 AutoLaunch 实例
 fn get_auto_launch() -> Result<AutoLaunch, AppError> {
-    let app_name = "CC Switch";
+    let app_name = "SwitchPlus";
     let exe_path =
         std::env::current_exe().map_err(|e| AppError::Message(format!("无法获取应用路径: {e}")))?;
 
@@ -101,7 +101,7 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn test_get_macos_app_bundle_path_not_in_bundle() {
-        let exe_path = std::path::Path::new("/usr/local/bin/cc-switch");
+        let exe_path = std::path::Path::new("/usr/local/bin/switchplus");
         let result = get_macos_app_bundle_path(exe_path);
         assert_eq!(result, None);
     }
@@ -110,7 +110,7 @@ mod tests {
     #[test]
     fn test_get_macos_app_bundle_path_dev_build() {
         // 开发环境下的路径通常不在 .app bundle 内
-        let exe_path = std::path::Path::new("/Users/dev/project/target/debug/cc-switch");
+        let exe_path = std::path::Path::new("/Users/dev/project/target/debug/switchplus");
         let result = get_macos_app_bundle_path(exe_path);
         assert_eq!(result, None);
     }

@@ -39,7 +39,7 @@ pub(super) async fn reject_self_forwarding(
     if targets_listener {
         // Do not include the URL: provider paths and queries can contain API keys.
         return Err(ProxyError::ConfigError(
-            "Upstream URL points to CC Switch's own proxy listener. Set the provider base URL to the real upstream service.".to_string(),
+            "Upstream URL points to SwitchPlus's own proxy listener. Set the provider base URL to the real upstream service.".to_string(),
         ));
     }
     Ok(())
@@ -81,17 +81,17 @@ mod tests {
     async fn rejects_own_listener_including_custom_ports_and_url_aliases() {
         for (target, address, port) in [
             ("http://127.0.0.1:3688/v1/responses", "127.0.0.1", 3688),
-            ("http://localhost:15721/v1", "127.0.0.1", 15721),
-            ("http://LOCALHOST.:15721/v1", "127.0.0.1", 15721),
-            ("http://proxy.localhost:15721/v1", "127.0.0.1", 15721),
-            ("http://127.1:15721/v1", "127.0.0.1", 15721),
-            ("http://[::ffff:127.0.0.1]:15721/v1", "127.0.0.1", 15721),
-            ("http://[::1]:15721/v1", "::1", 15721),
-            ("http://localhost:15721/v1", "::1", 15721),
-            ("http://127.0.0.1:15721/v1", "0.0.0.0", 15721),
-            ("http://[::1]:15721/v1", "::", 15721),
-            ("http://192.0.2.10:15721/v1", "192.0.2.10", 15721),
-            ("http://0.0.0.0:15721/v1", "127.0.0.1", 15721),
+            ("http://localhost:15721/v1", "127.0.0.1", 15731),
+            ("http://LOCALHOST.:15721/v1", "127.0.0.1", 15731),
+            ("http://proxy.localhost:15721/v1", "127.0.0.1", 15731),
+            ("http://127.1:15721/v1", "127.0.0.1", 15731),
+            ("http://[::ffff:127.0.0.1]:15721/v1", "127.0.0.1", 15731),
+            ("http://[::1]:15721/v1", "::1", 15731),
+            ("http://localhost:15721/v1", "::1", 15731),
+            ("http://127.0.0.1:15721/v1", "0.0.0.0", 15731),
+            ("http://[::1]:15721/v1", "::", 15731),
+            ("http://192.0.2.10:15721/v1", "192.0.2.10", 15731),
+            ("http://0.0.0.0:15721/v1", "127.0.0.1", 15731),
             ("http://127.0.0.1/v1", "127.0.0.1", 80),
         ] {
             assert!(
@@ -116,7 +116,7 @@ mod tests {
             "https://api.example.com/v1",
         ] {
             assert!(
-                reject_self_forwarding(target, "127.0.0.1", 15721)
+                reject_self_forwarding(target, "127.0.0.1", 15731)
                     .await
                     .is_ok(),
                 "{target}"
@@ -130,7 +130,7 @@ mod tests {
         let error = reject_self_forwarding(
             "http://user:secret@127.0.0.1:15721/private-key/v1?key=private-token",
             "127.0.0.1",
-            15721,
+            15731,
         )
         .await
         .unwrap_err()

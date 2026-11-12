@@ -550,7 +550,7 @@ pub(crate) async fn query_grok_plan(access_token: &str) -> Option<String> {
         .get(GROK_SETTINGS_ENDPOINT)
         .bearer_auth(access_token)
         .header("Accept", "application/json")
-        .header("User-Agent", "cc-switch")
+        .header("User-Agent", "switchplus")
         .timeout(std::time::Duration::from_secs(15))
         .send()
         .await
@@ -614,7 +614,7 @@ fn tier_name_for_reset(resets_at: Option<i64>, now_secs: i64) -> &'static str {
 /// 参数化 `tool_label` / `relogin_hint` 让该函数可被两个调用点共用（与
 /// `query_codex_quota` 的双调用点设计一致）：
 /// - `"grokbuild"` + "grok login"（Grok CLI 凭据路径）
-/// - `"xai_oauth"` + "re-login via cc-switch"（cc-switch 自管 xAI OAuth 路径，
+/// - `"xai_oauth"` + "re-login via switchplus"（switchplus 自管 xAI OAuth 路径，
 ///   见 `commands::xai_oauth::get_xai_oauth_quota`；两者是同一个 OAuth client，
 ///   token 对 grok.com 账单端点等效）
 pub(crate) async fn query_grok_quota(
@@ -634,7 +634,7 @@ pub(crate) async fn query_grok_quota(
         .header("Content-Type", "application/grpc-web+proto")
         .header("x-grpc-web", "1")
         .header("x-user-agent", "connect-es/2.1.1")
-        .header("User-Agent", "cc-switch")
+        .header("User-Agent", "switchplus")
         .body(vec![0u8; 5])
         .timeout(std::time::Duration::from_secs(15))
         .send()
@@ -1040,7 +1040,7 @@ mod tests {
         let determinate = grpc_status_failure(13, "internal", "grokbuild", RELOGIN_HINT)
             .expect("determinate is Ok");
         assert!(!determinate.success);
-        // tool_label 参数化：两条链路（CLI / cc-switch 自管 OAuth）标签正确落到快照
+        // tool_label 参数化：两条链路（CLI / switchplus 自管 OAuth）标签正确落到快照
         let auth =
             grpc_status_failure(16, "", "xai_oauth", "re-login").expect("auth failure is Ok");
         assert!(matches!(auth.credential_status, CredentialStatus::Expired));

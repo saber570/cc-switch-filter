@@ -51,7 +51,7 @@ pub(super) async fn reject_browser_requests(
                 Json(json!({
                     "error": {
                         "type": "forbidden",
-                        "message": format!("CC Switch local proxy: {reason}"),
+                        "message": format!("SwitchPlus local proxy: {reason}"),
                     }
                 })),
             )
@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn cli_requests_pass() {
-        for host in ["127.0.0.1:15721", "localhost:15721", "[::1]:15721"] {
+        for host in ["127.0.0.1:15731", "localhost:15731", "[::1]:15731"] {
             let h = headers(&[("host", host)]);
             assert_eq!(check_request("/v1/messages", &h, "127.0.0.1", None), Ok(()));
         }
@@ -147,7 +147,7 @@ mod tests {
     #[test]
     fn any_origin_is_rejected_outside_claude_desktop() {
         for origin in ["https://evil.example", "null", "tauri://localhost"] {
-            let h = headers(&[("host", "127.0.0.1:15721"), ("origin", origin)]);
+            let h = headers(&[("host", "127.0.0.1:15731"), ("origin", origin)]);
             for path in ["/v1/messages", "/v1/responses", "/v1beta/models", "/status"] {
                 assert!(check_request(path, &h, "127.0.0.1", None).is_err());
             }
@@ -158,20 +158,20 @@ mod tests {
 
     #[test]
     fn claude_desktop_keeps_its_token_check_only() {
-        let h = headers(&[("host", "127.0.0.1:15721"), ("origin", "app://claude")]);
+        let h = headers(&[("host", "127.0.0.1:15731"), ("origin", "app://claude")]);
         assert_eq!(
             check_request("/claude-desktop/v1/messages", &h, "127.0.0.1", None),
             Ok(())
         );
         // Rebinding still applies there: the Host rule is not exempted.
-        let h = headers(&[("host", "rebind.evil.example:15721")]);
+        let h = headers(&[("host", "rebind.evil.example:15731")]);
         assert!(check_request("/claude-desktop/v1/models", &h, "127.0.0.1", None).is_err());
     }
 
     #[test]
     fn rebinding_hosts_are_rejected_on_loopback_listener() {
         for host in [
-            "rebind.evil.example:15721",
+            "rebind.evil.example:15731",
             "evil.example.",
             "localhost.evil.example",
         ] {
@@ -191,11 +191,11 @@ mod tests {
     #[test]
     fn local_names_and_configured_client_host_pass() {
         for host in [
-            "host.docker.internal:15721",
-            "my-mac.local:15721",
-            "app.localhost:15721",
-            "LOCALHOST.:15721",
-            "172.25.144.1:15721",
+            "host.docker.internal:15731",
+            "my-mac.local:15731",
+            "app.localhost:15731",
+            "LOCALHOST.:15731",
+            "172.25.144.1:15731",
         ] {
             let h = headers(&[("host", host)]);
             assert_eq!(
@@ -204,7 +204,7 @@ mod tests {
                 "{host}"
             );
         }
-        let h = headers(&[("host", "Devbox.Example.com:15721")]);
+        let h = headers(&[("host", "Devbox.Example.com:15731")]);
         assert_eq!(
             check_request(
                 "/v1/messages",
@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn lan_listener_accepts_any_host_name() {
-        let h = headers(&[("host", "devbox.corp.example:15721")]);
+        let h = headers(&[("host", "devbox.corp.example:15731")]);
         assert_eq!(check_request("/v1/messages", &h, "0.0.0.0", None), Ok(()));
         assert_eq!(
             check_request("/v1/messages", &h, "192.168.1.5", None),

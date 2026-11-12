@@ -94,7 +94,7 @@ const baseConfig: WebDavSyncSettings = {
   baseUrl: "https://dav.example.com/dav/",
   username: "alice",
   password: "secret",
-  remoteRoot: "cc-switch-sync",
+  remoteRoot: "switchplus-sync",
   profile: "default",
   autoSync: false,
   status: {},
@@ -522,7 +522,7 @@ describe("WebdavSyncSection", () => {
       );
     });
 
-    fireEvent.change(screen.getByPlaceholderText("cc-switch-sync"), {
+    fireEvent.change(screen.getByPlaceholderText("switchplus-sync"), {
       target: { value: "new-root" },
     });
     fireEvent.click(

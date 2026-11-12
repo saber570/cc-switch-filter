@@ -20,30 +20,30 @@ static DIRECT_CLIENT: OnceCell<Client> = OnceCell::new();
 static CURRENT_PROXY_URL: OnceCell<RwLock<Option<String>>> = OnceCell::new();
 
 /// CC Switch 代理服务器当前监听的端口
-static CC_SWITCH_PROXY_PORT: OnceCell<RwLock<u16>> = OnceCell::new();
+static SWITCHPLUS_PROXY_PORT: OnceCell<RwLock<u16>> = OnceCell::new();
 
 /// 设置 CC Switch 代理服务器的监听端口
 ///
 /// 应在代理服务器启动时调用，以便系统代理检测能正确识别自己的端口
 pub fn set_proxy_port(port: u16) {
-    if let Some(lock) = CC_SWITCH_PROXY_PORT.get() {
+    if let Some(lock) = SWITCHPLUS_PROXY_PORT.get() {
         if let Ok(mut current_port) = lock.write() {
             *current_port = port;
-            log::debug!("[GlobalProxy] Updated CC Switch proxy port to {port}");
+            log::debug!("[GlobalProxy] Updated SwitchPlus proxy port to {port}");
         }
     } else {
-        let _ = CC_SWITCH_PROXY_PORT.set(RwLock::new(port));
-        log::debug!("[GlobalProxy] Initialized CC Switch proxy port to {port}");
+        let _ = SWITCHPLUS_PROXY_PORT.set(RwLock::new(port));
+        log::debug!("[GlobalProxy] Initialized SwitchPlus proxy port to {port}");
     }
 }
 
 /// 获取 CC Switch 代理服务器的监听端口
 fn get_proxy_port() -> u16 {
-    CC_SWITCH_PROXY_PORT
+    SWITCHPLUS_PROXY_PORT
         .get()
         .and_then(|lock| lock.read().ok())
         .map(|port| *port)
-        .unwrap_or(15721) // 默认端口作为回退
+        .unwrap_or(crate::identity::DEFAULT_PROXY_PORT) // 默认端口作为回退
 }
 
 /// 初始化全局 HTTP 客户端
@@ -590,13 +590,13 @@ mod tests {
     #[test]
     #[serial_test::serial]
     fn test_proxy_points_to_loopback() {
-        // 设置 CC Switch 代理端口为 15721（默认值）
-        set_proxy_port(15721);
+        // 设置 CC Switch 代理端口为 15731（默认值）
+        set_proxy_port(15731);
 
         // 只有指向 CC Switch 自己端口的 loopback 地址才返回 true
         assert!(proxy_points_to_loopback("http://127.0.0.1:15721"));
-        assert!(proxy_points_to_loopback("socks5://localhost:15721"));
-        assert!(proxy_points_to_loopback("127.0.0.1:15721"));
+        assert!(proxy_points_to_loopback("socks5://localhost:15731"));
+        assert!(proxy_points_to_loopback("127.0.0.1:15731"));
 
         // 其他 loopback 端口不应该被跳过（允许使用其他本地代理工具）
         assert!(!proxy_points_to_loopback("http://127.0.0.1:7890"));
@@ -613,7 +613,7 @@ mod tests {
         let _guard = env_lock().lock().unwrap();
 
         // 设置 CC Switch 代理端口
-        set_proxy_port(15721);
+        set_proxy_port(15731);
 
         let keys = [
             "HTTP_PROXY",

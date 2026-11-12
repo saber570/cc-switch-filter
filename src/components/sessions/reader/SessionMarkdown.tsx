@@ -22,7 +22,7 @@ import {
   SessionCodeBlock,
 } from "./SessionCodeBlock";
 
-// 底本：farion1231/cc-switch#6332 的 src/components/sessions/SessionMarkdown.tsx。
+// 底本：farion1231/switchplus#6332 的 src/components/sessions/SessionMarkdown.tsx。
 // 迁入阅读页后改为 v7 token、链接走 open_external、本地路径渲染为 PathChip，
 // 并加了超长内容的纯文本退化。
 

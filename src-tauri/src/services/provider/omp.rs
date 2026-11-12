@@ -152,7 +152,7 @@ mod tests {
     use std::{fs, sync::Arc};
     fn provider() -> Provider {
         Provider::with_id(
-            "cc-switch-test".into(),
+            "switchplus-test".into(),
             "Test".into(),
             json!({"baseUrl":"https://example.com/v1","apiKey":"!literal credential","api":"openai-completions","models":[{"id":"a"}]}),
             None,
@@ -169,16 +169,16 @@ mod tests {
         add(&state, provider(), true).unwrap();
         let mut edited = provider();
         edited.settings_config["models"][0]["id"] = json!("b");
-        edited.settings_config["apiKey"] = json!("cc-switch-validation-key");
+        edited.settings_config["apiKey"] = json!("switchplus-validation-key");
         update(&state, None, edited).unwrap();
         let written = fs::read_to_string(&path).unwrap();
         assert!(written.starts_with("# user header\nnotes: 'verbatim'\nproviders:\n  other:\n    baseUrl: https://other.example # keep\n"));
         assert!(written.ends_with("\n# user footer\n"));
         assert_eq!(
-            omp_config::get_providers().unwrap()["cc-switch-test"]["models"][0]["id"],
+            omp_config::get_providers().unwrap()["switchplus-test"]["models"][0]["id"],
             "b"
         );
-        remove(&state, "cc-switch-test").unwrap();
+        remove(&state, "switchplus-test").unwrap();
         assert_eq!(fs::read_to_string(path).unwrap(), before);
     }
 
@@ -247,22 +247,22 @@ mod tests {
         ProviderService::add(&state, AppType::Omp, provider(), true).unwrap();
         assert!(omp_config::get_providers()
             .unwrap()
-            .contains_key("cc-switch-test"));
+            .contains_key("switchplus-test"));
         let mut changed = provider();
         changed.settings_config["models"][0]["id"] = json!("b");
         ProviderService::update(&state, AppType::Omp, None, changed).unwrap();
         assert_eq!(
-            omp_config::get_providers().unwrap()["cc-switch-test"]["models"][0]["id"],
+            omp_config::get_providers().unwrap()["switchplus-test"]["models"][0]["id"],
             "b"
         );
-        ProviderService::remove_from_live_config(&state, AppType::Omp, "cc-switch-test").unwrap();
+        ProviderService::remove_from_live_config(&state, AppType::Omp, "switchplus-test").unwrap();
         assert!(omp_config::get_providers().unwrap().is_empty());
-        ProviderService::switch(&state, AppType::Omp, "cc-switch-test").unwrap();
+        ProviderService::switch(&state, AppType::Omp, "switchplus-test").unwrap();
         assert_eq!(
-            omp_config::get_providers().unwrap()["cc-switch-test"]["models"][0]["id"],
+            omp_config::get_providers().unwrap()["switchplus-test"]["models"][0]["id"],
             "b"
         );
-        ProviderService::delete(&state, AppType::Omp, "cc-switch-test").unwrap();
+        ProviderService::delete(&state, AppType::Omp, "switchplus-test").unwrap();
         assert!(omp_config::get_providers().unwrap().is_empty());
         assert_eq!(
             fs::read_to_string(dir.join("config.yml")).unwrap(),
@@ -277,7 +277,7 @@ mod tests {
         let state = AppState::new(Arc::new(Database::memory().unwrap()));
         add(&state, provider(), false).unwrap();
         assert!(!omp_config::get_omp_models_path().unwrap().exists());
-        enable(&state, "cc-switch-test").unwrap();
+        enable(&state, "switchplus-test").unwrap();
         let path = omp_config::get_omp_models_path().unwrap();
         let bytes = fs::read(&path).unwrap();
         state
@@ -287,9 +287,9 @@ mod tests {
             .unwrap()
             .execute_batch("PRAGMA query_only = ON")
             .unwrap();
-        assert!(remove(&state, "cc-switch-test").is_err());
+        assert!(remove(&state, "switchplus-test").is_err());
         assert_eq!(fs::read(&path).unwrap(), bytes);
-        assert!(delete(&state, "cc-switch-test").is_err());
+        assert!(delete(&state, "switchplus-test").is_err());
         assert_eq!(fs::read(&path).unwrap(), bytes);
     }
 }

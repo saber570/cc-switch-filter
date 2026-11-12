@@ -235,7 +235,7 @@ async fn http_success_without_mcp_and_timeouts_are_disconnected() {
     for value in [
         json!({}),
         json!({"type":"unsupported"}),
-        json!({"command":"cc-switch-nonexistent-mcp-test-command"}),
+        json!({"command":"switchplus-nonexistent-mcp-test-command"}),
     ] {
         assert_eq!(check_server(value, CHECK_TIMEOUT).await, Failed);
     }

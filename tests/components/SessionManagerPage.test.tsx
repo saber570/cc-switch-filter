@@ -80,7 +80,7 @@ const openRow = (title: string) =>
 const openAppMenu = async () =>
   userEvent.click(screen.getByRole("button", { name: /^应用：/ }));
 
-const EXPANDED_KEY = "cc-switch.sessionManager.expandedProjects";
+const EXPANDED_KEY = "switchplus.sessionManager.expandedProjects";
 
 const setupZetaSession = (word = "zeta") => {
   const source = "/mock/codex/needle.jsonl";

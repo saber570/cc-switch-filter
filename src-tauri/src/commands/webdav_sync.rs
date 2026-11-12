@@ -349,10 +349,10 @@ mod tests {
     #[test]
     #[serial]
     fn persist_sync_error_updates_status_without_overwriting_credentials() {
-        let test_home = std::env::temp_dir().join("cc-switch-sync-error-status-test");
+        let test_home = std::env::temp_dir().join("switchplus-sync-error-status-test");
         let _ = std::fs::remove_dir_all(&test_home);
         std::fs::create_dir_all(&test_home).expect("create test home");
-        std::env::set_var("CC_SWITCH_TEST_HOME", &test_home);
+        std::env::set_var("SWITCHPLUS_TEST_HOME", &test_home);
 
         crate::settings::update_settings(AppSettings::default()).expect("reset settings");
         let mut current = WebDavSyncSettings {
@@ -360,7 +360,7 @@ mod tests {
             base_url: "https://dav.example.com/dav/".to_string(),
             username: "alice".to_string(),
             password: "secret".to_string(),
-            remote_root: "cc-switch-sync".to_string(),
+            remote_root: "switchplus-sync".to_string(),
             profile: "default".to_string(),
             ..WebDavSyncSettings::default()
         };
@@ -377,7 +377,7 @@ mod tests {
         assert_eq!(after.base_url, "https://dav.example.com/dav/");
         assert_eq!(after.username, "alice");
         assert_eq!(after.password, "secret");
-        assert_eq!(after.remote_root, "cc-switch-sync");
+        assert_eq!(after.remote_root, "switchplus-sync");
         assert_eq!(after.profile, "default");
         assert!(
             after
@@ -394,10 +394,10 @@ mod tests {
     #[test]
     #[serial]
     fn require_enabled_webdav_settings_rejects_disabled_config() {
-        let test_home = std::env::temp_dir().join("cc-switch-sync-enabled-disabled-test");
+        let test_home = std::env::temp_dir().join("switchplus-sync-enabled-disabled-test");
         let _ = std::fs::remove_dir_all(&test_home);
         std::fs::create_dir_all(&test_home).expect("create test home");
-        std::env::set_var("CC_SWITCH_TEST_HOME", &test_home);
+        std::env::set_var("SWITCHPLUS_TEST_HOME", &test_home);
 
         crate::settings::update_settings(AppSettings::default()).expect("reset settings");
         crate::settings::set_webdav_sync_settings(Some(WebDavSyncSettings {
@@ -419,10 +419,10 @@ mod tests {
     #[test]
     #[serial]
     fn require_enabled_webdav_settings_returns_settings_when_enabled() {
-        let test_home = std::env::temp_dir().join("cc-switch-sync-enabled-ok-test");
+        let test_home = std::env::temp_dir().join("switchplus-sync-enabled-ok-test");
         let _ = std::fs::remove_dir_all(&test_home);
         std::fs::create_dir_all(&test_home).expect("create test home");
-        std::env::set_var("CC_SWITCH_TEST_HOME", &test_home);
+        std::env::set_var("SWITCHPLUS_TEST_HOME", &test_home);
 
         crate::settings::update_settings(AppSettings::default()).expect("reset settings");
         crate::settings::set_webdav_sync_settings(Some(WebDavSyncSettings {

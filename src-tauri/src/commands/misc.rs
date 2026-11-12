@@ -79,19 +79,12 @@ pub async fn copy_text_to_clipboard(text: String) -> Result<bool, String> {
 /// 检查更新
 #[tauri::command]
 pub async fn check_for_updates(handle: AppHandle) -> Result<bool, String> {
-    handle
-        .opener()
-        .open_url(
-            "https://github.com/farion1231/cc-switch/releases/latest",
-            None::<String>,
-        )
-        .map_err(|e| format!("打开更新页面失败: {e}"))?;
-
-    Ok(true)
+    let _ = handle;
+    Err("SwitchPlus 本地构建暂未配置独立更新源，请使用本地重新生成的安装包。".into())
 }
 
 /// 便携版新版本压缩包的下载地址，命名与 release.yml 的「Prepare Windows Assets」一致：
-/// `CC-Switch-v<版本>-Windows[-arm64]-Portable.zip`。版本号不像版本号时返回 None。
+/// `SwitchPlus-v<版本>-Windows[-arm64]-Portable.zip`。版本号不像版本号时返回 None。
 fn portable_zip_url(version: &str, arm64: bool) -> Option<String> {
     let version = version.trim().trim_start_matches('v');
     let looks_like_version = version.starts_with(|c: char| c.is_ascii_digit())
@@ -101,27 +94,19 @@ fn portable_zip_url(version: &str, arm64: bool) -> Option<String> {
     if !looks_like_version {
         return None;
     }
-    let suffix = if arm64 { "-arm64" } else { "" };
-    Some(format!(
-        "https://github.com/farion1231/cc-switch/releases/download/v{version}/CC-Switch-v{version}-Windows{suffix}-Portable.zip"
-    ))
+    let _ = arm64;
+    None // No published SwitchPlus release assets yet.
 }
 
-/// 便携版更新：直接下载对应架构的新版压缩包（解压覆盖即可，数据在 ~/.cc-switch 不受影响）。
+/// 便携版更新：直接下载对应架构的新版压缩包（解压覆盖即可，数据在 ~/.switchplus 不受影响）。
 /// 不做原地替换自身 exe：那样很容易被杀毒软件当成病毒拦截。
 #[tauri::command]
 pub async fn open_portable_update_download(
     handle: AppHandle,
     version: String,
 ) -> Result<bool, String> {
-    let url = portable_zip_url(&version, cfg!(target_arch = "aarch64"))
-        .unwrap_or_else(|| "https://github.com/farion1231/cc-switch/releases/latest".to_string());
-    handle
-        .opener()
-        .open_url(url, None::<String>)
-        .map_err(|e| format!("打开更新页面失败: {e}"))?;
-
-    Ok(true)
+    let _ = (handle, version);
+    Err("SwitchPlus 本地构建暂未配置独立更新源，请使用本地重新生成的便携包。".into())
 }
 
 /// 判断是否为便携版（绿色版）运行
@@ -1675,7 +1660,7 @@ async fn fetch_github_latest_version(client: &reqwest::Client, repo: &str) -> Op
     let url = format!("https://api.github.com/repos/{repo}/releases/latest");
     let resp = client
         .get(&url)
-        .header("User-Agent", "cc-switch")
+        .header("User-Agent", "switchplus")
         .header("Accept", "application/vnd.github+json")
         .timeout(LATEST_PROBE_TIMEOUT)
         .send()
@@ -1726,7 +1711,7 @@ fn drop_latest_behind_local(latest: Option<String>, local_version: Option<&str>)
 
 /// Hermes 的「最新版本」：GitHub Releases 为主，PyPI 兜底。
 ///
-/// cc-switch 安装/升级 Hermes 走的是官方 install.sh（`git clone` main 分支）与
+/// switchplus 安装/升级 Hermes 走的是官方 install.sh（`git clone` main 分支）与
 /// `hermes update`（`git pull`），整条链路与 PyPI 无关；而 PyPI 的 `hermes-agent`
 /// 自 0.19.0（2026-07-20）起停更，上游只在 GitHub Releases 发版
 /// （#6475 / #6618 / #7033：「最新版本」长期停在 0.19.0、比当前还旧、升级按钮不出现）。
@@ -4182,7 +4167,7 @@ fn package_manager_anchored_command_from_paths(
 /// 已展示给用户"将写回原生那处"——欺骗性故障。
 ///
 /// 判定顺序（命中即返回）：
-/// ① Hermes → `<bin_path 绝对> update`;Hermes CLI 自己知道安装环境,避免 cc-switch
+/// ① Hermes → `<bin_path 绝对> update`;Hermes CLI 自己知道安装环境,避免 switchplus
 ///    猜系统 `python3`/`python` 时撞上 Python 版本或 pyenv shim 问题。
 /// ② Claude / Grok 原生安装器 → `<bin_path 绝对> update`；
 ///    bin_path 指向 launcher,launcher 内部 dispatch update 子命令。它不归 npm 管,
@@ -5535,22 +5520,22 @@ impl ProviderLaunch {
 
 /// 附加参数在 .bat 里经这些变量传，也是附加参数的个数上限（各平台一样）。
 const USER_ARG_BATCH_VARS: [&str; 16] = [
-    "CC_SWITCH_ARG0",
-    "CC_SWITCH_ARG1",
-    "CC_SWITCH_ARG2",
-    "CC_SWITCH_ARG3",
-    "CC_SWITCH_ARG4",
-    "CC_SWITCH_ARG5",
-    "CC_SWITCH_ARG6",
-    "CC_SWITCH_ARG7",
-    "CC_SWITCH_ARG8",
-    "CC_SWITCH_ARG9",
-    "CC_SWITCH_ARG10",
-    "CC_SWITCH_ARG11",
-    "CC_SWITCH_ARG12",
-    "CC_SWITCH_ARG13",
-    "CC_SWITCH_ARG14",
-    "CC_SWITCH_ARG15",
+    "SWITCHPLUS_ARG0",
+    "SWITCHPLUS_ARG1",
+    "SWITCHPLUS_ARG2",
+    "SWITCHPLUS_ARG3",
+    "SWITCHPLUS_ARG4",
+    "SWITCHPLUS_ARG5",
+    "SWITCHPLUS_ARG6",
+    "SWITCHPLUS_ARG7",
+    "SWITCHPLUS_ARG8",
+    "SWITCHPLUS_ARG9",
+    "SWITCHPLUS_ARG10",
+    "SWITCHPLUS_ARG11",
+    "SWITCHPLUS_ARG12",
+    "SWITCHPLUS_ARG13",
+    "SWITCHPLUS_ARG14",
+    "SWITCHPLUS_ARG15",
 ];
 
 /// 把附加参数按空白拆开：单引号或双引号括起来的部分算同一个参数（引号本身去掉），没有
@@ -5598,30 +5583,30 @@ fn split_launch_args(input: &str) -> Result<Vec<String>, String> {
 /// Codex 的 `-c` 值在 .bat 里经这些变量传（值里可能有 `&` 之类 cmd 的特殊字符）。
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 const CODEX_OVERRIDE_BATCH_VARS: [&str; 24] = [
-    "CC_SWITCH_CODEX_C0",
-    "CC_SWITCH_CODEX_C1",
-    "CC_SWITCH_CODEX_C2",
-    "CC_SWITCH_CODEX_C3",
-    "CC_SWITCH_CODEX_C4",
-    "CC_SWITCH_CODEX_C5",
-    "CC_SWITCH_CODEX_C6",
-    "CC_SWITCH_CODEX_C7",
-    "CC_SWITCH_CODEX_C8",
-    "CC_SWITCH_CODEX_C9",
-    "CC_SWITCH_CODEX_C10",
-    "CC_SWITCH_CODEX_C11",
-    "CC_SWITCH_CODEX_C12",
-    "CC_SWITCH_CODEX_C13",
-    "CC_SWITCH_CODEX_C14",
-    "CC_SWITCH_CODEX_C15",
-    "CC_SWITCH_CODEX_C16",
-    "CC_SWITCH_CODEX_C17",
-    "CC_SWITCH_CODEX_C18",
-    "CC_SWITCH_CODEX_C19",
-    "CC_SWITCH_CODEX_C20",
-    "CC_SWITCH_CODEX_C21",
-    "CC_SWITCH_CODEX_C22",
-    "CC_SWITCH_CODEX_C23",
+    "SWITCHPLUS_CODEX_C0",
+    "SWITCHPLUS_CODEX_C1",
+    "SWITCHPLUS_CODEX_C2",
+    "SWITCHPLUS_CODEX_C3",
+    "SWITCHPLUS_CODEX_C4",
+    "SWITCHPLUS_CODEX_C5",
+    "SWITCHPLUS_CODEX_C6",
+    "SWITCHPLUS_CODEX_C7",
+    "SWITCHPLUS_CODEX_C8",
+    "SWITCHPLUS_CODEX_C9",
+    "SWITCHPLUS_CODEX_C10",
+    "SWITCHPLUS_CODEX_C11",
+    "SWITCHPLUS_CODEX_C12",
+    "SWITCHPLUS_CODEX_C13",
+    "SWITCHPLUS_CODEX_C14",
+    "SWITCHPLUS_CODEX_C15",
+    "SWITCHPLUS_CODEX_C16",
+    "SWITCHPLUS_CODEX_C17",
+    "SWITCHPLUS_CODEX_C18",
+    "SWITCHPLUS_CODEX_C19",
+    "SWITCHPLUS_CODEX_C20",
+    "SWITCHPLUS_CODEX_C21",
+    "SWITCHPLUS_CODEX_C22",
+    "SWITCHPLUS_CODEX_C23",
 ];
 
 /// Codex：卡就是当前直连的那家时直接跑 `codex`；否则用 `-c` 只对这个进程换成它，Key 经
@@ -5916,14 +5901,14 @@ pub(crate) fn open_agy_resume_terminal(
 }
 
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-const AGY_DIR_BATCH_VAR: &str = "CC_SWITCH_AGY_DIR";
+const AGY_DIR_BATCH_VAR: &str = "SWITCHPLUS_AGY_DIR";
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-const AGY_MODEL_BATCH_VAR: &str = "CC_SWITCH_AGY_MODEL";
+const AGY_MODEL_BATCH_VAR: &str = "SWITCHPLUS_AGY_MODEL";
 
 /// macOS / Linux 的启动脚本里，环境变量先以这个前缀的名字读进来，再由 `env` 改名交给
 /// 程序：用户 shell 的 rc 文件在中间执行，直接用原名会被 rc 里的 export 覆盖。
 #[cfg_attr(windows, allow(dead_code))]
-const LAUNCH_ENV_PREFIX: &str = "CC_SWITCH_LAUNCH_ENV_";
+const LAUNCH_ENV_PREFIX: &str = "SWITCHPLUS_LAUNCH_ENV_";
 
 /// 同一进程里连开几个终端也不会撞名。
 fn unique_temp_path(stem: &str, ext: &str) -> PathBuf {
@@ -5990,7 +5975,7 @@ fn shell_word(value: &str) -> String {
 }
 
 /// 交给用户 shell 执行的启动命令。有环境变量时经 `env` 设置或清除，值从启动脚本读进来的
-/// `CC_SWITCH_LAUNCH_ENV_<n>` 取，不出现在命令行里。
+/// `SWITCHPLUS_LAUNCH_ENV_<n>` 取，不出现在命令行里。
 #[cfg_attr(windows, allow(dead_code))]
 #[cfg(test)]
 fn unix_launch_command(launch: &ProviderLaunch) -> String {
@@ -6747,7 +6732,7 @@ fn build_windows_launch_env(launch: &ProviderLaunch) -> (String, Vec<(String, St
                 lines.push_str(&format!("set \"{name}={}\"\r\n", value.replace('%', "%%")))
             }
             Some(value) => {
-                let carrier = format!("CC_SWITCH_INTERNAL_ENV_{index}");
+                let carrier = format!("SWITCHPLUS_INTERNAL_ENV_{index}");
                 lines.push_str(&format!(
                     "set \"{name}=%{carrier}%\"\r\nset \"{carrier}=\"\r\n"
                 ));
@@ -6760,7 +6745,7 @@ fn build_windows_launch_env(launch: &ProviderLaunch) -> (String, Vec<(String, St
 
 /// 非 ASCII 的项目目录经这个环境变量传给 Claude 启动 .bat。
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-const WINDOWS_CWD_ENV: &str = "CC_SWITCH_INTERNAL_CWD";
+const WINDOWS_CWD_ENV: &str = "SWITCHPLUS_INTERNAL_CWD";
 
 /// 生成切到项目目录的 .bat 行，第二项是需要给启动进程设置的 `WINDOWS_CWD_ENV` 值。
 ///
@@ -6898,11 +6883,11 @@ pub(crate) fn launch_terminal_running(command_line: &str, label: &str) -> Result
         let content = format!(
             r#"#!/usr/bin/env sh
 trap 'rm -f "{script_path}"' EXIT
-echo "[cc-switch] Starting: {label}"
+echo "[switchplus] Starting: {label}"
 echo ""
 {cmd}
 echo ""
-echo "[cc-switch] Command exited. Press Enter to close."
+echo "[switchplus] Command exited. Press Enter to close."
 read -r _
 "#,
             script_path = file.display(),
@@ -7023,7 +7008,7 @@ read -r _
 
         let bat_file = temp_dir.join(format!("cc_switch_{}_{}.bat", label, pid));
         let content = format!(
-            "@echo off\r\necho [cc-switch] Starting: {label}\r\necho.\r\n{cmd}\r\necho.\r\necho [cc-switch] Command exited. Press any key to close.\r\npause >nul\r\ndel \"%~f0\" >nul 2>&1\r\n",
+            "@echo off\r\necho [switchplus] Starting: {label}\r\necho.\r\n{cmd}\r\necho.\r\necho [switchplus] Command exited. Press any key to close.\r\npause >nul\r\ndel \"%~f0\" >nul 2>&1\r\n",
             label = label,
             cmd = command_line,
         );
@@ -7121,11 +7106,11 @@ mod tests {
     fn portable_zip_url_matches_release_asset_names() {
         assert_eq!(
             portable_zip_url("4.0.12", false).as_deref(),
-            Some("https://github.com/farion1231/cc-switch/releases/download/v4.0.12/CC-Switch-v4.0.12-Windows-Portable.zip")
+            None
         );
         assert_eq!(
             portable_zip_url("v4.1.0-beta.1", true).as_deref(),
-            Some("https://github.com/farion1231/cc-switch/releases/download/v4.1.0-beta.1/CC-Switch-v4.1.0-beta.1-Windows-arm64-Portable.zip")
+            None
         );
         for bad in ["", "v", "latest", "4.0/../x", "4.0.0?x=1"] {
             assert!(portable_zip_url(bad, false).is_none(), "{bad}");
@@ -7703,9 +7688,9 @@ mod tests {
     fn agy_key_launch() -> ProviderLaunch {
         ProviderLaunch {
             title: "Using a private Antigravity profile for this provider:",
-            detail: Some(PathBuf::from("/home/me/.cc-switch/agy/relay")),
+            detail: Some(PathBuf::from("/home/me/.switchplus/agy/relay")),
             program: "agy",
-            args: vec!["--gemini_dir=/home/me/.cc-switch/agy/relay".to_string()],
+            args: vec!["--gemini_dir=/home/me/.switchplus/agy/relay".to_string()],
             batch_command: format!("agy \"--gemini_dir=%{AGY_DIR_BATCH_VAR}%\""),
             env: vec![
                 ("GEMINI_API_KEY", Some("k'$(echo no)`x`%PATH%".to_string())),
@@ -7713,7 +7698,7 @@ mod tests {
             ],
             batch_vars: vec![(
                 AGY_DIR_BATCH_VAR,
-                r"C:\Users\张三\.cc-switch\agy\relay".to_string(),
+                r"C:\Users\张三\.switchplus\agy\relay".to_string(),
             )],
             cleanup: Vec::new(),
         }
@@ -7724,11 +7709,11 @@ mod tests {
         let launch = agy_key_launch();
         assert_eq!(
             unix_launch_command(&launch),
-            "env -u CC_SWITCH_LAUNCH_ENV_0 -u CC_SWITCH_LAUNCH_ENV_1 -u GOOGLE_GEMINI_BASE_URL GEMINI_API_KEY=\"$CC_SWITCH_LAUNCH_ENV_0\" agy --gemini_dir=/home/me/.cc-switch/agy/relay"
+            "env -u SWITCHPLUS_LAUNCH_ENV_0 -u SWITCHPLUS_LAUNCH_ENV_1 -u GOOGLE_GEMINI_BASE_URL GEMINI_API_KEY=\"$SWITCHPLUS_LAUNCH_ENV_0\" agy --gemini_dir=/home/me/.switchplus/agy/relay"
         );
         assert_eq!(
             unix_launch_env_file(&launch),
-            "CC_SWITCH_LAUNCH_ENV_0='k'\"'\"'$(echo no)`x`%PATH%'\n"
+            "SWITCHPLUS_LAUNCH_ENV_0='k'\"'\"'$(echo no)`x`%PATH%'\n"
         );
         let plain = ProviderLaunch {
             env: Vec::new(),
@@ -7736,7 +7721,7 @@ mod tests {
         };
         assert_eq!(
             unix_launch_command(&plain),
-            "agy --gemini_dir=/home/me/.cc-switch/agy/relay"
+            "agy --gemini_dir=/home/me/.switchplus/agy/relay"
         );
         assert_eq!(unix_launch_env_file(&plain), "");
     }
@@ -7811,13 +7796,13 @@ mod tests {
         );
         assert_eq!(
             launch.batch_command,
-            "claude --dangerously-skip-permissions \"%CC_SWITCH_ARG0%\" \"%CC_SWITCH_ARG1%\""
+            "claude --dangerously-skip-permissions \"%SWITCHPLUS_ARG0%\" \"%SWITCHPLUS_ARG1%\""
         );
         assert_eq!(
             launch.batch_vars,
             vec![
-                ("CC_SWITCH_ARG0", "--append-system-prompt".to_string()),
-                ("CC_SWITCH_ARG1", "a & b | c".to_string()),
+                ("SWITCHPLUS_ARG0", "--append-system-prompt".to_string()),
+                ("SWITCHPLUS_ARG1", "a & b | c".to_string()),
             ]
         );
     }
@@ -7839,7 +7824,7 @@ mod tests {
         let mut launch = agy_key_launch();
         launch.skip_permissions();
         assert!(unix_launch_command(&launch).ends_with(
-            "agy --gemini_dir=/home/me/.cc-switch/agy/relay --dangerously-skip-permissions"
+            "agy --gemini_dir=/home/me/.switchplus/agy/relay --dangerously-skip-permissions"
         ));
         assert_eq!(
             launch.batch_command,
@@ -7858,14 +7843,14 @@ mod tests {
         assert_eq!(launch.args, vec!["--always-approve", "--model", "grok-4.6"]);
         assert_eq!(
             launch.batch_command,
-            "call grok --always-approve \"%CC_SWITCH_ARG0%\" \"%CC_SWITCH_ARG1%\""
+            "call grok --always-approve \"%SWITCHPLUS_ARG0%\" \"%SWITCHPLUS_ARG1%\""
         );
         assert_eq!(
             launch.env,
             vec![("GROK_HOME", Some("/home/me/.grok".to_string()))]
         );
         assert!(unix_launch_command(&launch).starts_with(
-            "env -u CC_SWITCH_LAUNCH_ENV_0 GROK_HOME=\"$CC_SWITCH_LAUNCH_ENV_0\" grok "
+            "env -u SWITCHPLUS_LAUNCH_ENV_0 GROK_HOME=\"$SWITCHPLUS_LAUNCH_ENV_0\" grok "
         ));
     }
 
@@ -7875,10 +7860,10 @@ mod tests {
             "Kimi",
             vec![
                 "model_provider='custom'".to_string(),
-                "model_providers.custom={name='K',base_url='https://k.example/v1?a=1&b=2'}"
+                "model_providers.switchplus={name='K',base_url='https://k.example/v1?a=1&b=2'}"
                     .to_string(),
             ],
-            vec![("CC_SWITCH_CODEX_API_KEY", Some("sk-kimi".to_string()))],
+            vec![("SWITCHPLUS_CODEX_API_KEY", Some("sk-kimi".to_string()))],
             Vec::new(),
         )
         .unwrap();
@@ -7889,16 +7874,16 @@ mod tests {
                 "-c",
                 "model_provider='custom'",
                 "-c",
-                "model_providers.custom={name='K',base_url='https://k.example/v1?a=1&b=2'}",
+                "model_providers.switchplus={name='K',base_url='https://k.example/v1?a=1&b=2'}",
                 "--dangerously-bypass-approvals-and-sandbox",
             ]
         );
         assert!(!unix_launch_command(&launch).contains("sk-kimi"));
         assert_eq!(
             launch.batch_command,
-            "call codex -c \"%CC_SWITCH_CODEX_C0%\" -c \"%CC_SWITCH_CODEX_C1%\" --dangerously-bypass-approvals-and-sandbox"
+            "call codex -c \"%SWITCHPLUS_CODEX_C0%\" -c \"%SWITCHPLUS_CODEX_C1%\" --dangerously-bypass-approvals-and-sandbox"
         );
-        assert_eq!(launch.batch_vars[1].0, "CC_SWITCH_CODEX_C1");
+        assert_eq!(launch.batch_vars[1].0, "SWITCHPLUS_CODEX_C1");
 
         let plain = codex_launch("Kimi", Vec::new(), Vec::new(), Vec::new()).unwrap();
         assert_eq!(plain.batch_command, "call codex");
@@ -7957,7 +7942,7 @@ mod tests {
         std::fs::write(
             bin.join("agy"),
             format!(
-                "#!/bin/sh\nprintf '%s\\n' \"${{GEMINI_API_KEY-unset}}\" \"${{GOOGLE_GEMINI_BASE_URL-unset}}\" \"${{CC_SWITCH_LAUNCH_ENV_0-unset}}\" \"$@\" > '{}'\n",
+                "#!/bin/sh\nprintf '%s\\n' \"${{GEMINI_API_KEY-unset}}\" \"${{GOOGLE_GEMINI_BASE_URL-unset}}\" \"${{SWITCHPLUS_LAUNCH_ENV_0-unset}}\" \"$@\" > '{}'\n",
                 out.display()
             ),
         )
@@ -7983,7 +7968,7 @@ mod tests {
         assert!(status.success());
         assert_eq!(
             std::fs::read_to_string(&out).unwrap(),
-            "k'$(echo no)`x`%PATH%\nunset\nunset\n--gemini_dir=/home/me/.cc-switch/agy/relay\n"
+            "k'$(echo no)`x`%PATH%\nunset\nunset\n--gemini_dir=/home/me/.switchplus/agy/relay\n"
         );
         assert!(
             !env_file.exists(),
@@ -7999,14 +7984,14 @@ mod tests {
             lines,
             "set \"GEMINI_API_KEY=k'$(echo no)`x`%%PATH%%\"\r\n\
              set \"GOOGLE_GEMINI_BASE_URL=\"\r\n\
-             set \"CC_SWITCH_AGY_DIR=%CC_SWITCH_INTERNAL_ENV_2%\"\r\n\
-             set \"CC_SWITCH_INTERNAL_ENV_2=\"\r\n"
+             set \"SWITCHPLUS_AGY_DIR=%SWITCHPLUS_INTERNAL_ENV_2%\"\r\n\
+             set \"SWITCHPLUS_INTERNAL_ENV_2=\"\r\n"
         );
         assert_eq!(
             carried,
             vec![(
-                "CC_SWITCH_INTERNAL_ENV_2".to_string(),
-                r"C:\Users\张三\.cc-switch\agy\relay".to_string()
+                "SWITCHPLUS_INTERNAL_ENV_2".to_string(),
+                r"C:\Users\张三\.switchplus\agy\relay".to_string()
             )]
         );
     }
@@ -8091,7 +8076,7 @@ mod tests {
     fn claude_terminal_config_shadows_what_the_switch_clears() {
         let drops = crate::services::provider::SwitchDrops {
             env: serde_json::json!({
-                "ANTHROPIC_AUTH_TOKEN": "PROXY_MANAGED",
+                "ANTHROPIC_AUTH_TOKEN": "SWITCHPLUS_PROXY_MANAGED",
                 "ANTHROPIC_DEFAULT_OPUS_MODEL": "ccs-claude-kimi--k3[1M]",
             })
             .as_object()
@@ -10473,7 +10458,7 @@ mod tests {
 
         #[test]
         fn hermes_uses_cli_update_anchor() {
-            // Hermes 自带 `hermes update`;锚定到命令行默认那处 CLI,避免 cc-switch 猜
+            // Hermes 自带 `hermes update`;锚定到命令行默认那处 CLI,避免 switchplus 猜
             // 系统 Python/pip 时撞上 Python >=3.11 或 pyenv shim 问题。
             let cmd = anchored_command_from_paths(
                 "hermes",
@@ -11196,7 +11181,7 @@ mod tests {
 
         #[test]
         fn hermes_install_uses_official_installer() {
-            // Hermes 官方 installer 会处理 Python 3.11+/uv 等运行时;不要再从 cc-switch
+            // Hermes 官方 installer 会处理 Python 3.11+/uv 等运行时;不要再从 switchplus
             // 里走 `python3 || python` pip 链。
             let cmd = install_command_for("hermes");
             assert!(
@@ -11621,18 +11606,18 @@ mod tests {
     fn effective_path_keeps_process_entries_with_non_unicode_path() {
         use std::os::windows::ffi::OsStringExt;
 
-        const CHILD: &str = "CC_SWITCH_TEST_NON_UNICODE_PATH";
+        const CHILD: &str = "SWITCHPLUS_TEST_NON_UNICODE_PATH";
         if std::env::var_os(CHILD).is_some() {
             assert!(std::env::var("PATH").is_err());
             let effective = effective_path_string();
-            assert!(effective.starts_with(r"C:\cc-switch-path-test;"));
-            assert!(effective.contains(r";D:\cc-switch-path-test"));
+            assert!(effective.starts_with(r"C:\switchplus-path-test;"));
+            assert!(effective.contains(r";D:\switchplus-path-test"));
             return;
         }
         // Use a subprocess so other tests never observe a modified process PATH.
-        let mut path: Vec<u16> = r"C:\cc-switch-path-test;C:\".encode_utf16().collect();
+        let mut path: Vec<u16> = r"C:\switchplus-path-test;C:\".encode_utf16().collect();
         path.push(0xD800); // Unpaired UTF-16 surrogate.
-        path.extend(r";D:\cc-switch-path-test".encode_utf16());
+        path.extend(r";D:\switchplus-path-test".encode_utf16());
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
@@ -12102,7 +12087,7 @@ mod tests {
             let entry = bin.join(format!("opencode.{extension}"));
             std::fs::write(
                 &entry,
-                "@echo off\r\necho arg=%~1\r\necho env=%CC_SWITCH_CAPTURE_TEST%\r\necho captured-stderr 1>&2\r\ncmd /D /C cc_switch_capture_helper.cmd\r\nexit /b %errorlevel%\r\n",
+                "@echo off\r\necho arg=%~1\r\necho env=%SWITCHPLUS_CAPTURE_TEST%\r\necho captured-stderr 1>&2\r\ncmd /D /C cc_switch_capture_helper.cmd\r\nexit /b %errorlevel%\r\n",
             )
             .unwrap();
             let canonical = std::fs::canonicalize(entry).unwrap();
@@ -12112,7 +12097,7 @@ mod tests {
                 &["models"],
                 &path,
                 CommandDeadline::from_timeout(Some(std::time::Duration::from_secs(10))),
-                &[("CC_SWITCH_CAPTURE_TEST", "preserved".into())],
+                &[("SWITCHPLUS_CAPTURE_TEST", "preserved".into())],
                 root.path(),
             )
             .unwrap();
@@ -12184,7 +12169,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .expect("clock should be after epoch")
             .as_nanos();
-        let missing = std::env::temp_dir().join(format!("cc-switch-missing-{unique}"));
+        let missing = std::env::temp_dir().join(format!("switchplus-missing-{unique}"));
 
         let error = resolve_launch_cwd(Some(missing.to_string_lossy().into_owned()))
             .expect_err("missing directory should fail");
@@ -12415,12 +12400,12 @@ mod tests {
         assert!(command.is_ascii(), "batch line must stay ASCII: {command}");
         assert_eq!(
             command,
-            "cd /d \"%CC_SWITCH_INTERNAL_CWD%\" || exit /b 1\r\nset \"CC_SWITCH_INTERNAL_CWD=\"\r\n"
+            "cd /d \"%SWITCHPLUS_INTERNAL_CWD%\" || exit /b 1\r\nset \"SWITCHPLUS_INTERNAL_CWD=\"\r\n"
         );
         assert_eq!(env.as_deref(), Some(path));
 
         let (unc_command, unc_env) = build_windows_cwd_command_str(r"\\server\共享\repo");
-        assert!(unc_command.starts_with("pushd \"%CC_SWITCH_INTERNAL_CWD%\" || exit /b 1\r\n"));
+        assert!(unc_command.starts_with("pushd \"%SWITCHPLUS_INTERNAL_CWD%\" || exit /b 1\r\n"));
         assert_eq!(unc_env.as_deref(), Some(r"\\server\共享\repo"));
     }
 }

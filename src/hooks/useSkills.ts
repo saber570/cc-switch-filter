@@ -569,10 +569,10 @@ export function useResyncSkillsToApps() {
 /**
  * CC Switch 目录下放 Skill 主副本的真实路径（改过配置目录就是改后的）
  */
-export function useCcSwitchSkillsDir(enabled = true) {
+export function useSwitchPlusSkillsDir(enabled = true) {
   return useQuery({
     queryKey: ["skills", "ccSwitchDir"],
-    queryFn: () => skillsApi.getCcSwitchSkillsDir(),
+    queryFn: () => skillsApi.getSwitchPlusSkillsDir(),
     enabled,
     staleTime: Infinity,
   });

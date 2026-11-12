@@ -9,7 +9,7 @@
 use std::time::Duration;
 
 /// 自检请求带的随机值，`/health` 原样写回响应头；对得上才算回到了自己
-pub const PROBE_HEADER: &str = "x-cc-switch-loopback-probe";
+pub const PROBE_HEADER: &str = "x-switchplus-loopback-probe";
 
 const PROBE_TIMEOUT: Duration = Duration::from_secs(5);
 

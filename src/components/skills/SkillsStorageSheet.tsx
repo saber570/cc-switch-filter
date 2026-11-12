@@ -4,7 +4,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useSettings } from "@/hooks/useSettings";
 import {
-  useCcSwitchSkillsDir,
+  useSwitchPlusSkillsDir,
   useInstalledSkills,
   useResyncSkillsToApps,
 } from "@/hooks/useSkills";
@@ -29,7 +29,7 @@ interface SkillsStorageSheetProps {
 
 const appName = (app: string) => APP_DISPLAY_NAME[app as AppId] ?? app;
 
-const DEFAULT_CC_SWITCH_DIR = "~/.cc-switch/skills";
+const DEFAULT_SWITCHPLUS_DIR = "~/.switchplus/skills";
 const UNIFIED_DIR = "~/.agents/skills";
 
 /** 和后端 SyncMethod（auto / symlink / copy）一一对应。 */
@@ -63,16 +63,16 @@ export function SkillsStorageSheet({
   const { t } = useTranslation();
   const { settings, updateSettings, autoSaveSettings } = useSettings();
   const { data: installedSkills } = useInstalledSkills();
-  const { data: ccSwitchDirRaw } = useCcSwitchSkillsDir(open);
+  const { data: ccSwitchDirRaw } = useSwitchPlusSkillsDir(open);
   const resyncMutation = useResyncSkillsToApps();
 
   const location: SkillStorageLocation =
-    settings?.skillStorageLocation ?? "cc_switch";
+    settings?.skillStorageLocation ?? "switch_plus";
   const syncMethod: SkillSyncMethod = settings?.skillSyncMethod ?? "auto";
   const installedCount = installedSkills?.length ?? 0;
   const ccSwitchDir = ccSwitchDirRaw
     ? shortenHomePath(ccSwitchDirRaw)
-    : DEFAULT_CC_SWITCH_DIR;
+    : DEFAULT_SWITCHPLUS_DIR;
 
   // 单选只是「想换到哪」；点「移动并切换…」才真正迁移
   const [pendingLocation, setPendingLocation] =
@@ -133,7 +133,7 @@ export function SkillsStorageSheet({
 
   const handleOpenFolder = async () => {
     try {
-      await skillsApi.openCcSwitchSkillsDir();
+      await skillsApi.openSwitchPlusSkillsDir();
     } catch (error) {
       toast.error(t("common.error"), {
         description: extractErrorMessage(error) || String(error),
@@ -210,12 +210,12 @@ export function SkillsStorageSheet({
                     type="radio"
                     name="skills-storage-location"
                     className={RADIO_CLASS}
-                    checked={pendingLocation === "cc_switch"}
+                    checked={pendingLocation === "switch_plus"}
                     disabled={isMigrating}
                     aria-describedby="skills-storage-cc-path"
-                    onChange={() => setPendingLocation("cc_switch")}
+                    onChange={() => setPendingLocation("switch_plus")}
                   />
-                  {t("skills.storageSheet.locationCcSwitch")}
+                  {t("skills.storageSheet.locationSwitchPlus")}
                 </label>
                 <div className="flex min-w-0 items-center gap-2 pl-[26px]">
                   <code

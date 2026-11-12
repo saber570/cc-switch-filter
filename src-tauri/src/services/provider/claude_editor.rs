@@ -472,7 +472,7 @@ mod tests {
         let live = json!({
             "env": {
                 "ANTHROPIC_BASE_URL": "http://127.0.0.1:15721",
-                "ANTHROPIC_AUTH_TOKEN": "PROXY_MANAGED",
+                "ANTHROPIC_AUTH_TOKEN": "SWITCHPLUS_PROXY_MANAGED",
                 "ANTHROPIC_DEFAULT_OPUS_MODEL": "ccs-claude-kimi--k3[1M]",
                 "ANTHROPIC_DEFAULT_SONNET_MODEL": "ccs-claude-kimi--k3[1M]",
                 "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "128000",

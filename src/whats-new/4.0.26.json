@@ -19,7 +19,7 @@
       "type": "new",
       "zh": "系统代理接走本地路由的请求时会提醒你",
       "zh-TW": "系統代理接走本地路由的請求時會提醒你",
-      "en": "CC Switch warns you when the system proxy captures local route requests",
+      "en": "SwitchPlus warns you when the system proxy captures local route requests",
       "ja": "システムプロキシがローカルルーティングの通信を横取りすると警告"
     },
     {

@@ -20,7 +20,7 @@ import { useUpdate } from "@/contexts/UpdateContext";
 import { Badge } from "@/components/ui/badge";
 import { WhatsNewDialog } from "@/components/WhatsNewDialog";
 import { WHATS_NEW_ENTRIES, entriesUpTo } from "@/lib/whatsNew";
-import ccswitchLogo from "@/assets/icons/logo.svg";
+import switchplusLogo from "@/assets/icons/logo.svg";
 import { extractErrorMessage } from "@/utils/errorUtils";
 
 interface AboutSectionProps {
@@ -31,7 +31,7 @@ interface AboutSectionProps {
 let appVersionCache: string | null = null;
 
 // 邀 Star 条关掉后记在本机（纯界面偏好，不进库、不随云同步）
-const STAR_PROMPT_DISMISSED_KEY = "ccswitch:about:starPromptDismissed";
+const STAR_PROMPT_DISMISSED_KEY = "switchplus:about:starPromptDismissed";
 
 function readStarPromptDismissed(): boolean {
   try {
@@ -198,13 +198,14 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
     <div className="divide-y divide-border overflow-hidden rounded-panel border border-border bg-surface">
       <div className="flex flex-wrap items-center gap-4 px-5 py-4">
         <img
-          src={ccswitchLogo}
+          src={switchplusLogo}
           alt=""
           draggable={false}
           className="h-10 w-10 shrink-0 p-1"
         />
         <div className="min-w-0 flex-1">
-          <div className="text-title text-fg-1">CC Switch</div>
+          <div className="text-title text-fg-1">SwitchPlus</div>
+          <div className="text-caption text-fg-2">chow</div>
           <div className="flex flex-wrap items-center gap-2 text-caption text-fg-2">
             {isLoadingVersion ? (
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -227,7 +228,8 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
           variant={hasUpdate ? "solid" : "neutral"}
           size="regular"
           onClick={handleCheckUpdate}
-          disabled={isChecking || isDownloading}
+          disabled
+          title={t("settings.localBuildUpdateHint")}
         >
           {isDownloading ? (
             <>
@@ -249,7 +251,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
           ) : (
             <>
               <RefreshCw className="h-3.5 w-3.5" />
-              {t("settings.checkForUpdates")}
+              {t("settings.localBuildUpdateLabel")}
             </>
           )}
         </Button>
@@ -280,7 +282,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
             onClick={handleOpenGithub}
           >
             <Github className="h-3.5 w-3.5" />
-            {t("settings.github")}
+            CC Switch · GitHub
           </Button>
         )}
         <Button
@@ -290,7 +292,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
           onClick={() => settingsApi.openExternal("https://ccswitch.io")}
         >
           <Globe className="h-3.5 w-3.5" />
-          {t("settings.officialWebsite")}
+          CC Switch · {t("settings.officialWebsite")}
         </Button>
         <Button
           type="button"
@@ -299,7 +301,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
           onClick={handleOpenReleaseNotes}
         >
           <ExternalLink className="h-3.5 w-3.5" />
-          {t("settings.releaseNotes")}
+          CC Switch · {t("settings.releaseNotes")}
         </Button>
         {recentEntries.length > 0 && (
           <Button
@@ -314,7 +316,7 @@ export function AboutSection({ isPortable }: AboutSectionProps) {
         )}
       </div>
 
-      {/* 下载与更新都走 ccswitch.io，用户不再经过仓库页，邀 Star 单独占一行；按钮即 GitHub 入口。
+      {/* 本地构建保留上游项目链接用于来源说明。
           关掉后链接行补回 GitHub 按钮 */}
       {!starPromptDismissed && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3 bg-action-soft py-3.5 ps-5 pe-3">

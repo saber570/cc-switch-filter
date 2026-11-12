@@ -881,7 +881,7 @@ describe("PiProviderForm", () => {
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
-      providerKey: "cc-switch-kimi",
+      providerKey: "switchplus-kimi",
       name: "Kimi",
       presetCategory: "cn_official",
     });
@@ -2386,7 +2386,7 @@ describe("PiProviderForm", () => {
     render(
       <PiProviderForm
         appId="pi"
-        providerId="cc-switch-kimi"
+        providerId="switchplus-kimi"
         submitLabel="Save external Kimi node"
         onSubmit={onSubmit}
         onCancel={() => {}}
@@ -2462,7 +2462,7 @@ describe("PiProviderForm", () => {
           },
         },
       ],
-      nativeOptionNotExposedByCcSwitch: {
+      nativeOptionNotExposedBySwitchPlus: {
         enabled: true,
         value: 3,
       },

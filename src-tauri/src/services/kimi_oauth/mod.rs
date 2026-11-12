@@ -496,7 +496,7 @@ fn identify(request: reqwest::RequestBuilder, device_id: &str) -> reqwest::Reque
         .header("Accept", "application/json")
         .header(
             "User-Agent",
-            concat!("cc-switch/", env!("CARGO_PKG_VERSION")),
+            concat!("switchplus/", env!("CARGO_PKG_VERSION")),
         )
         .header("X-Msh-Platform", "kimi_code_cli")
         .header("X-Msh-Version", env!("CARGO_PKG_VERSION"))

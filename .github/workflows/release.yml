@@ -1,10 +1,6 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
-  # 手动触发即干跑：完整编译、签名、公证，产物只留在 workflow 里，不建 GitHub Release
   workflow_dispatch:
 
 permissions:
@@ -60,6 +56,7 @@ jobs:
         run: pnpm vitest run tests/config/whatsNewEntries.test.ts
 
   release:
+    if: false # SwitchPlus local build: configure independent signing before publishing.
     needs: whats-new-check
     runs-on: ${{ matrix.os }}
     environment: release

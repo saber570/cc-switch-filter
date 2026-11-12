@@ -269,7 +269,7 @@ async fn handshake<T: Transport<RoleClient> + 'static>(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let client = ClientInfo {
         client_info: Implementation {
-            name: "cc-switch-connectivity".into(),
+            name: "switchplus-connectivity".into(),
             version: env!("CARGO_PKG_VERSION").into(),
             ..Default::default()
         },

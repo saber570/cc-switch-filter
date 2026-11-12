@@ -70,7 +70,7 @@ fn seed_all_providers(state: &cc_switch_lib::AppState) {
                 "relay",
                 json!({
                     "auth": { "OPENAI_API_KEY": "sk-relay" },
-                    "config": "model_provider = \"custom\"\nmodel = \"relay-model\"\n\n[model_providers.custom]\nname = \"custom\"\nbase_url = \"https://relay.example/v1\"\nwire_api = \"responses\"\n",
+                    "config": "model_provider = \"switchplus\"\nmodel = \"relay-model\"\n\n[model_providers.switchplus]\nname = \"custom\"\nbase_url = \"https://relay.example/v1\"\nwire_api = \"responses\"\n",
                     "modelCatalog": { "models": [{ "model": "relay-model" }] }
                 }),
                 None,
@@ -171,7 +171,7 @@ fn switch_keeps_private_modes_of_existing_files() {
 
     for inventory in [after_official, after_third_party] {
         for line in inventory.lines() {
-            if line.ends_with("cc-switch-model-catalog.json 644") {
+            if line.ends_with("switchplus-model-catalog.json 644") {
                 continue; // CC Switch 自己新建的模型目录，不是预置文件
             }
             assert!(

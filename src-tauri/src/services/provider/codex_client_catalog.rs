@@ -680,14 +680,14 @@ mod tests {
     impl Scope {
         fn new() -> Self {
             let dir = tempfile::TempDir::new().unwrap();
-            let saved = std::env::var_os("CC_SWITCH_TEST_HOME");
-            std::env::set_var("CC_SWITCH_TEST_HOME", dir.path());
+            let saved = std::env::var_os("SWITCHPLUS_TEST_HOME");
+            std::env::set_var("SWITCHPLUS_TEST_HOME", dir.path());
             std::fs::create_dir_all(get_codex_config_dir()).unwrap();
             Self { dir, saved }
         }
 
         fn store(&self) -> DeviceStore {
-            DeviceStore::at(self.dir.path().join(".cc-switch"))
+            DeviceStore::at(self.dir.path().join(".switchplus"))
         }
     }
 
@@ -695,8 +695,8 @@ mod tests {
         fn drop(&mut self) {
             reset_test_env();
             match self.saved.take() {
-                Some(value) => std::env::set_var("CC_SWITCH_TEST_HOME", value),
-                None => std::env::remove_var("CC_SWITCH_TEST_HOME"),
+                Some(value) => std::env::set_var("SWITCHPLUS_TEST_HOME", value),
+                None => std::env::remove_var("SWITCHPLUS_TEST_HOME"),
             }
         }
     }
@@ -791,7 +791,7 @@ mod tests {
             Some(content) => {
                 std::fs::write(
                     &config,
-                    "openai_base_url = \"http://127.0.0.1:15721/v1\"\nmodel_catalog_json = \"cc-switch-model-catalog.json\"\n",
+                    "openai_base_url = \"http://127.0.0.1:15721/v1\"\nmodel_catalog_json = \"switchplus-model-catalog.json\"\n",
                 )
                 .unwrap();
                 std::fs::write(get_codex_model_catalog_path(), content).unwrap();

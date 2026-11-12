@@ -33,8 +33,8 @@ describe("interfacePrefs", () => {
   });
 
   it("applies the stored density and zoom on startup", async () => {
-    localStorage.setItem("cc-switch-density", "comfortable");
-    localStorage.setItem("cc-switch-zoom", "1.25");
+    localStorage.setItem("switchplus-density", "comfortable");
+    localStorage.setItem("switchplus-zoom", "1.25");
     const prefs = await load();
     prefs.initializeInterfacePrefs();
 
@@ -43,8 +43,8 @@ describe("interfacePrefs", () => {
   });
 
   it("ignores stored values that are not a known density or zoom level", async () => {
-    localStorage.setItem("cc-switch-density", "spacious");
-    localStorage.setItem("cc-switch-zoom", "3");
+    localStorage.setItem("switchplus-density", "spacious");
+    localStorage.setItem("switchplus-zoom", "3");
     const prefs = await load();
     prefs.initializeInterfacePrefs();
 
@@ -57,7 +57,7 @@ describe("interfacePrefs", () => {
     prefs.setDensity("comfortable");
 
     expect(document.documentElement.dataset.density).toBe("comfortable");
-    expect(localStorage.getItem("cc-switch-density")).toBe("comfortable");
+    expect(localStorage.getItem("switchplus-density")).toBe("comfortable");
   });
 
   it("steps zoom one level at a time and stops at both ends", async () => {
@@ -67,7 +67,7 @@ describe("interfacePrefs", () => {
     prefs.stepZoom(1);
     prefs.stepZoom(1);
     expect(setZoomMock).toHaveBeenLastCalledWith(1.25);
-    expect(localStorage.getItem("cc-switch-zoom")).toBe("1.25");
+    expect(localStorage.getItem("switchplus-zoom")).toBe("1.25");
 
     setZoomMock.mockClear();
     prefs.stepZoom(1);

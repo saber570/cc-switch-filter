@@ -129,7 +129,7 @@ describe("ClaudeOfficialSection", () => {
   });
 
   it("says the link was copied when the browser is not to be opened", () => {
-    window.localStorage.setItem("cc-switch.authCenter.openBrowser", "0");
+    window.localStorage.setItem("switchplus.authCenter.openBrowser", "0");
     const auth = baseAuth();
     Object.assign(auth, {
       isPolling: true,
@@ -154,7 +154,7 @@ describe("ClaudeOfficialSection", () => {
     expect(
       screen.queryByRole("button", { name: "重新打开登录页" }),
     ).not.toBeInTheDocument();
-    window.localStorage.removeItem("cc-switch.authCenter.openBrowser");
+    window.localStorage.removeItem("switchplus.authCenter.openBrowser");
   });
 
   it("offers re-login once the login has expired", async () => {

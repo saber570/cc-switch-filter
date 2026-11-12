@@ -246,12 +246,12 @@ mod tests {
     }
 
     const LIVE: &str = r#"# 用户的注释
-model_provider = "custom"
+model_provider = "switchplus"
 model = "gpt-a"   # 行尾注释
 approval_policy = "on-request"
 openai_base_url = "https://stale.example/v1"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = "A"
 base_url = "https://a.example/v1"
 experimental_bearer_token = "sk-a"
@@ -293,11 +293,11 @@ command = "fs-server"
         assert_eq!(
             out,
             r#"# 用户的注释
-model_provider = "custom"
+model_provider = "switchplus"
 model = "gpt-b"   # 行尾注释
 approval_policy = "on-request"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = "B"
 base_url = "https://b.example/v1"
 

@@ -105,7 +105,7 @@ function adaptiveEffortOptions(model: PiPresetModel): string[] {
 export const mcodeOnlyPiPresets: PiProviderPreset[] = [
   {
     name: "OpenAI API",
-    providerKey: "cc-switch-openai-api",
+    providerKey: "switchplus-openai-api",
     websiteUrl: "https://platform.openai.com",
     apiKeyUrl: "https://platform.openai.com/api-keys",
     settingsConfig: {

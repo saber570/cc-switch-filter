@@ -627,8 +627,8 @@ async fn respond(
     stream.shutdown().await
 }
 
-const PAGE_DONE: &str = "<!doctype html><meta charset=utf-8><title>CC Switch</title><body style=\"font-family:system-ui;padding:48px\"><h2>登录成功 · Signed in</h2><p>可以关闭这个页面，回到 CC Switch。<br>You can close this page and return to CC Switch.</p></body>";
-const PAGE_FAILED: &str = "<!doctype html><meta charset=utf-8><title>CC Switch</title><body style=\"font-family:system-ui;padding:48px\"><h2>登录没有完成 · Sign-in not completed</h2><p>回到 CC Switch 重试。<br>Return to CC Switch and try again.</p></body>";
+const PAGE_DONE: &str = "<!doctype html><meta charset=utf-8><title>SwitchPlus</title><body style=\"font-family:system-ui;padding:48px\"><h2>登录成功 · Signed in</h2><p>可以关闭这个页面，回到 SwitchPlus。<br>You can close this page and return to SwitchPlus.</p></body>";
+const PAGE_FAILED: &str = "<!doctype html><meta charset=utf-8><title>SwitchPlus</title><body style=\"font-family:system-ui;padding:48px\"><h2>登录没有完成 · Sign-in not completed</h2><p>回到 SwitchPlus 重试。<br>Return to SwitchPlus and try again.</p></body>";
 
 /// `Ok(false)` while waiting for the browser; `Ok(true)` once the login is stored.
 pub fn poll_login(flow_id: &str) -> Result<bool, String> {

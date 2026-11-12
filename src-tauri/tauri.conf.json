@@ -1,8 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "CC Switch",
-  "version": "4.0.28",
-  "identifier": "com.ccswitch.desktop",
+  "productName": "SwitchPlus",
+  "mainBinaryName": "SwitchPlus",
+  "version": "4.0.29",
+  "identifier": "com.switchplus.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
@@ -14,9 +15,12 @@
     "windows": [
       {
         "label": "main",
-        "title": "",
+        "title": "SwitchPlus",
         "titleBarStyle": "Overlay",
-        "trafficLightPosition": { "x": 14, "y": 16 },
+        "trafficLightPosition": {
+          "x": 14,
+          "y": 16
+        },
         "width": 1000,
         "height": 650,
         "minWidth": 900,
@@ -38,7 +42,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -53,20 +57,16 @@
     },
     "macOS": {
       "minimumSystemVersion": "12.0"
-    }
+    },
+    "publisher": "chow"
   },
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["ccswitch"]
+        "schemes": [
+          "switchplus"
+        ]
       }
-    },
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM4MDI4QzlBNTczOTI4RTMKUldUaktEbFhtb3dDeUM5US9kT0FmdGR5Ti9vQzcwa2dTMlpibDVDUmQ2M0VGTzVOWnd0SGpFVlEK",
-      "endpoints": [
-        "https://dl.ccswitch.io/latest.json",
-        "https://github.com/farion1231/cc-switch/releases/latest/download/latest.json"
-      ]
     }
   }
 }

@@ -1,7 +1,7 @@
 //! 「打开终端」用某张 Codex 卡启动 `codex`：只对这一个进程生效，不写 `config.toml`。
 //!
 //! 办法是 `codex -c key=value`，但它和 `config.toml` 是逐层合并的（0.164 实测）：给
-//! `model_providers.custom` 传一整张表，原表里没被覆盖的键（请求头、查询参数、bearer）照样
+//! `model_providers.switchplus` 传一整张表，原表里没被覆盖的键（请求头、查询参数、bearer）照样
 //! 留着；顶层的键也只能改值、不能删。所以切到这张卡时会变的键这里都显式写一遍：
 //!
 //! - 路由表：Key 改用 `env_key` 经环境变量传，不出现在命令行上，也压得住原表留下的
@@ -35,7 +35,7 @@ use crate::provider::Provider;
 use super::codex_direct::{self, PROXY_KEPT_CLIENT_KEYS};
 
 /// 卡上的 Key 经这个环境变量交给 Codex（路由表的 `env_key`）。
-pub(crate) const API_KEY_ENV: &str = "CC_SWITCH_CODEX_API_KEY";
+pub(crate) const API_KEY_ENV: &str = "SWITCHPLUS_CODEX_API_KEY";
 
 /// 上一家留下了推理强度、这张卡又没有模型目录时写的值。Codex 不设置时对目录外的模型
 /// 不发 `reasoning.effort`（0.164 实测），`-c` 写不出「不发」，退而用各家都认的 medium，
@@ -530,11 +530,11 @@ requires_openai_auth = true
         let live = r#"model = "gpt-6-astra"
 model_reasoning_effort = "xhigh"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = "Old"
 base_url = "http://127.0.0.1:15721/v1"
 wire_api = "responses"
-experimental_bearer_token = "PROXY_MANAGED"
+experimental_bearer_token = "SWITCHPLUS_PROXY_MANAGED"
 "#;
         let launch = build(&provider(KIMI, "sk-kimi"), live).unwrap();
         assert_eq!(launch.env, vec![(API_KEY_ENV, Some("sk-kimi".to_string()))]);
@@ -544,7 +544,7 @@ experimental_bearer_token = "PROXY_MANAGED"
         let table = launch
             .overrides
             .iter()
-            .find(|o| o.starts_with("model_providers.custom="))
+            .find(|o| o.starts_with("model_providers.switchplus="))
             .expect("route table");
         assert!(table.contains("base_url='https://api.moonshot.cn/v1'"));
         assert!(table.contains(&format!("env_key='{API_KEY_ENV}'")));
@@ -562,9 +562,9 @@ experimental_bearer_token = "PROXY_MANAGED"
 
     #[test]
     fn leftover_headers_in_the_live_table_refuse_to_open() {
-        let live = r#"model_provider = "custom"
+        let live = r#"model_provider = "switchplus"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = "Other"
 base_url = "https://other.example/v1"
 http_headers = { "X-Api-Key" = "other-secret" }
@@ -572,7 +572,7 @@ http_headers = { "X-Api-Key" = "other-secret" }
         let err = build(&provider(KIMI, "sk-kimi"), live).unwrap_err();
         assert!(err
             .to_string()
-            .contains("model_providers.custom.http_headers"));
+            .contains("model_providers.switchplus.http_headers"));
     }
 
     #[test]
@@ -584,7 +584,7 @@ model_provider = "local"
 name = "Local"
 base_url = "http://localhost:8080/v1"
 "#;
-        let live = r#"[model_providers.custom]
+        let live = r#"[model_providers.switchplus]
 name = "Paid"
 base_url = "https://paid.example/v1"
 experimental_bearer_token = "sk-paid"
@@ -592,7 +592,7 @@ experimental_bearer_token = "sk-paid"
         let err = build(&provider(config, ""), live).unwrap_err();
         assert!(err
             .to_string()
-            .contains("model_providers.custom.experimental_bearer_token"));
+            .contains("model_providers.switchplus.experimental_bearer_token"));
     }
 
     #[test]

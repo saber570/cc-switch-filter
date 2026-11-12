@@ -1,6 +1,6 @@
 //! Provider import from deep link
 //!
-//! Handles importing provider configurations via ccswitch:// URLs.
+//! Handles importing provider configurations via switchplus:// URLs.
 
 use super::codex_link::{self, CodexLinkConfig};
 use super::grok_link::GrokLinkProfile;
@@ -826,11 +826,11 @@ fn build_codex_settings(request: &DeepLinkImportRequest) -> Result<serde_json::V
 
     // Build config.toml content
     let config_toml = format!(
-        r#"model_provider = "custom"
+        r#"model_provider = "switchplus"
 model = {model_name}
 model_reasoning_effort = "high"
 
-[model_providers.custom]
+[model_providers.switchplus]
 name = {provider_display_name}
 base_url = {endpoint}
 wire_api = "responses"
@@ -1565,8 +1565,8 @@ mod tests {
     #[test]
     #[serial_test::serial]
     fn grokbuild_deeplink_never_carries_env_key_or_resolved_secret() {
-        let original = std::env::var_os("CC_SWITCH_DEEPLINK_ENV_PROBE");
-        std::env::set_var("CC_SWITCH_DEEPLINK_ENV_PROBE", "secret-must-not-leak");
+        let original = std::env::var_os("SWITCHPLUS_DEEPLINK_ENV_PROBE");
+        std::env::set_var("SWITCHPLUS_DEEPLINK_ENV_PROBE", "secret-must-not-leak");
 
         let mut request = DeepLinkImportRequest {
             resource: "provider".to_string(),
@@ -1580,7 +1580,7 @@ mod tests {
                 "[model.\"grok-env\"]\nmodel = \"grok-4.5\"\n",
                 "base_url = \"https://attacker.example/v1\"\nname = \"Attacker\"\n",
                 "api_key = \"sk-declared-by-link\"\n",
-                "env_key = \"CC_SWITCH_DEEPLINK_ENV_PROBE\"\n",
+                "env_key = \"SWITCHPLUS_DEEPLINK_ENV_PROBE\"\n",
                 "api_backend = \"responses\"\ncontext_window = 500000\n",
             )
         });
@@ -1603,8 +1603,8 @@ mod tests {
         );
 
         match original {
-            Some(value) => std::env::set_var("CC_SWITCH_DEEPLINK_ENV_PROBE", value),
-            None => std::env::remove_var("CC_SWITCH_DEEPLINK_ENV_PROBE"),
+            Some(value) => std::env::set_var("SWITCHPLUS_DEEPLINK_ENV_PROBE", value),
+            None => std::env::remove_var("SWITCHPLUS_DEEPLINK_ENV_PROBE"),
         }
     }
 
@@ -1624,14 +1624,14 @@ mod tests {
         // 拒绝——测试就退化成只覆盖"没有 key 时报错"，对"不得解析环境变量"这条
         // 真正的安全属性零覆盖。设上之后，一旦有人恢复回退解析，api_key 会变成
         // 非空、拒绝不再触发，这条断言立刻变红。
-        let original = std::env::var_os("CC_SWITCH_DEEPLINK_ENV_PROBE");
-        std::env::set_var("CC_SWITCH_DEEPLINK_ENV_PROBE", "secret-must-not-leak");
+        let original = std::env::var_os("SWITCHPLUS_DEEPLINK_ENV_PROBE");
+        std::env::set_var("SWITCHPLUS_DEEPLINK_ENV_PROBE", "secret-must-not-leak");
 
         let config_toml = concat!(
             "[models]\ndefault = \"grok-env\"\n\n",
             "[model.\"grok-env\"]\nmodel = \"grok-4.5\"\n",
             "base_url = \"https://attacker.example/v1\"\nname = \"Attacker\"\n",
-            "env_key = \"CC_SWITCH_DEEPLINK_ENV_PROBE\"\n",
+            "env_key = \"SWITCHPLUS_DEEPLINK_ENV_PROBE\"\n",
             "api_backend = \"responses\"\ncontext_window = 500000\n",
         );
         let request = DeepLinkImportRequest {
@@ -1646,8 +1646,8 @@ mod tests {
         let result = parse_and_merge_config(&request);
 
         match original {
-            Some(value) => std::env::set_var("CC_SWITCH_DEEPLINK_ENV_PROBE", value),
-            None => std::env::remove_var("CC_SWITCH_DEEPLINK_ENV_PROBE"),
+            Some(value) => std::env::set_var("SWITCHPLUS_DEEPLINK_ENV_PROBE", value),
+            None => std::env::remove_var("SWITCHPLUS_DEEPLINK_ENV_PROBE"),
         }
 
         let err = result.expect_err(

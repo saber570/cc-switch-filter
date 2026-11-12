@@ -545,7 +545,7 @@ pub fn set_provider_with_format(
         };
 
         // 判空要连「存在但不是对象」一起算：否则写入会静默失效——界面显示添加成功而
-        // 文件里没有。provider 段是 cc-switch 的投影区，归一化不会碰用户自有的
+        // 文件里没有。provider 段是 switchplus 的投影区，归一化不会碰用户自有的
         // model / theme 等顶层配置；providers 是原生声明，格式有误时拒绝而不是清空。
         match full_config.get(key) {
             Some(Value::Object(_)) => {}
@@ -708,8 +708,8 @@ mod tests {
     struct TestHomeGuard(Option<std::ffi::OsString>, crate::settings::AppSettings);
     impl TestHomeGuard {
         fn set(home: &std::path::Path) -> Self {
-            let previous_env = std::env::var_os("CC_SWITCH_TEST_HOME");
-            std::env::set_var("CC_SWITCH_TEST_HOME", home);
+            let previous_env = std::env::var_os("SWITCHPLUS_TEST_HOME");
+            std::env::set_var("SWITCHPLUS_TEST_HOME", home);
             let guard = Self(previous_env, crate::settings::get_settings());
             crate::settings::update_settings(Default::default()).unwrap();
             guard
@@ -719,8 +719,8 @@ mod tests {
         fn drop(&mut self) {
             crate::settings::update_settings(self.1.clone()).unwrap();
             match self.0.take() {
-                Some(value) => std::env::set_var("CC_SWITCH_TEST_HOME", value),
-                None => std::env::remove_var("CC_SWITCH_TEST_HOME"),
+                Some(value) => std::env::set_var("SWITCHPLUS_TEST_HOME", value),
+                None => std::env::remove_var("SWITCHPLUS_TEST_HOME"),
             }
         }
     }

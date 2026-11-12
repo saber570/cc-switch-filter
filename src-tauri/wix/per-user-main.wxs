@@ -53,9 +53,9 @@
              Newer tauri-plugin-updater versions only pass AUTOLAUNCHAPP while restart_after_install is
              enabled (the default). If that is ever turned off, an update install falls back to the polite
              close request and nothing is terminated. -->
-        <util:CloseApplication Id="TerminateAppForUpdate" Target="cc-switch.exe"
+        <util:CloseApplication Id="TerminateAppForUpdate" Target="SwitchPlus.exe"
                                CloseMessage="no" TerminateProcess="0" RebootPrompt="no">AUTOLAUNCHAPP</util:CloseApplication>
-        <util:CloseApplication Id="CloseAppForInstall" Target="cc-switch.exe"
+        <util:CloseApplication Id="CloseAppForInstall" Target="SwitchPlus.exe"
                                CloseMessage="yes" RebootPrompt="no">NOT AUTOLAUNCHAPP</util:CloseApplication>
 
         <!-- Whether the desktop shortcut is still there before this install runs (AppSearch runs before the old version is removed) -->
@@ -273,10 +273,10 @@
 						  Target="[System64Folder]msiexec.exe"
 						  Arguments="/x [ProductCode]" />
 
-                <RemoveFile Id="RemoveUserProgramsFiles" Directory="TauriLocalAppDataPrograms" Name="*" On="uninstall" />
-                <RemoveFolder Id="RemoveUserProgramsFolder" Directory="TauriLocalAppDataPrograms" On="uninstall" />
 
-				<RemoveFolder Id="INSTALLDIR"
+				<!-- Remove only an empty Programs directory; never delete shared files. -->
+                <RemoveFolder Id="RemoveUserProgramsFolder" Directory="TauriLocalAppDataPrograms" On="uninstall" />
+                <RemoveFolder Id="INSTALLDIR"
 							  On="uninstall" />
 
 				<RegistryValue Root="HKCU"

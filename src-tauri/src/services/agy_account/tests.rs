@@ -224,7 +224,7 @@ mod switching {
     #[test]
     #[ignore]
     fn real_keychain_round_trip_on_a_test_item() {
-        let store = keychain::SystemKeychain::named("cc-switch-agy-selftest", "probe");
+        let store = keychain::SystemKeychain::named("switchplus-agy-selftest", "probe");
         let first = keychain::encode(&credential("probe", "one")).unwrap();
         store.write(&first).unwrap();
         assert_eq!(store.read().unwrap().as_deref(), Some(first.as_str()));
@@ -235,7 +235,7 @@ mod switching {
             .args([
                 "delete-generic-password",
                 "-s",
-                "cc-switch-agy-selftest",
+                "switchplus-agy-selftest",
                 "-a",
                 "probe",
             ])

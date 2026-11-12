@@ -1157,7 +1157,7 @@ export const providerPresets: ProviderPreset[] = [
     websiteUrl: "https://alltokens.si",
     // 站点关闭了个人注册（/api/status 的 register_enabled=false），只能企业注册
     apiKeyUrl: "https://alltokens.si/enterprise-register",
-    // 官方 CC Switch 接入文档（alltokens.si/docs/cc-switch/configure）：Anthropic
+    // 官方 CC Switch 接入文档（alltokens.si/docs/switchplus/configure）：Anthropic
     // base 用站点根。目录里 Claude ID 用点号（claude-sonnet-5.5，非 5-5），没有
     // Haiku（alltokens.si/api/pricing，2026-10-19），故四档全部写明、Haiku 指向 Sonnet
     settingsConfig: {

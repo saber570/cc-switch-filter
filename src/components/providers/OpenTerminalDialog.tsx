@@ -24,13 +24,13 @@ import { extractErrorMessage } from "@/utils/errorUtils";
 import { cn } from "@/lib/utils";
 import { providerNeedsRouting } from "@/utils/providerCapabilities";
 
-const STORAGE_KEY = "cc-switch:terminal:recent-dirs";
+const STORAGE_KEY = "switchplus:terminal:recent-dirs";
 const MAX_RECENT = 5;
 /** 跳过权限确认按应用分别记住：同一个人可能只在其中一个工具里这么用 */
 const skipPermissionsKey = (appId: AppId) =>
-  `cc-switch:terminal:skip-permissions:${appId}`;
+  `switchplus:terminal:skip-permissions:${appId}`;
 /** 附加参数同样按应用记住：各个 CLI 的参数互不通用 */
-const extraArgsKey = (appId: AppId) => `cc-switch:terminal:extra-args:${appId}`;
+const extraArgsKey = (appId: AppId) => `switchplus:terminal:extra-args:${appId}`;
 
 function readRecent(): string[] {
   try {

@@ -46,7 +46,7 @@ use std::sync::Arc;
 use tauri::Manager;
 use tokio::sync::RwLock;
 
-const PROXY_AUTH_PLACEHOLDER: &str = "PROXY_MANAGED";
+const PROXY_AUTH_PLACEHOLDER: &str = "SWITCHPLUS_PROXY_MANAGED";
 
 /// Whether the upstream belongs to the OpenCode gateway (`opencode.ai`).
 ///
@@ -2076,7 +2076,7 @@ impl RequestForwarder {
             && !codex_responses_to_anthropic
         {
             if codex_official_auth_passthrough {
-                if super::providers::codex_compaction::scrub_ccswitch_state_for_official(
+                if super::providers::codex_compaction::scrub_switchplus_state_for_official(
                     &mut request_body,
                 ) {
                     log::debug!(
@@ -2459,7 +2459,7 @@ impl RequestForwarder {
         let opencode_fallback_user_agent =
             if custom_user_agent.is_none() && is_opencode_upstream(upstream_host.as_deref()) {
                 Some(http::HeaderValue::from_static(concat!(
-                    "cc-switch/",
+                    "switchplus/",
                     env!("CARGO_PKG_VERSION")
                 )))
             } else {
@@ -4424,7 +4424,7 @@ fn reject_proxy_placeholder_for_managed_account_upstream(
     }
 
     Err(ProxyError::AuthError(
-        "Managed account proxy auth was not resolved; PROXY_MANAGED must not be sent upstream"
+        "Managed account proxy auth was not resolved; SWITCHPLUS_PROXY_MANAGED must not be sent upstream"
             .to_string(),
     ))
 }
@@ -4802,7 +4802,7 @@ mod tests {
             "api.anthropic.com",
             "notopencode.ai",
             "example.com",
-            "127.0.0.1:15721",
+            "127.0.0.1:15731",
         ] {
             assert!(
                 !is_opencode_upstream(Some(host)),
@@ -5419,7 +5419,7 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(
             "authorization",
-            HeaderValue::from_static("Bearer PROXY_MANAGED"),
+            HeaderValue::from_static("Bearer SWITCHPLUS_PROXY_MANAGED"),
         );
 
         let err = reject_proxy_placeholder_for_managed_account_upstream(
@@ -5430,7 +5430,7 @@ mod tests {
 
         assert!(matches!(
             err,
-            ProxyError::AuthError(message) if message.contains("PROXY_MANAGED")
+            ProxyError::AuthError(message) if message.contains("SWITCHPLUS_PROXY_MANAGED")
         ));
 
         let xai_err = reject_proxy_placeholder_for_managed_account_upstream(
@@ -5440,7 +5440,7 @@ mod tests {
         .expect_err("xAI placeholder should be rejected before upstream");
         assert!(matches!(
             xai_err,
-            ProxyError::AuthError(message) if message.contains("PROXY_MANAGED")
+            ProxyError::AuthError(message) if message.contains("SWITCHPLUS_PROXY_MANAGED")
         ));
     }
 
@@ -5449,7 +5449,7 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(
             "authorization",
-            HeaderValue::from_static("Bearer PROXY_MANAGED"),
+            HeaderValue::from_static("Bearer SWITCHPLUS_PROXY_MANAGED"),
         );
 
         let err = reject_proxy_placeholder_for_managed_account_upstream(
@@ -5460,7 +5460,7 @@ mod tests {
 
         assert!(matches!(
             err,
-            ProxyError::AuthError(message) if message.contains("PROXY_MANAGED")
+            ProxyError::AuthError(message) if message.contains("SWITCHPLUS_PROXY_MANAGED")
         ));
     }
 
@@ -5469,7 +5469,7 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(
             "authorization",
-            HeaderValue::from_static("Bearer PROXY_MANAGED"),
+            HeaderValue::from_static("Bearer SWITCHPLUS_PROXY_MANAGED"),
         );
 
         reject_proxy_placeholder_for_managed_account_upstream(
@@ -5873,7 +5873,7 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(
             http::header::AUTHORIZATION,
-            HeaderValue::from_static("Bearer PROXY_MANAGED"),
+            HeaderValue::from_static("Bearer SWITCHPLUS_PROXY_MANAGED"),
         );
         let mut provider = test_provider_with_type(None);
         provider.id = "codex-official".to_string();
@@ -7408,7 +7408,7 @@ mod tests {
             provider.settings_config = json!({
                 "auth": { "OPENAI_API_KEY": "sk-third-party" },
                 "config": format!(
-                    "model_provider = \"custom\"\nmodel = \"row-model\"\n\n[model_providers.custom]\nname = \"custom\"\nbase_url = \"{}/v1\"\nwire_api = \"responses\"\n",
+                    "model_provider = \"switchplus\"\nmodel = \"row-model\"\n\n[model_providers.switchplus]\nname = \"custom\"\nbase_url = \"{}/v1\"\nwire_api = \"responses\"\n",
                     upstream.base_url
                 ),
                 "modelCatalog": { "models": [{ "model": "listed" }] },

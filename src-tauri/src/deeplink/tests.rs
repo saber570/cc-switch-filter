@@ -24,11 +24,11 @@ impl TestHomeGuard {
         let dir = tempfile::tempdir().expect("create isolated test home");
         let original_home = env::var_os("HOME");
         let original_userprofile = env::var_os("USERPROFILE");
-        let original_test_home = env::var_os("CC_SWITCH_TEST_HOME");
+        let original_test_home = env::var_os("SWITCHPLUS_TEST_HOME");
 
         env::set_var("HOME", dir.path());
         env::set_var("USERPROFILE", dir.path());
-        env::set_var("CC_SWITCH_TEST_HOME", dir.path());
+        env::set_var("SWITCHPLUS_TEST_HOME", dir.path());
 
         Self {
             _dir: dir,
@@ -42,8 +42,8 @@ impl TestHomeGuard {
 impl Drop for TestHomeGuard {
     fn drop(&mut self) {
         match &self.original_test_home {
-            Some(value) => env::set_var("CC_SWITCH_TEST_HOME", value),
-            None => env::remove_var("CC_SWITCH_TEST_HOME"),
+            Some(value) => env::set_var("SWITCHPLUS_TEST_HOME", value),
+            None => env::remove_var("SWITCHPLUS_TEST_HOME"),
         }
         match &self.original_userprofile {
             Some(value) => env::set_var("USERPROFILE", value),
@@ -62,7 +62,7 @@ impl Drop for TestHomeGuard {
 
 #[test]
 fn test_parse_valid_claude_deeplink() {
-    let url = "ccswitch://v1/import?resource=provider&app=claude&name=Test%20Provider&homepage=https%3A%2F%2Fexample.com&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test-123&icon=claude";
+    let url = "switchplus://v1/import?resource=provider&app=claude&name=Test%20Provider&homepage=https%3A%2F%2Fexample.com&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test-123&icon=claude";
 
     let request = parse_deeplink_url(url).unwrap();
 
@@ -81,7 +81,7 @@ fn test_parse_valid_claude_deeplink() {
 
 #[test]
 fn test_parse_deeplink_drops_icon_that_is_not_a_builtin_name() {
-    let base = "ccswitch://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test";
+    let base = "switchplus://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test";
 
     // 大小写和空白照旧归一
     let request = parse_deeplink_url(&format!("{base}&icon=%20DeepSeek%20")).unwrap();
@@ -100,7 +100,7 @@ fn test_parse_deeplink_drops_icon_that_is_not_a_builtin_name() {
 
 #[test]
 fn test_parse_deeplink_keeps_only_allowed_icon_urls() {
-    let base = "ccswitch://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test&icon=deepseek";
+    let base = "switchplus://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test&icon=deepseek";
 
     let request = parse_deeplink_url(&format!(
         "{base}&iconUrl=https%3A%2F%2Fcdn.example.com%2Flogo.svg"
@@ -129,7 +129,7 @@ fn test_parse_deeplink_keeps_only_allowed_icon_urls() {
 
 #[test]
 fn test_parse_deeplink_with_notes() {
-    let url = "ccswitch://v1/import?resource=provider&app=codex&name=Codex&homepage=https%3A%2F%2Fcodex.com&endpoint=https%3A%2F%2Fapi.codex.com&apiKey=key123&notes=Test%20notes";
+    let url = "switchplus://v1/import?resource=provider&app=codex&name=Codex&homepage=https%3A%2F%2Fcodex.com&endpoint=https%3A%2F%2Fapi.codex.com&apiKey=key123&notes=Test%20notes";
 
     let request = parse_deeplink_url(url).unwrap();
 
@@ -138,7 +138,7 @@ fn test_parse_deeplink_with_notes() {
 
 #[test]
 fn pi_provider_link_without_a_model_is_rejected_up_front() {
-    let url = "ccswitch://v1/import?resource=provider&app=pi&name=Pi&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=sk-test";
+    let url = "switchplus://v1/import?resource=provider&app=pi&name=Pi&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=sk-test";
     let err = parse_deeplink_url(url).expect_err("a Pi node without models is unusable");
     assert!(err.to_string().contains("model"), "{err}");
 }
@@ -147,7 +147,7 @@ fn pi_provider_link_without_a_model_is_rejected_up_front() {
 fn test_parse_grokbuild_provider() {
     use super::provider::build_provider_from_request;
 
-    let url = "ccswitch://v1/import?resource=provider&app=grokbuild&name=Grok%20Relay&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=secret&model=grok-4.5";
+    let url = "switchplus://v1/import?resource=provider&app=grokbuild&name=Grok%20Relay&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=secret&model=grok-4.5";
 
     let request = parse_deeplink_url(url).unwrap();
 
@@ -187,7 +187,7 @@ fn test_parse_invalid_scheme() {
 
 #[test]
 fn test_parse_unsupported_version() {
-    let url = "ccswitch://v2/import?resource=provider&app=claude&name=Test";
+    let url = "switchplus://v2/import?resource=provider&app=claude&name=Test";
 
     let result = parse_deeplink_url(url);
     assert!(result.is_err());
@@ -200,7 +200,7 @@ fn test_parse_unsupported_version() {
 #[test]
 fn test_parse_missing_required_field() {
     // Name is still required even in v3.8+ (only homepage/endpoint/apiKey are optional)
-    let url = "ccswitch://v1/import?resource=provider&app=claude";
+    let url = "switchplus://v1/import?resource=provider&app=claude";
 
     let result = parse_deeplink_url(url);
     assert!(result.is_err());
@@ -213,7 +213,7 @@ fn test_parse_missing_required_field() {
 /// configUrl 没实现，必须在解析阶段就报错：放行的话，用户点了确认导入才失败
 #[test]
 fn test_parse_rejects_config_url_up_front() {
-    let url = "ccswitch://v1/import?resource=provider&app=claude&name=Test&configUrl=https%3A%2F%2Fexample.com%2Fc.json";
+    let url = "switchplus://v1/import?resource=provider&app=claude&name=Test&configUrl=https%3A%2F%2Fexample.com%2Fc.json";
 
     let err = parse_deeplink_url(url).unwrap_err();
     assert!(err.to_string().contains("configUrl"), "{err}");
@@ -223,7 +223,7 @@ fn test_parse_rejects_config_url_up_front() {
 #[test]
 fn test_parse_mcp_deeplink_accepts_pi_mcode_and_omp() {
     let config = BASE64_URL_SAFE_NO_PAD.encode(r#"{"mcpServers":{"fetch":{"command":"uvx"}}}"#);
-    let url = format!("ccswitch://v1/import?resource=mcp&apps=claude,pi,mcode,omp&config={config}");
+    let url = format!("switchplus://v1/import?resource=mcp&apps=claude,pi,mcode,omp&config={config}");
 
     let request = parse_deeplink_url(&url).expect("pi, mcode and ohmpi are valid MCP targets");
     let apps = parse_mcp_apps(request.apps.as_deref().unwrap()).unwrap();
@@ -235,7 +235,7 @@ fn test_parse_mcp_deeplink_accepts_pi_mcode_and_omp() {
 fn test_parse_mcp_deeplink_accepts_dsh() {
     let config = BASE64_URL_SAFE_NO_PAD.encode(r#"{"mcpServers":{"fetch":{"command":"uvx"}}}"#);
     for apps in ["dsh", "claude,dsh"] {
-        let url = format!("ccswitch://v1/import?resource=mcp&apps={apps}&config={config}");
+        let url = format!("switchplus://v1/import?resource=mcp&apps={apps}&config={config}");
         let request = parse_deeplink_url(&url).expect("dsh is a valid MCP target");
         assert!(
             parse_mcp_apps(request.apps.as_deref().unwrap())
@@ -254,7 +254,7 @@ fn test_parse_provider_deeplink_accepts_the_pi_family_apps_with_a_model() {
         assert_eq!(request.app.as_deref(), Some(app));
 
         let url = format!(
-            "ccswitch://v1/import?resource=provider&app={app}&name=Test&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk"
+            "switchplus://v1/import?resource=provider&app={app}&name=Test&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk"
         );
         let err = parse_deeplink_url(&url).expect_err("a node without models is unusable");
         assert!(err.to_string().contains("model"), "{app}: {err}");
@@ -263,7 +263,7 @@ fn test_parse_provider_deeplink_accepts_the_pi_family_apps_with_a_model() {
 
 #[test]
 fn test_parse_prompt_deeplink_accepts_mcode() {
-    let url = "ccswitch://v1/import?resource=prompt&app=mcode&name=Rules&content=IyBoaQ%3D%3D";
+    let url = "switchplus://v1/import?resource=prompt&app=mcode&name=Rules&content=IyBoaQ%3D%3D";
 
     let request = parse_deeplink_url(url).expect("MiniMax Code has a prompt panel");
     assert_eq!(request.app.as_deref(), Some("mcode"));
@@ -281,7 +281,7 @@ fn test_pending_deeplink_survives_peek_and_clears_only_on_matching_ack() {
     let link = |name: &str| PendingDeepLink::Import {
         request: Box::new(
             parse_deeplink_url(&format!(
-                "ccswitch://v1/import?resource=provider&app=claude&name={name}"
+                "switchplus://v1/import?resource=provider&app=claude&name={name}"
             ))
             .expect("valid link"),
         ),
@@ -1027,7 +1027,7 @@ fn test_build_claude_provider_without_config_unchanged() {
 #[serial_test::serial]
 fn test_import_prompt_allows_space_in_base64_content() {
     let _test_home = TestHomeGuard::new();
-    let url = "ccswitch://v1/import?resource=prompt&app=codex&name=PromptPlus&content=Pj4+";
+    let url = "switchplus://v1/import?resource=prompt&app=codex&name=PromptPlus&content=Pj4+";
     let request = parse_deeplink_url(url).unwrap();
 
     // URL decoded content may have "+" become space
@@ -1075,7 +1075,7 @@ fn test_parse_prompt_deeplink() {
     let content = "Hello World";
     let content_b64 = BASE64_STANDARD.encode(content);
     let url = format!(
-        "ccswitch://v1/import?resource=prompt&app=claude&name=test&content={}&description=desc&enabled=true",
+        "switchplus://v1/import?resource=prompt&app=claude&name=test&content={}&description=desc&enabled=true",
         content_b64
     );
 
@@ -1092,7 +1092,7 @@ fn test_parse_prompt_deeplink() {
 fn test_parse_grokbuild_prompt_deeplink() {
     let content_b64 = BASE64_STANDARD.encode("Grok instructions");
     let url = format!(
-        "ccswitch://v1/import?resource=prompt&app=grokbuild&name=test&content={content_b64}"
+        "switchplus://v1/import?resource=prompt&app=grokbuild&name=test&content={content_b64}"
     );
 
     let request = parse_deeplink_url(&url).expect("parse Grok Build prompt deeplink");
@@ -1105,7 +1105,7 @@ fn test_parse_mcp_deeplink() {
     let config = r#"{"mcpServers":{"test":{"command":"echo"}}}"#;
     let config_b64 = BASE64_STANDARD.encode(config);
     let url = format!(
-        "ccswitch://v1/import?resource=mcp&apps=claude,codex&config={}&enabled=true",
+        "switchplus://v1/import?resource=mcp&apps=claude,codex&config={}&enabled=true",
         config_b64
     );
 
@@ -1121,7 +1121,7 @@ fn test_parse_grokbuild_mcp_deeplink() {
     let config = r#"{"mcpServers":{"test":{"command":"echo"}}}"#;
     let config_b64 = BASE64_STANDARD.encode(config);
     let url = format!(
-        "ccswitch://v1/import?resource=mcp&apps=grokbuild&config={config_b64}&enabled=true"
+        "switchplus://v1/import?resource=mcp&apps=grokbuild&config={config_b64}&enabled=true"
     );
 
     let request = parse_deeplink_url(&url).expect("parse Grok Build MCP deeplink");
@@ -1135,7 +1135,7 @@ fn test_parse_mcode_and_pi_mcp_deeplink() {
     let config = r#"{"mcpServers":{"test":{"command":"echo"}}}"#;
     let config_b64 = BASE64_STANDARD.encode(config);
     let url =
-        format!("ccswitch://v1/import?resource=mcp&apps=mcode,pi&config={config_b64}&enabled=true");
+        format!("switchplus://v1/import?resource=mcp&apps=mcode,pi&config={config_b64}&enabled=true");
 
     let request = parse_deeplink_url(&url).expect("parse MiniMax Code / Pi MCP deeplink");
     let apps = request.apps.as_deref().unwrap();
@@ -1146,7 +1146,7 @@ fn test_parse_mcode_and_pi_mcp_deeplink() {
 
 #[test]
 fn test_parse_skill_deeplink() {
-    let url = "ccswitch://v1/import?resource=skill&repo=owner/repo&directory=skills&branch=dev";
+    let url = "switchplus://v1/import?resource=skill&repo=owner/repo&directory=skills&branch=dev";
     let request = parse_deeplink_url(url).unwrap();
 
     assert_eq!(request.resource, "skill");
@@ -1161,7 +1161,7 @@ fn test_parse_skill_deeplink() {
 
 #[test]
 fn test_parse_multiple_endpoints_comma_separated() {
-    let url = "ccswitch://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi1.example.com,https%3A%2F%2Fapi2.example.com,https%3A%2F%2Fapi3.example.com&apiKey=sk-test";
+    let url = "switchplus://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi1.example.com,https%3A%2F%2Fapi2.example.com,https%3A%2F%2Fapi3.example.com&apiKey=sk-test";
 
     let request = parse_deeplink_url(url).unwrap();
 
@@ -1176,7 +1176,7 @@ fn test_parse_multiple_endpoints_comma_separated() {
 #[test]
 fn test_parse_single_endpoint_backward_compatible() {
     // Old format with single endpoint should still work
-    let url = "ccswitch://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test";
+    let url = "switchplus://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test";
 
     let request = parse_deeplink_url(url).unwrap();
 
@@ -1188,7 +1188,7 @@ fn test_parse_single_endpoint_backward_compatible() {
 
 #[test]
 fn test_parse_endpoints_with_spaces_trimmed() {
-    let url = "ccswitch://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi1.example.com%20,%20https%3A%2F%2Fapi2.example.com&apiKey=sk-test";
+    let url = "switchplus://v1/import?resource=provider&app=claude&name=Test&endpoint=https%3A%2F%2Fapi1.example.com%20,%20https%3A%2F%2Fapi2.example.com&apiKey=sk-test";
 
     let request = parse_deeplink_url(url).unwrap();
 
@@ -1265,10 +1265,10 @@ fn test_codex_link_config_keeps_provider_auth_fields_through_to_live() {
     let config = serde_json::json!({
         "auth": { "OPENAI_API_KEY": "sk-link" },
         "config": concat!(
-            "model_provider = \"custom\"\n",
+            "model_provider = \"switchplus\"\n",
             "model = \"gpt-5.5\"\n",
             "model_reasoning_effort = \"medium\"\n\n",
-            "[model_providers.custom]\n",
+            "[model_providers.switchplus]\n",
             "name = \"Relay Auth\"\n",
             "base_url = \"https://api.relay.example/v1\"\n",
             "wire_api = \"responses\"\n",
@@ -1345,7 +1345,7 @@ fn test_codex_link_config_keeps_same_origin_model_catalog_url() {
     // #7942
     let config = serde_json::json!({
         "config": concat!(
-            "[model_providers.custom]\n",
+            "[model_providers.switchplus]\n",
             "base_url = \"https://api.relay.example/v1\"\n",
             "model_catalog_url = \"https://api.relay.example/v1/models?format=codex\"\n",
         )
@@ -1367,7 +1367,7 @@ fn test_codex_link_config_rejects_a_model_catalog_url_on_another_origin() {
     // Codex 取目录时带着这个供应商的鉴权：别的源会把 Key 发到确认框里没显示的地方
     let config = serde_json::json!({
         "config": concat!(
-            "[model_providers.custom]\n",
+            "[model_providers.switchplus]\n",
             "base_url = \"https://api.relay.example/v1\"\n",
             "model_catalog_url = \"https://collector.example/models\"\n",
         )
@@ -1392,7 +1392,7 @@ fn test_codex_link_config_keeps_provider_settings_and_drops_global_ones() {
             "[features]\nstandalone_web_search = true\n\n",
             "[tools.web_search]\ncontext_size = \"high\"\n\n",
             "[mcp_servers.evil]\ncommand = \"sh\"\n\n",
-            "[model_providers.custom]\n",
+            "[model_providers.switchplus]\n",
             "base_url = \"https://api.relay.example/v1\"\n",
             "supports_standalone_web_search = true\n",
             "unknown_future_field = \"x\"\n",
@@ -1433,19 +1433,19 @@ fn test_codex_link_config_keeps_provider_settings_and_drops_global_ones() {
 #[test]
 fn test_codex_link_config_rejects_command_and_local_credential_sources() {
     for (key, snippet) in [
-        ("auth", "[model_providers.custom.auth]\ncommand = \"sh\"\n"),
+        ("auth", "[model_providers.switchplus.auth]\ncommand = \"sh\"\n"),
         (
             "aws",
-            "[model_providers.custom.aws]\nprofile = \"default\"\n",
+            "[model_providers.switchplus.aws]\nprofile = \"default\"\n",
         ),
         (
             "env_http_headers",
-            "[model_providers.custom.env_http_headers]\nx-key = \"HOME\"\n",
+            "[model_providers.switchplus.env_http_headers]\nx-key = \"HOME\"\n",
         ),
     ] {
         let config = serde_json::json!({
             "config": format!(
-                "[model_providers.custom]\nbase_url = \"https://api.relay.example/v1\"\n\n{snippet}"
+                "[model_providers.switchplus]\nbase_url = \"https://api.relay.example/v1\"\n\n{snippet}"
             )
         });
         let err = import_codex_with_config(config, None, None).unwrap_err();
@@ -1457,7 +1457,7 @@ fn test_codex_link_config_rejects_command_and_local_credential_sources() {
 fn test_codex_link_config_drops_env_key_when_the_link_has_a_key() {
     let config = serde_json::json!({
         "config": concat!(
-            "[model_providers.custom]\n",
+            "[model_providers.switchplus]\n",
             "base_url = \"https://api.relay.example/v1\"\n",
             "env_key = \"RELAY_API_KEY\"\n",
         )
@@ -1482,7 +1482,7 @@ fn test_codex_link_with_only_env_key_is_rejected_by_name() {
         name: Some("Relay".to_string()),
         config: Some(BASE64_STANDARD.encode(
             serde_json::json!({
-                "config": "[model_providers.custom]\nbase_url = \"https://api.relay.example/v1\"\nenv_key = \"RELAY_API_KEY\"\n"
+                "config": "[model_providers.switchplus]\nbase_url = \"https://api.relay.example/v1\"\nenv_key = \"RELAY_API_KEY\"\n"
             })
             .to_string(),
         )),
@@ -1500,8 +1500,8 @@ fn test_codex_link_accepts_a_whole_config_toml() {
 
     // configFormat=toml：整份就是 config.toml
     let toml_text = concat!(
-        "model_provider = \"custom\"\nmodel = \"gpt-5.5\"\n\n",
-        "[model_providers.custom]\nname = \"Toml Relay\"\n",
+        "model_provider = \"switchplus\"\nmodel = \"gpt-5.5\"\n\n",
+        "[model_providers.switchplus]\nname = \"Toml Relay\"\n",
         "base_url = \"https://api.relay.example/v1\"\n",
         "wire_api = \"responses\"\nsupports_websockets = true\n",
         "experimental_bearer_token = \"sk-from-toml\"\n",
@@ -1646,7 +1646,7 @@ fn test_grok_link_config_rejects_credential_providers_and_local_files() {
 
 fn provider_link(app: &str, api_format: Option<&str>) -> String {
     let mut url = format!(
-        "ccswitch://v1/import?resource=provider&app={app}&name=Example&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=sk-test&model=example-model"
+        "switchplus://v1/import?resource=provider&app={app}&name=Example&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=sk-test&model=example-model"
     );
     if let Some(format) = api_format {
         url.push_str(&format!("&apiFormat={format}"));
@@ -1903,7 +1903,7 @@ fn test_dynamic_syntax_guard_also_covers_values_from_config_and_direct_requests(
     // config 里补来的 Key 在合并时就拒绝
     let config = BASE64_STANDARD.encode(r#"{"apiKey":"{file:~/.aws/credentials}"}"#);
     let url = format!(
-        "ccswitch://v1/import?resource=provider&app=opencode&name=Example&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&model=m&config={config}"
+        "switchplus://v1/import?resource=provider&app=opencode&name=Example&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&model=m&config={config}"
     );
     let request = parse_deeplink_url(&url).expect("URL params themselves are fine");
     assert!(parse_and_merge_config(&request).is_err());
@@ -2117,7 +2117,7 @@ fn agy_deeplink_provider_config_precedence_and_protocol() {
         "env": {"GEMINI_API_KEY": "fixture", "GOOGLE_GEMINI_BASE_URL": "https://relay.example", "GEMINI_MODEL": "env-model", "NODE_OPTIONS": "untrusted"},
         "config": {"model": {"name": "native-model"}, "unrelated": true}
     }).to_string());
-    let url = format!("ccswitch://v1/import?resource=provider&app=agy&name=Test&config={config}&apiFormat=gemini_native");
+    let url = format!("switchplus://v1/import?resource=provider&app=agy&name=Test&config={config}&apiFormat=gemini_native");
     let request = parse_deeplink_url(&url).unwrap();
     let merged = parse_and_merge_config(&request).unwrap();
     assert_eq!(merged.model.as_deref(), Some("native-model"));
@@ -2143,7 +2143,7 @@ fn agy_deeplink_provider_config_precedence_and_protocol() {
     assert_eq!(merged.endpoint.as_deref(), Some("https://explicit.example"));
     for format in ["anthropic", "openai_chat", "openai_responses"] {
         assert!(parse_deeplink_url(&format!(
-            "ccswitch://v1/import?resource=provider&app=agy&name=Test&apiFormat={format}"
+            "switchplus://v1/import?resource=provider&app=agy&name=Test&apiFormat={format}"
         ))
         .is_err());
     }
@@ -2160,7 +2160,7 @@ fn agy_deeplink_accepts_flat_env_and_rejects_invalid_env() {
     ] {
         let encoded = BASE64_URL_SAFE_NO_PAD.encode(config.to_string());
         let request = parse_deeplink_url(&format!(
-            "ccswitch://v1/import?resource=provider&app=agy&name=Test&config={encoded}"
+            "switchplus://v1/import?resource=provider&app=agy&name=Test&config={encoded}"
         ))
         .unwrap();
         let result = parse_and_merge_config(&request);
@@ -2184,7 +2184,7 @@ fn agy_deeplink_mcp_import_merges_apps_and_writes_native_config() {
     // First import belongs to another app, then the same ID is enabled for agy.
     for apps in ["codex", "agy"] {
         let request = parse_deeplink_url(&format!(
-            "ccswitch://v1/import?resource=mcp&apps={apps}&config={config}"
+            "switchplus://v1/import?resource=mcp&apps={apps}&config={config}"
         ))
         .unwrap();
         let result = super::mcp::import_mcp_from_deeplink(&state, request).unwrap();
@@ -2211,7 +2211,7 @@ fn agy_deeplink_prompt_import_respects_activation() {
     let content = BASE64_URL_SAFE_NO_PAD.encode("Agy instructions");
     let path = crate::prompt_files::prompt_file_path(&AppType::Agy).unwrap();
     for enabled in [false, true] {
-        let request = parse_deeplink_url(&format!("ccswitch://v1/import?resource=prompt&app=agy&name=Test-{enabled}&content={content}&enabled={enabled}")).unwrap();
+        let request = parse_deeplink_url(&format!("switchplus://v1/import?resource=prompt&app=agy&name=Test-{enabled}&content={content}&enabled={enabled}")).unwrap();
         let id = import_prompt_from_deeplink(&state, request).unwrap();
         assert_eq!(
             state.db.get_prompts("agy").unwrap()[&id].content,
@@ -2231,7 +2231,7 @@ fn agy_deeplink_prompt_import_respects_activation() {
 fn agy_deeplink_enabled_key_provider_stays_out_of_live_files() {
     let _home = TestHomeGuard::new();
     let state = AppState::new(Arc::new(Database::memory().unwrap()));
-    let request = parse_deeplink_url("ccswitch://v1/import?resource=provider&app=agy&name=Agy&endpoint=https://relay.example&apiKey=fixture&model=link-model&enabled=true").unwrap();
+    let request = parse_deeplink_url("switchplus://v1/import?resource=provider&app=agy&name=Agy&endpoint=https://relay.example&apiKey=fixture&model=link-model&enabled=true").unwrap();
     let id = super::provider::import_provider_from_deeplink(&state, request).unwrap();
     // Antigravity cards have no "enable": enabled=true only imports the card.
     let current = crate::mode::current::provider_for(
@@ -2269,7 +2269,7 @@ fn agy_deeplink_enabled_key_provider_stays_out_of_live_files() {
 fn skill_deeplink_is_a_shared_repository_not_an_agy_install() {
     let state = AppState::new(Arc::new(Database::memory().unwrap()));
     let request =
-        parse_deeplink_url("ccswitch://v1/import?resource=skill&repo=example/skills&app=agy")
+        parse_deeplink_url("switchplus://v1/import?resource=skill&repo=example/skills&app=agy")
             .unwrap();
     assert!(request.app.is_none());
     assert_eq!(
@@ -2292,7 +2292,7 @@ fn claude_desktop_link_with_claude_models_becomes_a_direct_card() {
     use crate::provider::ClaudeDesktopMode;
 
     let provider = build_claude_desktop_from_url(
-        "ccswitch://v1/import?resource=provider&app=claude-desktop&name=Relay&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test&model=claude-sonnet-4-6&haikuModel=anthropic%2Fclaude-haiku-4-5",
+        "switchplus://v1/import?resource=provider&app=claude-desktop&name=Relay&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test&model=claude-sonnet-4-6&haikuModel=anthropic%2Fclaude-haiku-4-5",
     )
     .unwrap();
     let meta = provider.meta.as_ref().unwrap();
@@ -2322,7 +2322,7 @@ fn claude_desktop_link_without_models_stays_direct() {
     use crate::provider::ClaudeDesktopMode;
 
     let provider = build_claude_desktop_from_url(
-        "ccswitch://v1/import?resource=provider&app=claude-desktop&name=Relay&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test",
+        "switchplus://v1/import?resource=provider&app=claude-desktop&name=Relay&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test",
     )
     .unwrap();
     let meta = provider.meta.as_ref().unwrap();
@@ -2338,7 +2338,7 @@ fn claude_desktop_link_with_other_models_becomes_a_mapping_card() {
     use crate::provider::ClaudeDesktopMode;
 
     let provider = build_claude_desktop_from_url(
-        "ccswitch://v1/import?resource=provider&app=claude-desktop&name=GLM&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test&model=glm-4.6&haikuModel=glm-4.5-air",
+        "switchplus://v1/import?resource=provider&app=claude-desktop&name=GLM&endpoint=https%3A%2F%2Fapi.example.com&apiKey=sk-test&model=glm-4.6&haikuModel=glm-4.5-air",
     )
     .unwrap();
     let meta = provider.meta.as_ref().unwrap();
@@ -2368,7 +2368,7 @@ fn claude_desktop_link_with_non_anthropic_format_becomes_a_mapping_card() {
     use crate::provider::ClaudeDesktopMode;
 
     let provider = build_claude_desktop_from_url(
-        "ccswitch://v1/import?resource=provider&app=claude-desktop&name=Chat&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=sk-test&model=claude-sonnet-4-6&apiFormat=openai_chat",
+        "switchplus://v1/import?resource=provider&app=claude-desktop&name=Chat&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=sk-test&model=claude-sonnet-4-6&apiFormat=openai_chat",
     )
     .unwrap();
     let meta = provider.meta.as_ref().unwrap();
@@ -2385,7 +2385,7 @@ fn claude_desktop_link_with_non_anthropic_format_becomes_a_mapping_card() {
 #[test]
 fn claude_desktop_link_with_non_anthropic_format_needs_a_model() {
     let err = build_claude_desktop_from_url(
-        "ccswitch://v1/import?resource=provider&app=claude-desktop&name=Chat&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=sk-test&apiFormat=openai_responses",
+        "switchplus://v1/import?resource=provider&app=claude-desktop&name=Chat&endpoint=https%3A%2F%2Fapi.example.com%2Fv1&apiKey=sk-test&apiFormat=openai_responses",
     )
     .expect_err("a mapping card needs an upstream model");
     assert!(err.to_string().contains("model"), "{err}");
@@ -2476,12 +2476,12 @@ fn test_pi_family_links_build_each_apps_minimal_node() {
 #[test]
 #[serial_test::serial]
 fn test_omp_link_rejects_keys_that_resolve_through_the_environment() {
-    let previous = env::var_os("ccswitch_link_probe_secret");
-    env::set_var("ccswitch_link_probe_secret", "real-secret");
-    let result = parse_deeplink_url(&link_with("omp", "apiKey", "ccswitch_link_probe_secret"));
+    let previous = env::var_os("switchplus_link_probe_secret");
+    env::set_var("switchplus_link_probe_secret", "real-secret");
+    let result = parse_deeplink_url(&link_with("omp", "apiKey", "switchplus_link_probe_secret"));
     match previous {
-        Some(value) => env::set_var("ccswitch_link_probe_secret", value),
-        None => env::remove_var("ccswitch_link_probe_secret"),
+        Some(value) => env::set_var("switchplus_link_probe_secret", value),
+        None => env::remove_var("switchplus_link_probe_secret"),
     }
     let err = result.expect_err("omp would send the environment value to the link's endpoint");
     assert!(err.to_string().contains("apiKey"), "{err}");
@@ -2583,7 +2583,7 @@ fn test_pi_family_inline_config_fills_each_apps_native_connection_fields() {
     ] {
         let encoded = BASE64_STANDARD.encode(config);
         let url = format!(
-            "ccswitch://v1/import?resource=provider&app={app}&name=Example&model=m&config={encoded}"
+            "switchplus://v1/import?resource=provider&app={app}&name=Example&model=m&config={encoded}"
         );
         let request = parse_and_merge_config(&parse_deeplink_url(&url).unwrap()).unwrap();
         assert_eq!(request.api_key.as_deref(), Some("sk-from-config"), "{app}");

@@ -116,7 +116,7 @@ pub fn claude_exclusive_env(key: &str) -> bool {
     CLAUDE_EXCLUSIVE_ENV.contains(&key)
 }
 
-/// Codex `config.toml` 顶层的关键字段。另有 `[model_providers.custom]` 整表。
+/// Codex `config.toml` 顶层的关键字段。另有 `[model_providers.switchplus]` 整表。
 pub const CODEX_FLOOR_TOP: &[&str] = &[
     // 选路：`openai_base_url` 会把内置 openai 路由改道到别的地址。
     "model_provider",

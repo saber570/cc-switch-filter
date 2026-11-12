@@ -31,7 +31,7 @@ const OPENED_GRACE: Duration = Duration::from_secs(3);
 const LOCATE_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// 截获 `BROWSER` 的脚本把链接写到这个变量指向的文件。
-const OPENED_URL_ENV: &str = "CC_SWITCH_CLAUDE_OPENED_URL";
+const OPENED_URL_ENV: &str = "SWITCHPLUS_CLAUDE_OPENED_URL";
 
 /// 交给账号目录里 Claude Code 之前要清掉的变量：任何一个都会把它指向别的登录或别的服务。
 pub const CLAUDE_ACCOUNT_UNSET: &[&str] = &[

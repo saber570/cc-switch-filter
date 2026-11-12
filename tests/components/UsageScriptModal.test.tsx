@@ -217,7 +217,7 @@ describe("UsageScriptModal Oh My Pi credentials", () => {
       <QueryClientProvider client={client}>
         <Modal
           provider={{
-            id: "cc-switch-demo",
+            id: "switchplus-demo",
             name: "Demo",
             // A base URL the balance template recognises, so the test reaches
             // `getBalance` instead of stopping at the template picker.

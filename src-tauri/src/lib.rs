@@ -13,6 +13,7 @@ mod codex_rollout_file;
 mod codex_state_db;
 mod commands;
 mod config;
+pub mod identity;
 mod database;
 mod deeplink;
 mod dsh_config;
@@ -291,7 +292,7 @@ fn runtime_log_level_allows(level: log::Level, max_level: log::LevelFilter) -> b
     max_level.to_level().is_some_and(|maximum| level <= maximum)
 }
 
-/// 统一处理 ccswitch:// 深链接 URL
+/// 统一处理 switchplus:// 深链接 URL
 ///
 /// - 解析 URL，把结果（或错误）暂存为待处理深链接，再发 `deeplink-pending` 通知前端来读
 ///   （前端可能还没挂载，见 `deeplink::PendingDeepLink`）
@@ -302,7 +303,7 @@ fn handle_deeplink_url(
     focus_main_window: bool,
     source: &str,
 ) -> bool {
-    if !url_str.starts_with("ccswitch://") {
+    if !url_str.starts_with("switchplus://") {
         return false;
     }
 
@@ -423,7 +424,7 @@ fn raise_open_file_limit() {
     }
 }
 
-/// 又启动了一个实例（或经命令行打开 ccswitch:// 链接）：退出轻量模式、处理链接、把主窗口拿到前台。
+/// 又启动了一个实例（或经命令行打开 switchplus:// 链接）：退出轻量模式、处理链接、把主窗口拿到前台。
 /// 在后台线程上调用（见 single_instance 回调），一次处理一个：连着启动两次时，
 /// 不能两边都看到主窗口不在、各建一个。
 #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
@@ -477,7 +478,8 @@ fn handle_second_instance(app: &tauri::AppHandle, args: Vec<String>) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // 设置 panic hook，在应用崩溃时记录日志到 <app_config_dir>/crash.log（默认 ~/.cc-switch/crash.log）
+    if !identity::startup_allowed() { return; }
+    // 设置 panic hook，在应用崩溃时记录日志到 <app_config_dir>/crash.log（默认 ~/.switchplus/crash.log）
     panic_hook::setup_panic_hook();
 
     let mut builder = tauri::Builder::default();
@@ -600,7 +602,7 @@ pub fn run() {
             app_store::refresh_app_config_dir_override(app.handle());
             panic_hook::init_app_config_dir(crate::config::get_app_config_dir());
 
-            // 初始化日志（输出到 <app_config_dir>/logs/cc-switch.log）
+            // 初始化日志（输出到 <app_config_dir>/logs/switchplus.log）
             {
                 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 
@@ -625,7 +627,7 @@ pub fn run() {
                             Target::new(TargetKind::Stdout),
                             Target::new(TargetKind::Folder {
                                 path: log_dir,
-                                file_name: Some("cc-switch".into()),
+                                file_name: Some("switchplus".into()),
                             }),
                         ])
                         // KeepSome(4) 保留 4 个轮转归档，加上当前文件最多约 100 MiB。
@@ -638,7 +640,7 @@ pub fn run() {
 
                 // 用户配置存在数据库中，数据库尚未打开时使用保守的 Info 级别。
                 log::set_max_level(log::LevelFilter::Info);
-                log::info!("=== CC Switch v{} started ===", env!("CARGO_PKG_VERSION"));
+                log::info!("=== SwitchPlus v{} started ===", env!("CARGO_PKG_VERSION"));
             }
 
             #[cfg(unix)]
@@ -651,18 +653,6 @@ pub fn run() {
             #[cfg(target_os = "windows")]
             set_windows_app_user_model_id(app.handle());
 
-            // 注册 Updater 插件（桌面端）；放在 logger 之后，确保失败可诊断。
-            #[cfg(desktop)]
-            {
-                if let Err(e) = app
-                    .handle()
-                    .plugin(tauri_plugin_updater::Builder::new().build())
-                {
-                    // 若配置不完整（如缺少 pubkey），跳过 Updater 而不中断应用
-                    log::warn!("初始化 Updater 插件失败，已跳过：{e}");
-                }
-            }
-
             // 注入 AppHandle 给 usage_events，让无 AppHandle 持有的写日志路径
             // 也能向前端推送 `usage-log-recorded`。
             // 放在日志系统初始化之后，确保 init 的日志能正常输出。
@@ -670,7 +660,7 @@ pub fn run() {
 
             // 初始化数据库
             let app_config_dir = crate::config::get_app_config_dir();
-            let db_path = app_config_dir.join("cc-switch.db");
+            let db_path = app_config_dir.join("switchplus.db");
             let json_path = app_config_dir.join("config.json");
 
             // 检查是否需要从 config.json 迁移到 SQLite
@@ -807,7 +797,7 @@ pub fn run() {
             // 设置 AppHandle 用于代理故障转移时的 UI 更新
             app_state.proxy_service.set_app_handle(app.handle().clone());
 
-            // 补完上次崩溃时写到一半的客户端文件（写前意图在 ~/.cc-switch/live-state.json），
+            // 补完上次崩溃时写到一半的客户端文件（写前意图在 ~/.switchplus/live-state.json），
             // 要在任何写客户端文件的启动步骤之前。
             crate::mode::operation::recover_on_startup(&app_state.db);
 
@@ -967,7 +957,7 @@ pub fn run() {
                         }
                     }
 
-                    // 旧版官方路由桶（cc-switch-official）迁回 openai，须在统一迁移之前：
+                    // 旧版官方路由桶（switchplus-official）迁回 openai，须在统一迁移之前：
                     // 开关开着时，紧接着的统一迁移会把它们按正常流程带进 custom。
                     match crate::codex_history_migration::maybe_migrate_codex_legacy_official_history_to_openai_bucket() {
                         Ok(outcome) => {
@@ -1208,12 +1198,12 @@ pub fn run() {
                 #[cfg(target_os = "linux")]
                 {
                     // Use Tauri's path API to get correct path (includes app identifier)
-                    // tauri-plugin-deep-link writes to: ~/.local/share/com.ccswitch.desktop/applications/cc-switch-handler.desktop
+                    // tauri-plugin-deep-link writes to: ~/.local/share/com.switchplus.desktop/applications/switchplus-handler.desktop
                     // Only register if .desktop file doesn't exist to avoid overwriting user customizations
                     let should_register = app
                         .path()
                         .data_dir()
-                        .map(|d| !d.join("applications/cc-switch-handler.desktop").exists())
+                        .map(|d| !d.join("applications/switchplus-handler.desktop").exists())
                         .unwrap_or(true);
 
                     if should_register {
@@ -1256,7 +1246,7 @@ pub fn run() {
                         log::debug!("  URL[{i}]: {}", url_for_log(url_str));
 
                         if handle_deeplink_url(&app_handle, url_str, true, "on_open_url") {
-                            break; // Process only first ccswitch:// URL
+                            break; // Process only first switchplus:// URL
                         }
                     }
                 }
@@ -1285,7 +1275,7 @@ pub fn run() {
             // Linux（AppIndicator）不派发点击事件，只能出原生菜单，菜单里有一项打开面板。
             let native_menu = tray_panel::uses_native_menu();
             let mut tray_builder = TrayIconBuilder::with_id(tray::TRAY_ID)
-                .tooltip("CC Switch") // 鼠标悬停提示
+                .tooltip("SwitchPlus") // 鼠标悬停提示
                 .on_tray_icon_event(tray::handle_tray_icon_event)
                 .on_menu_event(|app, event| {
                     tray::handle_tray_menu_event(app, &event.id.0);
@@ -1773,8 +1763,8 @@ pub fn run() {
             commands::resync_skills_to_apps,
             commands::update_skill,
             commands::migrate_skill_storage,
-            commands::get_cc_switch_skills_dir,
-            commands::open_cc_switch_skills_dir,
+            commands::get_switchplus_skills_dir,
+            commands::open_switchplus_skills_dir,
             commands::open_skill_dir,
             commands::search_skills_sh,
             // Skill management (legacy API compatibility)
@@ -2014,6 +2004,10 @@ pub fn run() {
     app.run(|app_handle, event| {
         // 处理退出请求（所有平台）
         if let RunEvent::ExitRequested { api, code, .. } = &event {
+            if identity::cc_switch_running().unwrap_or(true) {
+                log::warn!("CC Switch 已启动，退出时跳过客户端配置改写");
+                return;
+            }
             match classify_exit_request(*code) {
                 // code 为 None 表示运行时自动触发（如隐藏窗口的 WebView 被回收导致无存活窗口），
                 // 此时应仅阻止退出、保持托盘后台运行。
@@ -2085,7 +2079,7 @@ pub fn run() {
         #[cfg(target_os = "macos")]
         {
             // macOS 在 Dock 图标被点击并重新激活应用时会触发 Reopen 事件，这里手动恢复主窗口。
-            // RunEvent::Opened（ccswitch:// 链接）不在这里处理：deep-link 插件的 on_event 已把它
+            // RunEvent::Opened（switchplus:// 链接）不在这里处理：deep-link 插件的 on_event 已把它
             // 转成 on_open_url 回调，这里再处理一遍会让同一条链接触发两次导入。
             if let RunEvent::Reopen { .. } = event {
                 if let Some(window) = app_handle.get_webview_window("main") {
@@ -2121,6 +2115,7 @@ pub fn run() {
 /// 把接上代理的客户端都指回直连（模式和代理路由保留，下次启动再接上），再停止代理。
 /// 客户端不能一直指着代理：开机自启默认关闭，CC Switch 一关客户端就连不上了。
 pub async fn cleanup_before_exit(app_handle: &tauri::AppHandle) {
+    if identity::cc_switch_running().unwrap_or(true) { return; }
     if let Some(state) = app_handle.try_state::<store::AppState>() {
         crate::mode::controller::detach_all(state.inner()).await;
         log::info!("退出清理完成：客户端已指回直连，代理已停止");
@@ -2280,7 +2275,7 @@ fn show_migration_error_dialog(app: &tauri::AppHandle, error: &str) -> bool {
         format!(
             "从旧版本迁移配置时发生错误：\n\n{error}\n\n\
             您的数据尚未丢失，旧配置文件仍然保留。\n\
-            建议回退到旧版本 CC Switch 以保护数据。\n\n\
+            建议回退到旧版本 SwitchPlus 以保护数据。\n\n\
             点击「重试」重新尝试迁移\n\
             点击「退出」关闭程序（可回退版本后重新打开）"
         )
@@ -2288,7 +2283,7 @@ fn show_migration_error_dialog(app: &tauri::AppHandle, error: &str) -> bool {
         format!(
             "An error occurred while migrating configuration:\n\n{error}\n\n\
             Your data is NOT lost - the old config file is still preserved.\n\
-            Consider rolling back to an older CC Switch version.\n\n\
+            Consider rolling back to an older SwitchPlus version.\n\n\
             Click 'Retry' to attempt migration again\n\
             Click 'Exit' to close the program"
         )
@@ -2338,7 +2333,7 @@ fn show_database_init_error_dialog(
             您的数据尚未丢失，应用不会自动删除数据库文件。\n\
             常见原因包括：数据库版本过新、文件损坏、权限不足、磁盘空间不足等。\n\n\
             建议：\n\
-            1) 先备份整个配置目录（包含 cc-switch.db）\n\
+            1) 先备份整个配置目录（包含 switchplus.db）\n\
             2) 如果提示“数据库版本过新”，请升级到更新版本\n\
             3) 如果刚升级出现异常，可回退旧版本导出/备份后再升级\n\n\
             点击「重试」重新尝试初始化\n\
@@ -2352,8 +2347,8 @@ fn show_database_init_error_dialog(
             Your data is NOT lost - the app will not delete the database automatically.\n\
             Common causes include: newer database version, corrupted file, permission issues, or low disk space.\n\n\
             Suggestions:\n\
-            1) Back up the entire config directory (including cc-switch.db)\n\
-            2) If you see “database version is newer”, please upgrade CC Switch\n\
+            1) Back up the entire config directory (including switchplus.db)\n\
+            2) If you see “database version is newer”, please upgrade SwitchPlus\n\
             3) If this happened right after upgrading, consider rolling back to export/backup then upgrade again\n\n\
             Click 'Retry' to attempt initialization again\n\
             Click 'Exit' to close the program",

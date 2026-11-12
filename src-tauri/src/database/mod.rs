@@ -96,9 +96,10 @@ fn register_db_change_hook(conn: &Connection) {
 impl Database {
     /// 初始化数据库连接并创建表
     ///
-    /// 数据库文件位于 `~/.cc-switch/cc-switch.db`
+    /// 数据库文件位于 `~/.switchplus/switchplus.db`
     pub fn init() -> Result<Self, AppError> {
-        let db_path = get_app_config_dir().join("cc-switch.db");
+        let db_path = get_app_config_dir().join("switchplus.db");
+        crate::identity::ensure_write_allowed(&db_path)?;
         let db_exists = db_path.exists();
 
         // 确保父目录存在

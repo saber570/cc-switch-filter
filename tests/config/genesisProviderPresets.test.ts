@@ -69,7 +69,7 @@ describe("Genesis app compatibility", () => {
   it("inherits the K3 starter in compatible Pi based clients", () => {
     expect(
       Object.keys(find(kimiProviderPresets)?.settingsConfig.models ?? {}),
-    ).toEqual(["cc-switch-genesis/kimi-k3"]);
+    ).toEqual(["switchplus-genesis/kimi-k3"]);
     for (const presets of [mcodeProviderPresets, dshProviderPresets]) {
       expect(Object.keys(find(presets)?.settingsConfig.models ?? {})).toEqual([
         "kimi-k3",

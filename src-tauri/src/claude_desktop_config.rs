@@ -18,8 +18,8 @@ use crate::mode::stack::DesktopStackModel;
 use crate::mode::state::{self, PendingTarget};
 use crate::provider::{ClaudeDesktopMode, Provider};
 
-pub const PROFILE_ID: &str = "00000000-0000-4000-8000-000000157210";
-pub const PROFILE_NAME: &str = "CC Switch";
+pub const PROFILE_ID: &str = "00000000-0000-4000-8000-000000157310";
+pub const PROFILE_NAME: &str = "SwitchPlus";
 
 #[cfg(any(target_os = "macos", windows, target_os = "linux", test))]
 const CONFIG_FILE: &str = "claude_desktop_config.json";
@@ -1713,7 +1713,7 @@ mod tests {
                 .join("Application Support")
                 .join("Claude-3p"),
         );
-        paths.device = DeviceStore::at(home.join(".cc-switch"));
+        paths.device = DeviceStore::at(home.join(".switchplus"));
         paths
     }
 
@@ -1787,7 +1787,7 @@ mod tests {
     #[test]
     fn linux_config_dir_uses_host_config_when_cc_switch_runs_in_flatpak() {
         let home = Path::new("/home/tester");
-        let private_xdg = Path::new("/home/tester/.var/app/com.ccswitch.desktop/config");
+        let private_xdg = Path::new("/home/tester/.var/app/com.switchplus.desktop/config");
 
         assert_eq!(
             linux_config_dir_from_home(home, Some(private_xdg), true),
