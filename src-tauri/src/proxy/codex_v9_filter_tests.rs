@@ -33,16 +33,23 @@ fn filters_history_without_damaging_tools_or_current_effort() {
         {"role":"user","id":"msg_old","content":[{"type":"input_image","file_id":"file_keep"}]},
         {"type":"function_call","id":"fc_old","call_id":"pair","name":"read","arguments":"{}"},
         {"type":"function_call_output","id":"out_old","call_id":"pair","output":"content"},
-        {"type":"web_search_call","id":"resource_keep"}
+        {"type":"web_search_call","id":"ws_old","status":"completed",
+          "action":{"type":"search","query":"router retry","sources":[{"url":"https://example.com/source","title":"Source"}]}}
     ]});
-    assert_eq!(filter_request(&mut body).unwrap(), (1, 3));
+    assert_eq!(filter_request(&mut body).unwrap(), (1, 4));
     assert_eq!(body["reasoning"]["effort"], "high");
     assert_eq!(body["store"], false);
     assert_eq!(body["include"], json!(["other"]));
     assert_eq!(body["input"][0]["content"][0]["file_id"], "file_keep");
     assert_eq!(body["input"][1]["call_id"], body["input"][2]["call_id"]);
     assert_eq!(body["input"][2]["output"], "content");
-    assert_eq!(body["input"][3]["id"], "resource_keep");
+    assert_eq!(body["input"][3]["type"], "message");
+    assert_eq!(body["input"][3]["role"], "assistant");
+    let search = body["input"][3]["content"][0]["text"].as_str().unwrap();
+    assert!(search.contains("router retry"));
+    assert!(search.contains("https://example.com/source"));
+    assert!(search.contains("Source"));
+    assert!(!search.contains("ws_old"));
     assert_eq!(filter_request(&mut body).unwrap(), (0, 0));
 }
 
@@ -74,6 +81,20 @@ fn preserves_plain_summary_and_compaction_trigger() {
     assert_eq!(body["input"], input);
     assert!(codex_compaction::is_compaction_request(&body));
     assert_eq!(body["tools"][0]["name"], "read");
+}
+
+#[test]
+fn replays_summary_from_pre_merge_switchplus_installation() {
+    let mut body = json!({"input":[{
+        "type":"compaction",
+        "encrypted_content":"ccswitch-compaction-v1:cHJldmlvdXMgd29yaw"
+    }]});
+    assert!(filter_request(&mut body).is_ok());
+    assert_eq!(body["input"][0]["role"], "user");
+    assert!(body["input"][0]["content"][0]["text"]
+        .as_str()
+        .unwrap()
+        .contains("previous work"));
 }
 
 #[test]
@@ -125,13 +146,17 @@ fn rejects_foreign_damaged_or_empty_summaries_before_any_mutation() {
 }
 
 #[test]
-fn provider_setting_is_opt_in_and_roundtrips() {
+fn filtering_is_default_and_legacy_settings_cannot_disable_it() {
     let mut p = crate::provider::Provider::with_id("test".into(), "test".into(), json!({}), None);
-    assert!(!enabled(&crate::app_config::AppType::Codex, &p));
-    p.meta = Some(serde_json::from_value(json!({"codexV9Filter":true})).unwrap());
     assert!(enabled(&crate::app_config::AppType::Codex, &p));
+    for legacy in [true, false] {
+        p.meta = Some(serde_json::from_value(json!({"codexV9Filter":legacy})).unwrap());
+        assert!(enabled(&crate::app_config::AppType::Codex, &p));
+    }
     assert!(!enabled(&crate::app_config::AppType::Claude, &p));
-    assert_eq!(serde_json::to_value(p.meta).unwrap()["codexV9Filter"], true);
+    p.id = crate::database::CODEX_OFFICIAL_PROVIDER_ID.to_string();
+    p.category = Some("official".into());
+    assert!(!enabled(&crate::app_config::AppType::Codex, &p));
 }
 
 #[test]

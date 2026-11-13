@@ -76,39 +76,6 @@ pub async fn copy_text_to_clipboard(text: String) -> Result<bool, String> {
     .map_err(|e| format!("剪贴板任务执行失败: {e}"))?
 }
 
-/// 检查更新
-#[tauri::command]
-pub async fn check_for_updates(handle: AppHandle) -> Result<bool, String> {
-    let _ = handle;
-    Err("SwitchPlus 本地构建暂未配置独立更新源，请使用本地重新生成的安装包。".into())
-}
-
-/// 便携版新版本压缩包的下载地址，命名与 release.yml 的「Prepare Windows Assets」一致：
-/// `SwitchPlus-v<版本>-Windows[-arm64]-Portable.zip`。版本号不像版本号时返回 None。
-fn portable_zip_url(version: &str, arm64: bool) -> Option<String> {
-    let version = version.trim().trim_start_matches('v');
-    let looks_like_version = version.starts_with(|c: char| c.is_ascii_digit())
-        && version
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '+'));
-    if !looks_like_version {
-        return None;
-    }
-    let _ = arm64;
-    None // No published SwitchPlus release assets yet.
-}
-
-/// 便携版更新：直接下载对应架构的新版压缩包（解压覆盖即可，数据在 ~/.switchplus 不受影响）。
-/// 不做原地替换自身 exe：那样很容易被杀毒软件当成病毒拦截。
-#[tauri::command]
-pub async fn open_portable_update_download(
-    handle: AppHandle,
-    version: String,
-) -> Result<bool, String> {
-    let _ = (handle, version);
-    Err("SwitchPlus 本地构建暂未配置独立更新源，请使用本地重新生成的便携包。".into())
-}
-
 /// 判断是否为便携版（绿色版）运行
 #[tauri::command]
 pub async fn is_portable_mode() -> Result<bool, String> {
@@ -7101,21 +7068,6 @@ mod tests {
         assert!(!is_shell_command_missing("config file not found", "claude"));
     }
     use super::*;
-
-    #[test]
-    fn portable_zip_url_matches_release_asset_names() {
-        assert_eq!(
-            portable_zip_url("4.0.12", false).as_deref(),
-            None
-        );
-        assert_eq!(
-            portable_zip_url("v4.1.0-beta.1", true).as_deref(),
-            None
-        );
-        for bad in ["", "v", "latest", "4.0/../x", "4.0.0?x=1"] {
-            assert!(portable_zip_url(bad, false).is_none(), "{bad}");
-        }
-    }
 
     #[test]
     fn external_url_whitelist() {

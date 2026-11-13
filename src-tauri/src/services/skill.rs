@@ -7866,7 +7866,7 @@ mod tests {
                 let config_dir = home.path().join(".switchplus");
                 fs::create_dir_all(&config_dir).expect("isolated config directory");
                 // Keep Windows' legacy-HOME fallback out of this destructive test.
-                fs::File::create(config_dir.join("switchplus.db"))
+                fs::File::create(config_dir.join("cc-switch.db"))
                     .expect("isolated database sentinel");
                 let _home = TestHomeGuard::set(home.path());
                 assert_eq!(crate::config::get_app_config_dir(), config_dir);

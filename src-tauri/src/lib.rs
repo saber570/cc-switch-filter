@@ -13,7 +13,6 @@ mod codex_rollout_file;
 mod codex_state_db;
 mod commands;
 mod config;
-pub mod identity;
 mod database;
 mod deeplink;
 mod dsh_config;
@@ -22,6 +21,7 @@ mod gemini_config;
 mod gemini_mcp;
 mod grok_config;
 pub mod hermes_config;
+pub mod identity;
 mod init_status;
 mod jsonc_document;
 mod kimi_config;
@@ -478,7 +478,9 @@ fn handle_second_instance(app: &tauri::AppHandle, args: Vec<String>) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    if !identity::startup_allowed() { return; }
+    if !identity::startup_allowed() {
+        return;
+    }
     // 设置 panic hook，在应用崩溃时记录日志到 <app_config_dir>/crash.log（默认 ~/.switchplus/crash.log）
     panic_hook::setup_panic_hook();
 
@@ -660,7 +662,7 @@ pub fn run() {
 
             // 初始化数据库
             let app_config_dir = crate::config::get_app_config_dir();
-            let db_path = app_config_dir.join("switchplus.db");
+            let db_path = crate::identity::database_path();
             let json_path = app_config_dir.join("config.json");
 
             // 检查是否需要从 config.json 迁移到 SQLite
@@ -1198,7 +1200,7 @@ pub fn run() {
                 #[cfg(target_os = "linux")]
                 {
                     // Use Tauri's path API to get correct path (includes app identifier)
-                    // tauri-plugin-deep-link writes to: ~/.local/share/com.switchplus.desktop/applications/switchplus-handler.desktop
+                    // tauri-plugin-deep-link writes to: ~/.local/share/io.github.saber570.switchplus/applications/switchplus-handler.desktop
                     // Only register if .desktop file doesn't exist to avoid overwriting user customizations
                     let should_register = app
                         .path()
@@ -1622,10 +1624,6 @@ pub fn run() {
             commands::get_log_config,
             commands::set_log_config,
             commands::restart_app,
-            commands::install_update_and_restart,
-            commands::check_app_update_available,
-            commands::check_for_updates,
-            commands::open_portable_update_download,
             commands::is_portable_mode,
             commands::copy_text_to_clipboard,
             commands::get_claude_plugin_status,
@@ -2115,7 +2113,9 @@ pub fn run() {
 /// 把接上代理的客户端都指回直连（模式和代理路由保留，下次启动再接上），再停止代理。
 /// 客户端不能一直指着代理：开机自启默认关闭，SwitchPlus 一关客户端就连不上了。
 pub async fn cleanup_before_exit(app_handle: &tauri::AppHandle) {
-    if identity::cc_switch_running().unwrap_or(true) { return; }
+    if identity::cc_switch_running().unwrap_or(true) {
+        return;
+    }
     if let Some(state) = app_handle.try_state::<store::AppState>() {
         crate::mode::controller::detach_all(state.inner()).await;
         log::info!("退出清理完成：客户端已指回直连，代理已停止");
@@ -2333,7 +2333,7 @@ fn show_database_init_error_dialog(
             您的数据尚未丢失，应用不会自动删除数据库文件。\n\
             常见原因包括：数据库版本过新、文件损坏、权限不足、磁盘空间不足等。\n\n\
             建议：\n\
-            1) 先备份整个配置目录（包含 switchplus.db）\n\
+            1) 先备份整个配置目录（包含 cc-switch.db 或 switchplus.db）\n\
             2) 如果提示“数据库版本过新”，请升级到更新版本\n\
             3) 如果刚升级出现异常，可回退旧版本导出/备份后再升级\n\n\
             点击「重试」重新尝试初始化\n\
@@ -2347,7 +2347,7 @@ fn show_database_init_error_dialog(
             Your data is NOT lost - the app will not delete the database automatically.\n\
             Common causes include: newer database version, corrupted file, permission issues, or low disk space.\n\n\
             Suggestions:\n\
-            1) Back up the entire config directory (including switchplus.db)\n\
+            1) Back up the entire config directory (including cc-switch.db or switchplus.db)\n\
             2) If you see “database version is newer”, please upgrade SwitchPlus\n\
             3) If this happened right after upgrading, consider rolling back to export/backup then upgrade again\n\n\
             Click 'Retry' to attempt initialization again\n\

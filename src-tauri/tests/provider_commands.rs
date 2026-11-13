@@ -751,10 +751,10 @@ fn switch_provider_updates_claude_live_and_state() {
     let home_dir = std::env::var("HOME").expect("HOME should be set by ensure_test_home");
     let db_path = std::path::Path::new(&home_dir)
         .join(".switchplus")
-        .join("switchplus.db");
+        .join("cc-switch.db");
     assert!(
         db_path.exists(),
-        "switching provider should persist to switchplus.db"
+        "switching provider should persist to cc-switch.db"
     );
 
     // 验证当前供应商已更新

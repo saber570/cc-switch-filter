@@ -276,7 +276,7 @@ command = "fs-server"
                 .chain([KeyPath::new(floor::CODEX_PROVIDER_TABLE)])
                 .collect(),
             set: vec![
-                (KeyPath::new(&["model_provider"]), value("custom")),
+                (KeyPath::new(&["model_provider"]), value("switchplus")),
                 (KeyPath::new(&["model"]), value("gpt-b")),
                 (
                     KeyPath::new(floor::CODEX_PROVIDER_TABLE),

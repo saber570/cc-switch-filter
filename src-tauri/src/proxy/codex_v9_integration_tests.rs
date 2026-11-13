@@ -167,12 +167,12 @@ async fn codex_v9_compaction_roundtrips_and_replays_across_provider_protocols() 
 }
 
 #[tokio::test]
-async fn codex_v9_setting_filters_and_retries_through_real_http_forwarder() {
-    for (enabled, error_code) in [
-        (false, "stream_incomplete"),
-        (true, "stream_incomplete"),
-        (true, "server_error"),
-        (true, "bad_response"),
+async fn codex_v9_defaults_filter_and_retry_through_real_http_forwarder() {
+    for (legacy_setting, error_code) in [
+        (None, "stream_incomplete"),
+        (Some(false), "stream_incomplete"),
+        (Some(true), "server_error"),
+        (None, "bad_response"),
     ] {
         let seen = Arc::new(Mutex::new(Vec::<Value>::new()));
         let records = seen.clone();
@@ -203,7 +203,7 @@ async fn codex_v9_setting_filters_and_retries_through_real_http_forwarder() {
             None,
         );
         provider.meta = Some(ProviderMeta {
-            codex_v9_filter: Some(enabled),
+            codex_v9_filter: legacy_setting,
             ..Default::default()
         });
         let body = json!({"model":"test-model","stream":true,"reasoning":{"effort":"high"},"input":[
@@ -245,20 +245,73 @@ async fn codex_v9_setting_filters_and_retries_through_real_http_forwarder() {
         )
         .unwrap();
         let calls = seen.lock().await;
-        assert_eq!(calls.len(), if enabled { 2 } else { 1 });
-        if enabled {
-            assert!(!text.contains("never_run"));
-            assert!(text.contains("resp_ok"));
-            for call in calls.iter() {
-                assert_eq!(call["model"], "test-model");
-                assert_eq!(call["input"].as_array().unwrap().len(), 1);
-                assert!(call["input"][0].get("id").is_none());
-                assert_eq!(call["reasoning"]["effort"], "high");
-            }
-        } else {
-            assert!(text.contains("never_run"));
-            assert_eq!(calls[0]["input"].as_array().unwrap().len(), 2);
+        assert_eq!(calls.len(), 2);
+        assert!(!text.contains("never_run"));
+        assert!(text.contains("resp_ok"));
+        for call in calls.iter() {
+            assert_eq!(call["model"], "test-model");
+            assert_eq!(call["input"].as_array().unwrap().len(), 1);
+            assert!(call["input"][0].get("id").is_none());
+            assert_eq!(call["reasoning"]["effort"], "high");
         }
         server.abort();
     }
+}
+
+#[tokio::test]
+async fn codex_v9_replays_search_history_without_orphaned_native_calls() {
+    let seen = Arc::new(Mutex::new(Vec::<Value>::new()));
+    let records = seen.clone();
+    let app = axum::Router::new().fallback(axum::routing::post(move |Json(body): Json<Value>| {
+        let records = records.clone();
+        async move {
+            let items = body["input"].as_array().unwrap();
+            if items.iter().any(|item| item["type"] == "web_search_call") {
+                return (StatusCode::BAD_REQUEST, [("content-type", "application/json")],
+                    json!({"error":{"type":"invalid_request_error","message":"web_search_call was provided without its required reasoning item"}}).to_string());
+            }
+            records.lock().await.push(body);
+            let completed = json!({"type":"response.completed","response":{
+                "id":"search-continued","status":"completed","model":"test-model",
+                "output":[{"type":"web_search_call","id":"ws_new","status":"completed",
+                    "action":{"type":"search","query":"follow-up"}}]
+            }});
+            (StatusCode::OK, [("content-type", "text/event-stream")],
+                format!("event: response.completed\ndata: {completed}\n\n"))
+        }
+    }));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    let state = ProxyState::for_test(Arc::new(Database::memory().unwrap()));
+    let events = send_compaction_test_request(&state, compaction_test_provider(addr, "openai_responses"),
+        json!({"model":"test-model","stream":true,"input":[
+            {"type":"reasoning","id":"rs_old","encrypted_content":"old-resource"},
+            {"type":"web_search_call","id":"ws_old","status":"completed",
+                "action":{"type":"search","queries":["retry compatibility"],
+                    "sources":[{"url":"https://example.com/docs","title":"Docs"}]}},
+            {"type":"message","role":"assistant","content":[{"type":"output_text","text":"Found the fix",
+                "annotations":[{"type":"url_citation","url":"https://example.com/docs","title":"Docs","start_index":0,"end_index":13}]}]},
+            {"role":"user","content":"Continue from the search"}
+        ]})).await;
+    let records = seen.lock().await;
+    assert_eq!(records.len(), 1);
+    let sent = &records[0];
+    assert_eq!(sent["model"], "test-model");
+    assert!(sent["input"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|item| item["type"] != "reasoning"));
+    let history = sent["input"].to_string();
+    assert!(history.contains("retry compatibility"));
+    assert!(history.contains("https://example.com/docs"));
+    assert!(history.contains("url_citation"));
+    assert!(history.contains("Continue from the search"));
+    assert!(!history.contains("ws_old"));
+    assert_eq!(
+        events.last().unwrap()["response"]["output"][0]["id"],
+        "ws_new"
+    );
+    server.abort();
 }

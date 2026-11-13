@@ -351,6 +351,7 @@ jobs:
   # macOS 两个架构分两台机器同时编译（以前在一台机器上串行），再由 macos-release 合并签名。
   # 编译不需要任何 secret；挂 release environment 只是为了和其它平台在开头一起批准一次。
   macos-binary:
+    if: false # SwitchPlus uses the shared local build entry; upstream signing is not configured.
     name: Build macOS binary (${{ matrix.target }})
     needs: whats-new-check
     runs-on: macos-15
@@ -412,6 +413,7 @@ jobs:
   # 合并成 universal 二进制后打包、签名、公证。不挂 environment：它依赖的 macos-binary
   # 已经过了 release 的批准，这里再挂会在半路要求第二次批准。secret 都是仓库级的。
   macos-release:
+    if: false # Keep upstream packaging disabled on the personal fork.
     name: Bundle macOS release
     runs-on: macos-15
     needs: macos-binary

@@ -41,7 +41,6 @@ pub(crate) use dao::proxy::{PRICING_SOURCE_REQUEST, PRICING_SOURCE_RESPONSE};
 pub use dao::FailoverQueueItem;
 pub use dao::Profile;
 
-use crate::config::get_app_config_dir;
 use crate::error::AppError;
 use rusqlite::{hooks::Action, Connection};
 use serde::Serialize;
@@ -96,9 +95,9 @@ fn register_db_change_hook(conn: &Connection) {
 impl Database {
     /// 初始化数据库连接并创建表
     ///
-    /// 数据库文件位于 `~/.switchplus/switchplus.db`
+    /// 沿用 SwitchPlus 已安装版本的数据库路径。
     pub fn init() -> Result<Self, AppError> {
-        let db_path = get_app_config_dir().join("switchplus.db");
+        let db_path = crate::identity::database_path();
         crate::identity::ensure_write_allowed(&db_path)?;
         let db_exists = db_path.exists();
 

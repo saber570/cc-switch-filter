@@ -310,28 +310,6 @@ pub async fn restart_app(app: AppHandle) -> Result<bool, String> {
     Ok(true)
 }
 
-/// 下载并安装应用更新，然后由后端直接重启应用。
-///
-/// macOS 更新会原地替换 `.app` bundle。如果先返回前端、再让旧 WebView 调
-/// `process.relaunch()`，旧进程可能已经处在 bundle 被替换后的不稳定窗口期。
-/// 这里把退出清理、安装和重启串在同一个后端流程中，避免依赖旧前端继续执行。
-#[tauri::command]
-pub async fn install_update_and_restart(app: AppHandle) -> Result<bool, String> {
-    let _ = app;
-    Err("SwitchPlus 本地构建尚未配置独立更新源，请使用重新生成的 SwitchPlus 安装包。".into())
-}
-
-/// 检查是否有可用的应用更新，返回可用的新版本号（无更新时返回 None）。
-///
-/// 数据库版本过新的恢复界面用它判断：升级应用能否解决问题。若返回 None，说明
-/// 已是最新版本，但数据库仍不兼容（通常由第三方客户端或更高版本创建），应提示用户
-/// 升级无法解决，而不是让其反复尝试。
-#[tauri::command]
-pub async fn check_app_update_available(app: AppHandle) -> Result<Option<String>, String> {
-    let _ = app;
-    Ok(None)
-}
-
 /// 获取 app_config_dir 覆盖配置 (从 Store)
 #[tauri::command]
 pub async fn get_app_config_dir_override(app: AppHandle) -> Result<Option<String>, String> {

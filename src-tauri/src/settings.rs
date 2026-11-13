@@ -992,8 +992,9 @@ fn load_settings_from_path(path: &Path) -> LoadedSettings {
 
 /// 文件不存在时返回 `None`；其它 I/O 错误重试几次仍失败才返回。
 fn read_settings_bytes(path: &Path) -> std::io::Result<Option<Vec<u8>>> {
-    crate::identity::ensure_read_allowed(path)
-        .map_err(|error| std::io::Error::new(std::io::ErrorKind::PermissionDenied, error.to_string()))?;
+    crate::identity::ensure_read_allowed(path).map_err(|error| {
+        std::io::Error::new(std::io::ErrorKind::PermissionDenied, error.to_string())
+    })?;
     let mut attempt = 1;
     loop {
         match fs::read(path) {
@@ -1192,7 +1193,10 @@ pub fn is_codex_third_party_history_provider_bucket_migrated() -> bool {
                 .codex_third_party_history_provider_bucket_v1
                 .as_ref()
         })
-        .is_some_and(|m| m.scanned_history_files)
+        .is_some_and(|m| {
+            m.scanned_history_files
+                && m.target_provider_id == crate::codex_config::SWITCHPLUS_CODEX_MODEL_PROVIDER_ID
+        })
 }
 
 pub fn mark_codex_third_party_history_provider_bucket_migrated(

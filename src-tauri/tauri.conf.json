@@ -1,14 +1,14 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "SwitchPlus",
-  "mainBinaryName": "SwitchPlus",
+  "mainBinaryName": "switchplus",
   "version": "4.0.29",
-  "identifier": "com.switchplus.desktop",
+  "identifier": "io.github.saber570.switchplus",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
-    "beforeDevCommand": "pnpm run dev:renderer",
-    "beforeBuildCommand": "pnpm run build:renderer"
+    "beforeDevCommand": "corepack pnpm run dev:renderer",
+    "beforeBuildCommand": "corepack pnpm run build:renderer"
   },
   "app": {
     "macOSPrivateApi": true,
@@ -51,6 +51,12 @@
       "icons/switchplus/icon.ico"
     ],
     "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/switchplus/icon.ico",
+        "installerHooks": "nsis/hooks.nsh"
+      },
       "wix": {
         "template": "wix/per-user-main.wxs"
       }
@@ -58,18 +64,14 @@
     "macOS": {
       "minimumSystemVersion": "12.0"
     },
-    "publisher": "chow",
-    "resources": [
-      "../LICENSE",
-      "../THIRD_PARTY_NOTICES.md"
-    ]
+    "publisher": "saber570",
+    "homepage": "https://github.com/saber570/cc-switch-filter",
+    "resources": ["../LICENSE", "../THIRD_PARTY_NOTICES.md"]
   },
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": [
-          "switchplus"
-        ]
+        "schemes": ["switchplus"]
       }
     }
   }

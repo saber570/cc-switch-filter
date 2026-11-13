@@ -31,7 +31,6 @@ pub(crate) fn enabled(
 ) -> bool {
     matches!(app, crate::app_config::AppType::Codex)
         && !super::providers::is_codex_official_provider(provider)
-        && provider.meta.as_ref().and_then(|m| m.codex_v9_filter) == Some(true)
 }
 
 fn rejection(code: &str, message: &str) -> ProxyError {
@@ -126,6 +125,25 @@ pub(crate) fn filter_request(body: &mut Value) -> Result<(usize, usize), ProxyEr
             !remove
         });
         for item in items {
+            // Native web-search records require the reasoning item that issued
+            // them. Reasoning is deliberately not replayed across resources,
+            // so replay the readable search history as assistant text instead.
+            // Keep the successful response unchanged for the client's UI.
+            if item["type"] == "web_search_call" {
+                let mut record = item.clone();
+                if let Some(record) = record.as_object_mut() {
+                    ids += usize::from(record.remove("id").is_some());
+                    record.remove("type");
+                }
+                *item = json!({
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [{
+                        "type": "output_text",
+                        "text": format!("[Previous web search]\n{record}")
+                    }]
+                });
+            }
             let portable = matches!(
                 item["type"].as_str(),
                 Some(

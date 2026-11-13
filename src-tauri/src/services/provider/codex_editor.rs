@@ -625,9 +625,12 @@ mod tests {
         let text = row["config"].as_str().unwrap();
         let parsed: toml::Table = toml::from_str(text).unwrap();
         assert_eq!(parsed["model"].as_str(), Some("gpt-b"));
-        assert_eq!(parsed["model_provider"].as_str(), Some("custom"));
         assert_eq!(
-            parsed["model_providers"]["custom"]["base_url"].as_str(),
+            parsed["model_provider"].as_str(),
+            Some(crate::live::project::codex::ROUTE_ID)
+        );
+        assert_eq!(
+            parsed["model_providers"][crate::live::project::codex::ROUTE_ID]["base_url"].as_str(),
             Some("https://new.example/v1")
         );
         assert!(parsed["model_providers"].get("relay").is_none());
@@ -664,9 +667,12 @@ mod tests {
         .unwrap();
         let text = plan.row_settings["config"].as_str().unwrap();
         let parsed: toml::Table = toml::from_str(text).unwrap();
-        assert_eq!(parsed["model_provider"].as_str(), Some("custom"));
         assert_eq!(
-            parsed["model_providers"]["custom"]["base_url"].as_str(),
+            parsed["model_provider"].as_str(),
+            Some(crate::live::project::codex::ROUTE_ID)
+        );
+        assert_eq!(
+            parsed["model_providers"][crate::live::project::codex::ROUTE_ID]["base_url"].as_str(),
             Some("https://relay.example.com/v1")
         );
         assert!(parsed.get("base_url").is_none(), "{text}");

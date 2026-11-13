@@ -2,19 +2,21 @@
 
 本分支以 SwitchPlus 个人版构建；下文 CC Switch 指复用的上游代理与摘要实现。
 
-在 **Codex → 编辑供应商 → 高级设置 → V9 历史过滤与自动重试** 开启。
-默认关闭，仅对经 CC Switch 本地代理的 Codex 请求生效；直连不会经过过滤。
-配置保存在供应商元数据 `meta.codexV9Filter`，不写入 Codex 配置文件。
+第三方 Codex 请求在路由和聚合模式下默认启用过滤与重试，界面不再提供 V9 开关。
+旧数据库中的 `meta.codexV9Filter: false` 或缺失值不影响启用，无需重新导入配置。
+直连不会经过本地过滤；官方登录供应商仍按原有协议处理。
 
 该供应商作为请求的起始目标时启用 V9 过滤与重试，整次请求共用重试预算，
 包括 CC Switch 内部故障转移后的响应。聚合模式按请求选中的供应商决定。
-每个新请求重新读取设置；当前已经开始的请求继续使用开始时的设置。
 官方登录供应商不启用此模式。
 
 ## 行为
 
 - 清理历史 `reasoning` 条目，以及普通消息、函数/自定义工具调用和结果的顶层 `id`。
   保留正文、图片、文件引用、`call_id`、工具参数和结果，以及当前的 `reasoning.effort`。
+- 历史 `web_search_call` 转为助手普通文本，保留查询、操作、来源及返回信息，
+  去掉资源 ID。正文里的搜索回答和引用原样保留，成功响应中的搜索调用也原样交给客户端。
+  避免清理推理后留下缺少必需 `reasoning` 的搜索调用，导致下一轮 HTTP 400。
 - 设置 `store: false`，移除 `include` 中的 `reasoning.encrypted_content`。
 - 整轮 SSE 暂存到 `response.completed` 再交付，保留成功响应里的推理。
   失败尝试中的文本和工具调用不会交给客户端；不可重试的失败只交付错误事件。
@@ -38,6 +40,7 @@
 - 支持普通文字摘要，以及 CC Switch 的摘要压缩：保留 `compaction_trigger`，
   交给已有 Responses / Chat / Anthropic 适配器生成摘要；成功响应仍经 V9 缓冲交付。
   后续请求中的 CC Switch 摘要条目解回普通文字消息，切换供应商时完整携带摘要。
+  同时读取旧版 `ccswitch-compaction-v1:` 和新版 `switchplus-compaction-v1:` 摘要，升级后可继续旧对话。
   支持 `compaction`、`compaction_summary`、`context_compaction` 三种摘要条目名称。
 - 拒绝未知、损坏或空白的压缩载荷，以及 `item_reference`、`previous_response_id`
   和 `conversation`。整份历史验证通过后才转换，不把无法解读的上下文换成占位文字。
@@ -58,7 +61,7 @@ CC Switch 原有供应商选择、故障转移、鉴权和协议转换仍然运�
 ## 从外置 V9 迁移
 
 1. 在没有进行中任务时，正常停止外置 V9 服务，让它恢复 Codex 地址。
-2. 保持 CC Switch 的本地代理/路由模式开启，启用目标供应商的 V9 开关。
+2. 保持 SwitchPlus 的本地代理/路由或聚合模式开启；内置过滤自动生效。
 3. 重开之前缓存了 `18181` 地址的 Codex 客户端。
 
 不再需要 Node.js 过滤进程、18181 端口或配置文件轮询。
@@ -70,7 +73,7 @@ CC Switch 原有供应商选择、故障转移、鉴权和协议转换仍然运�
 ```sh
 pnpm install --frozen-lockfile
 pnpm typecheck
-pnpm vitest run tests/components/CodexV9FilterField.test.tsx tests/components/CodexFormFields.test.tsx tests/components/ProviderForm.codexCopilot.test.tsx
+pnpm vitest run tests/components/CodexFormFields.test.tsx tests/components/ProviderForm.codexCopilot.test.tsx tests/components/DatabaseCompatibility.test.tsx
 cargo test --manifest-path src-tauri/Cargo.toml --locked --lib codex_v9
 ```
 

@@ -1,8 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { DatabaseUpgrade } from "./components/DatabaseUpgrade";
-import { UpdateProvider } from "./contexts/UpdateContext";
+import { DatabaseCompatibility } from "./components/DatabaseCompatibility";
 import "./index.css";
 // 导入国际化配置
 import i18n, { syncLanguageFromSettings } from "./i18n";
@@ -102,12 +101,12 @@ async function bootstrap() {
       "get_init_error",
     )) as ConfigLoadErrorPayload | null;
     if (initError && initError.kind === "db_version_too_new") {
-      // 数据库版本过新：渲染应用内「升级应用」恢复界面，不进入正常 App
+      // 数据库版本过新：渲染数据库兼容性恢复界面，不进入正常 App
       ReactDOM.createRoot(document.getElementById("root")!).render(
         <React.StrictMode>
           <FrontendErrorBoundary>
             <ThemeProvider defaultTheme="system" storageKey="switchplus-theme">
-              <DatabaseUpgrade payload={initError} />
+              <DatabaseCompatibility payload={initError} />
               <Toaster />
             </ThemeProvider>
           </FrontendErrorBoundary>
@@ -140,16 +139,14 @@ async function bootstrap() {
       <FrontendErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider defaultTheme="system" storageKey="switchplus-theme">
-            <UpdateProvider>
-              {/* 系统开了「减少动态效果」时，framer-motion 的位移动画一律跳过 */}
-              <MotionConfig reducedMotion="user">
-                {/* 全局悬停提示：移上去立即出现（HoverTip） */}
-                <TooltipProvider delayDuration={0} skipDelayDuration={0}>
-                  <App />
-                </TooltipProvider>
-              </MotionConfig>
-              <Toaster />
-            </UpdateProvider>
+            {/* 系统开了「减少动态效果」时，framer-motion 的位移动画一律跳过 */}
+            <MotionConfig reducedMotion="user">
+              {/* 全局悬停提示：移上去立即出现（HoverTip） */}
+              <TooltipProvider delayDuration={0} skipDelayDuration={0}>
+                <App />
+              </TooltipProvider>
+            </MotionConfig>
+            <Toaster />
           </ThemeProvider>
         </QueryClientProvider>
       </FrontendErrorBoundary>

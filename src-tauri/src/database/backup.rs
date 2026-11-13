@@ -508,7 +508,7 @@ impl Database {
     where
         F: FnOnce(&Path, &Path) -> Result<(), AppError>,
     {
-        let db_path = get_app_config_dir().join("switchplus.db");
+        let db_path = crate::identity::database_path();
         if !db_path.exists() {
             return Ok(None);
         }
@@ -1199,7 +1199,7 @@ mod tests {
             // SWITCHPLUS_TEST_HOME and makes import exercise its safety backup.
             let config_dir = temp_dir.path().join(".switchplus");
             std::fs::create_dir_all(&config_dir).expect("create isolated config directory");
-            std::fs::File::create(config_dir.join("switchplus.db"))
+            std::fs::File::create(config_dir.join("cc-switch.db"))
                 .expect("create isolated database sentinel");
             let guard = Self {
                 previous_test_home,

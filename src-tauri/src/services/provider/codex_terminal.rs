@@ -540,7 +540,7 @@ experimental_bearer_token = "SWITCHPLUS_PROXY_MANAGED"
         assert_eq!(launch.env, vec![(API_KEY_ENV, Some("sk-kimi".to_string()))]);
         assert!(launch
             .overrides
-            .contains(&"model_provider='custom'".to_string()));
+            .contains(&"model_provider='switchplus'".to_string()));
         let table = launch
             .overrides
             .iter()

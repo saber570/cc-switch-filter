@@ -1733,11 +1733,11 @@ mod tests {
             parsed
                 .get("model_provider")
                 .and_then(|value| value.as_str()),
-            Some("custom")
+            Some(crate::live::project::codex::ROUTE_ID)
         );
         let custom_provider = parsed
             .get("model_providers")
-            .and_then(|value| value.get("custom"))
+            .and_then(|value| value.get(crate::live::project::codex::ROUTE_ID))
             .expect("custom model provider");
         assert_eq!(
             custom_provider.get("name").and_then(|value| value.as_str()),

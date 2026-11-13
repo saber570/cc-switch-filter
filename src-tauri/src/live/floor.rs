@@ -146,7 +146,7 @@ pub const CODEX_FLOOR_NESTED: &[&[&str]] = &[
 ];
 
 /// CC Switch 写进 Codex live 的供应商表。
-pub const CODEX_PROVIDER_TABLE: &[&str] = &["model_providers", "custom"];
+pub const CODEX_PROVIDER_TABLE: &[&str] = &["model_providers", "switchplus"];
 
 /// Codex 的供应商独有字段（顶层）。
 ///

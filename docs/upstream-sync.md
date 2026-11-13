@@ -43,11 +43,12 @@ git merge upstream/main
 `providers/codex_compaction.rs` 的识别、解码和协议转换，避免维护另一套摘要实现。
 
 ```sh
-pnpm install --frozen-lockfile
-pnpm typecheck
-pnpm vitest run tests/components/CodexV9FilterField.test.tsx tests/components/CodexFormFields.test.tsx tests/components/ProviderForm.codexCopilot.test.tsx
+corepack pnpm install --frozen-lockfile
+corepack pnpm typecheck
+corepack pnpm vitest run tests/components/CodexFormFields.test.tsx tests/components/ProviderForm.codexCopilot.test.tsx tests/components/DatabaseCompatibility.test.tsx
 cargo test --manifest-path src-tauri/Cargo.toml --locked --lib proxy::
-pnpm tauri build --config src-tauri/tauri.local-build.conf.json
+corepack pnpm build:check
+corepack pnpm build
 ```
 
 验证通过后，将同步分支合并回 fork 的 `switchplus-personal`（也可在自己的 fork 提 PR），再构建新安装包。

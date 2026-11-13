@@ -23,6 +23,7 @@ use futures::stream::{Stream, StreamExt};
 use serde_json::{json, Value};
 
 pub(crate) const CCSWITCH_COMPACTION_PREFIX: &str = "switchplus-compaction-v1:";
+const LEGACY_COMPACTION_PREFIX: &str = "ccswitch-compaction-v1:";
 
 /// CC Switch 自己包装进 `encrypted_content` 的内容都以它开头，官方后端一律解不开。
 const CCSWITCH_ENVELOPE_PREFIX: &str = "switchplus-";
@@ -75,13 +76,16 @@ pub(crate) fn encode_compaction_summary(summary: &str) -> String {
 
 /// 解开 CC Switch 包装的摘要；别家密文或损坏的内容返回 None。
 pub(crate) fn decode_compaction_summary(encrypted_content: &str) -> Option<String> {
-    let encoded = encrypted_content.strip_prefix(CCSWITCH_COMPACTION_PREFIX)?;
+    let encoded = encrypted_content
+        .strip_prefix(CCSWITCH_COMPACTION_PREFIX)
+        .or_else(|| encrypted_content.strip_prefix(LEGACY_COMPACTION_PREFIX))?;
     let bytes = URL_SAFE_NO_PAD.decode(encoded).ok()?;
     String::from_utf8(bytes).ok()
 }
 
 fn is_switchplus_envelope(encrypted_content: &str) -> bool {
     encrypted_content.starts_with(CCSWITCH_ENVELOPE_PREFIX)
+        || encrypted_content.starts_with("ccswitch-")
 }
 
 fn compaction_encrypted_content(item: &Value) -> Option<&str> {
@@ -520,6 +524,17 @@ mod tests {
             Some("进度：修好了压缩\nnext: test")
         );
         assert_eq!(decode_compaction_summary("gAAAAABopenai-blob"), None);
+        let legacy = encoded.replacen(CCSWITCH_COMPACTION_PREFIX, LEGACY_COMPACTION_PREFIX, 1);
+        assert_eq!(
+            decode_compaction_summary(&legacy),
+            decode_compaction_summary(&encoded)
+        );
+        assert!(is_switchplus_envelope(&legacy));
+        let old_item = json!({"type":"compaction", "encrypted_content":legacy});
+        assert!(!is_unrecognized_compaction_item(&old_item));
+        assert!(compaction_item_replay_text(&old_item)
+            .unwrap()
+            .contains("next: test"));
     }
 
     #[test]

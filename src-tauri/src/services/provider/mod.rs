@@ -397,8 +397,11 @@ mod tests {
                 .expect("keyless managed Copilot preview");
                 let text = view.settings["config"].as_str().expect("config text");
                 let parsed: toml::Value = toml::from_str(text).expect("preview TOML");
-                let route = &parsed["model_providers"]["custom"];
-                assert_eq!(parsed["model_provider"].as_str(), Some("custom"));
+                let route = &parsed["model_providers"][crate::live::project::codex::ROUTE_ID];
+                assert_eq!(
+                    parsed["model_provider"].as_str(),
+                    Some(crate::live::project::codex::ROUTE_ID)
+                );
                 assert_eq!(route["wire_api"].as_str(), Some("responses"));
                 assert!(route.get("requires_openai_auth").is_none());
                 assert!(route.get("experimental_bearer_token").is_none());

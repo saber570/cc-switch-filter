@@ -1312,8 +1312,11 @@ wire_api = "responses"
             .unwrap();
             let config = projection.catalog_input_text();
             let parsed: TomlValue = toml::from_str(&config).unwrap();
-            assert_eq!(parsed["model_provider"].as_str(), Some("custom"));
-            let route = &parsed["model_providers"]["custom"];
+            assert_eq!(
+                parsed["model_provider"].as_str(),
+                Some(crate::live::project::codex::ROUTE_ID)
+            );
+            let route = &parsed["model_providers"][crate::live::project::codex::ROUTE_ID];
             assert_eq!(route["wire_api"].as_str(), Some("responses"));
             assert!(route.get("requires_openai_auth").is_none());
 

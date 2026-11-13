@@ -181,21 +181,18 @@ async function selectFormat(format: CodexCopilotApiFormat) {
 }
 
 describe("Codex Copilot provider form", () => {
-  it("persists V9 opt-in and allows turning it off for an existing provider", async () => {
-    const onSubmit = renderForm({
+  it("drops the retired filter setting without exposing a toggle", async () => {
+    const legacyMeta: ProviderMeta & { codexV9Filter: boolean } = {
       providerType: "github_copilot",
-      codexV9Filter: true,
-    });
-    const toggle = screen.getByRole("switch", { name: /V9/ });
-    expect(toggle.getAttribute("aria-checked")).toBe("true");
+      codexV9Filter: false,
+    };
+    const onSubmit = renderForm(legacyMeta);
+    expect(screen.queryByRole("switch", { name: /V9/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "save" }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-    expect(onSubmit.mock.calls.at(-1)?.[0].meta?.codexV9Filter).toBe(true);
-    onSubmit.mockClear();
-    fireEvent.click(toggle);
-    fireEvent.click(screen.getByRole("button", { name: "save" }));
-    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-    expect(onSubmit.mock.calls.at(-1)?.[0].meta?.codexV9Filter).toBeUndefined();
+    expect(onSubmit.mock.calls.at(-1)?.[0].meta).not.toHaveProperty(
+      "codexV9Filter",
+    );
   });
 
   beforeEach(() => {

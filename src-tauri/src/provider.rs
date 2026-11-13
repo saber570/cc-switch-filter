@@ -485,7 +485,7 @@ impl LocalProxyRequestOverrides {
 /// 供应商元数据
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProviderMeta {
-    /// Opt-in V9 Responses history filtering, buffered delivery and bounded retry.
+    /// Legacy setting retained when reading older databases. Filtering is now always enabled for third-party Codex.
     #[serde(rename = "codexV9Filter", skip_serializing_if = "Option::is_none")]
     pub codex_v9_filter: Option<bool>,
     /// 自定义端点列表（按 URL 去重存储）

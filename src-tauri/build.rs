@@ -1,5 +1,9 @@
 fn main() {
-    tauri_build::build();
+    tauri_build::try_build(tauri_build::Attributes::new().windows_attributes(
+        tauri_build::WindowsAttributes::new().window_icon_path("icons/switchplus/icon.ico"),
+    ))
+    .expect("failed to build SwitchPlus application resources");
+    println!("cargo:rerun-if-changed=icons/switchplus/icon.ico");
 
     // Windows: Embed Common Controls v6 manifest for test binaries
     //

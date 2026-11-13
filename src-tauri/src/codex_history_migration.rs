@@ -52,11 +52,58 @@ pub(crate) fn lock_history_op_for_backup_cleanup() -> std::sync::MutexGuard<'sta
 /// Codex 内建默认 provider id：config.toml 没有 `model_provider` 键时会话归入此桶。
 /// 官方订阅（ChatGPT OAuth / OpenAI API key）的历史会话都记录这个 id。
 const OFFICIAL_OPENAI_CODEX_MODEL_PROVIDER_ID: &str = "openai";
-const LEGACY_SWITCHPLUS_CODEX_MODEL_PROVIDER_ID: &str = "switchplus";
+const LEGACY_SWITCHPLUS_CODEX_MODEL_PROVIDER_ID: &str = "ccswitch";
 // If a Codex preset ever used a temporary routing key, keep that old key here
 // so local history can be bucketed under the current custom provider id.
-const SWITCHPLUS_LEGACY_CODEX_MODEL_PROVIDER_IDS: &[&str] = &[
+const CC_SWITCH_LEGACY_CODEX_MODEL_PROVIDER_IDS: &[&str] = &[
     LEGACY_SWITCHPLUS_CODEX_MODEL_PROVIDER_ID,
+    "aicodemirror",
+    "aicoding",
+    "aigocode",
+    "aihubmix",
+    "ark_agentplan",
+    "bailian",
+    "bailing",
+    "byteplus",
+    "claudecn",
+    "compshare",
+    "compshare_coding",
+    "crazyrouter",
+    "ctok",
+    "cubence",
+    "deepseek",
+    "dmxapi",
+    "doubaoseed",
+    "eflowcode",
+    "etok",
+    "kimi",
+    "lemondata",
+    "longcat",
+    "micu",
+    "minimax",
+    "minimax_en",
+    "modelscope",
+    "novita",
+    "nvidia",
+    "openrouter",
+    "packycode",
+    "patewayai",
+    "pipellm",
+    "qianfan_coding",
+    "relaxycode",
+    "rightcode",
+    "runapi",
+    "shengsuanyun",
+    "siliconflow",
+    "siliconflow_en",
+    "sssaicode",
+    "stepfun",
+    "stepfun_en",
+    "therouter",
+    "xiaomi_mimo",
+    "xiaomi_mimo_token_plan",
+    "zhipu_glm",
+    "zhipu_glm_en",
 ];
 
 #[derive(Debug, Clone, Default)]
@@ -340,8 +387,8 @@ fn codex_config_text_routes_custom(config_text: &str) -> bool {
         .unwrap_or(false)
 }
 
-/// v3.17–v3.20 官方账号走本地路由时，会话记在 `switchplus-official` 桶下；v4 起这张表
-/// 不再写、旧表被清理，这些会话恢复时报「Model provider `switchplus-official` not found」
+/// v3.17–v3.20 官方账号走本地路由时，会话记在 `cc-switch-official` 桶下；v4 起这张表
+/// 不再写、旧表被清理，这些会话恢复时报「Model provider `cc-switch-official` not found」
 /// （#7948）。它们用的是官方登录、表名本就是 "OpenAI"，迁回内置 "openai" 桶后能力不变，
 /// 且这个 id 永远能解析。统一会话开关开着时，随后的统一迁移会再把它们按正常流程搬进
 /// custom 桶（备份里记为 openai，关开关时可精确还原），所以这里不看开关。
@@ -858,6 +905,23 @@ fn collect_source_model_provider_ids(db: &Database) -> Result<BTreeSet<String>, 
     let providers = db.get_all_providers("codex")?;
     let mut ids = BTreeSet::new();
 
+    // Upgrade an existing SwitchPlus route without taking over a fresh
+    // installation's shared CC Switch history. The old marker lives in our
+    // isolated settings directory, and a saved mode proves prior ownership.
+    let settings = crate::settings::get_settings();
+    let old_target = settings
+        .local_migrations
+        .as_ref()
+        .and_then(|m| m.codex_third_party_history_provider_bucket_v1.as_ref())
+        .map(|m| m.target_provider_id.as_str());
+    if old_target == Some("custom")
+        && crate::mode::current::mode_state(&crate::app_config::AppType::Codex)
+            .mode
+            .is_some()
+    {
+        ids.insert("custom".to_string());
+    }
+
     for provider in providers.values() {
         if provider.category.as_deref() == Some("official")
             || is_official_seed_id(&provider.id)
@@ -904,7 +968,7 @@ fn migration_backup_root(migration_name: &str) -> PathBuf {
 }
 
 fn is_known_cc_switch_legacy_codex_model_provider_id(provider_id: &str) -> bool {
-    SWITCHPLUS_LEGACY_CODEX_MODEL_PROVIDER_IDS
+    CC_SWITCH_LEGACY_CODEX_MODEL_PROVIDER_IDS
         .iter()
         .any(|known| known.eq_ignore_ascii_case(provider_id))
 }
@@ -935,7 +999,7 @@ fn legacy_codex_model_provider_id_from_normalized_config(config_text: &str) -> O
 
 fn normalized_legacy_codex_provider_name(name: &str) -> Option<&'static str> {
     if is_known_cc_switch_legacy_codex_model_provider_id(name) {
-        return SWITCHPLUS_LEGACY_CODEX_MODEL_PROVIDER_IDS
+        return CC_SWITCH_LEGACY_CODEX_MODEL_PROVIDER_IDS
             .iter()
             .copied()
             .find(|known| known.eq_ignore_ascii_case(name));
@@ -1520,6 +1584,53 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
+    fn switchplus_upgrade_migrates_previous_bucket_only_with_local_ownership() {
+        let dir = tempdir().unwrap();
+        let _env = EnvVarGuard::set("SWITCHPLUS_TEST_HOME", dir.path());
+        crate::settings::reload_settings().unwrap();
+        let db = Database::memory().unwrap();
+        let store = crate::live::engine::DeviceStore::for_device();
+        crate::settings::mark_codex_third_party_history_provider_bucket_migrated(
+            CodexThirdPartyHistoryProviderBucketMigration {
+                completed_at: "previous-version".into(),
+                target_provider_id: "custom".into(),
+                source_provider_ids: vec![],
+                migrated_jsonl_files: 0,
+                migrated_state_rows: 0,
+                scanned_history_files: true,
+            },
+        )
+        .unwrap();
+        assert!(!crate::settings::is_codex_third_party_history_provider_bucket_migrated());
+        assert!(!collect_source_model_provider_ids(&db)
+            .unwrap()
+            .contains("custom"));
+        crate::mode::state::update(&store, |state| {
+            state
+                .apps
+                .entry("codex".into())
+                .or_default()
+                .set_mode_state(crate::mode::state::ModeState {
+                    mode: Some(crate::mode::state::Mode::Proxy),
+                    ..Default::default()
+                });
+        })
+        .unwrap();
+        let codex_dir = get_codex_config_dir();
+        let sessions = codex_dir.join("sessions");
+        fs::create_dir_all(&sessions).unwrap();
+        let path = sessions.join("upgrade.jsonl");
+        fs::write(&path, "{\"type\":\"session_meta\",\"payload\":{\"id\":\"upgrade\",\"model_provider\":\"custom\"}}\n").unwrap();
+        let outcome = maybe_migrate_codex_third_party_history_provider_bucket(&db).unwrap();
+        assert_eq!(outcome.migrated_jsonl_files, 1);
+        assert!(fs::read_to_string(path)
+            .unwrap()
+            .contains("\"model_provider\":\"switchplus\""));
+        assert!(crate::settings::is_codex_third_party_history_provider_bucket_migrated());
+    }
+
+    #[test]
     fn detects_custom_routed_codex_config_for_unify_gate() {
         // 注入产物（官方 + 统一开关）
         assert!(codex_config_text_routes_custom(
@@ -1591,13 +1702,13 @@ base_url = "https://aihubmix.example/v1"
                 None,
             ),
             Provider::with_id(
-                "legacy-switchplus".to_string(),
+                "legacy-ccswitch".to_string(),
                 "Legacy CC Switch".to_string(),
                 serde_json::json!({
                     "auth": {},
-                    "config": r#"model_provider = "switchplus"
+                    "config": r#"model_provider = "ccswitch"
 
-[model_providers.switchplus]
+[model_providers.ccswitch]
 name = "AIHubMix"
 base_url = "https://aihubmix.example/v1"
 "#
@@ -1663,7 +1774,7 @@ base_url = "https://proxy.example/v1"
         let source_provider_ids = collect_source_model_provider_ids(&db).expect("collect ids");
         assert_eq!(
             source_provider_ids,
-            source_ids(&["aihubmix", "switchplus", "rightcode"])
+            source_ids(&["aihubmix", "ccswitch", "rightcode"])
         );
 
         let session_dir = codex_dir.join("sessions/2026/05/28");
@@ -1674,10 +1785,10 @@ base_url = "https://proxy.example/v1"
             concat!(
                 "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s1\",\"model_provider\":\"rightcode\"}}\n",
                 "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s2\",\"model_provider\":\"aihubmix\"}}\n",
-                "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s3\",\"model_provider\":\"switchplus\"}}\n",
+                "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s3\",\"model_provider\":\"ccswitch\"}}\n",
                 "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s4\",\"model_provider\":\"my-private-relay\"}}\n",
                 "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s5\",\"model_provider\":\"openai\"}}\n",
-                "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s6\",\"model_provider\":\"custom\"}}\n",
+                "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s6\",\"model_provider\":\"switchplus\"}}\n",
             ),
         )
         .expect("write session");
@@ -1689,7 +1800,7 @@ base_url = "https://proxy.example/v1"
         let session_text = fs::read_to_string(&session_path).expect("read session");
         assert_eq!(
             session_text
-                .matches("\"model_provider\":\"custom\"")
+                .matches("\"model_provider\":\"switchplus\"")
                 .count(),
             4
         );
@@ -1709,10 +1820,10 @@ base_url = "https://proxy.example/v1"
             INSERT INTO threads (id, model_provider) VALUES
                 ('rightcode-thread', 'rightcode'),
                 ('aihubmix-thread', 'aihubmix'),
-                ('switchplus-thread', 'switchplus'),
+                ('ccswitch-thread', 'ccswitch'),
                 ('manual-thread', 'my-private-relay'),
                 ('openai-thread', 'openai'),
-                ('custom-thread', 'custom');",
+                ('custom-thread', 'switchplus');",
         )
         .expect("seed state db");
         drop(conn);
@@ -1735,7 +1846,7 @@ base_url = "https://proxy.example/v1"
             )
             .expect("count provider")
         };
-        assert_eq!(count_provider("custom"), 4);
+        assert_eq!(count_provider("switchplus"), 4);
         assert_eq!(count_provider("my-private-relay"), 1);
         assert_eq!(count_provider("openai"), 1);
         assert!(backup_root
@@ -1758,7 +1869,7 @@ base_url = "https://proxy.example/v1"
                     .map(String::as_str)
                     .collect::<Vec<_>>()
             ),
-            source_ids(&["legacy-switchplus", "rightcode"])
+            source_ids(&["legacy-ccswitch", "rightcode"])
         );
 
         let config_provider_id = |provider_id: &str| -> String {
@@ -1778,24 +1889,24 @@ base_url = "https://proxy.example/v1"
             rightcode_config
                 .get("model_provider")
                 .and_then(|value| value.as_str()),
-            Some("custom")
+            Some("switchplus")
         );
         assert!(rightcode_config
             .get("model_providers")
             .and_then(|value| value.get("aihubmix"))
             .is_none());
 
-        let switchplus_config: toml::Value =
-            toml::from_str(&config_provider_id("legacy-switchplus")).expect("parse switchplus config");
+        let ccswitch_config: toml::Value =
+            toml::from_str(&config_provider_id("legacy-ccswitch")).expect("parse ccswitch config");
         assert_eq!(
-            switchplus_config
+            ccswitch_config
                 .get("model_provider")
                 .and_then(|value| value.as_str()),
-            Some("custom")
+            Some("switchplus")
         );
-        assert!(switchplus_config
+        assert!(ccswitch_config
             .get("model_providers")
-            .and_then(|value| value.get("switchplus"))
+            .and_then(|value| value.get("ccswitch"))
             .is_none());
 
         let manual_config: toml::Value =
@@ -1823,7 +1934,7 @@ base_url = "https://proxy.example/v1"
             normalized_config
                 .get("model_provider")
                 .and_then(|value| value.as_str()),
-            Some("custom")
+            Some("switchplus")
         );
     }
 
@@ -1846,7 +1957,7 @@ base_url = "https://proxy.example/v1"
             &session_path,
             concat!(
                 "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s1\",\"model_provider\":\"openai\"}}\n",
-                "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s2\",\"model_provider\":\"custom\"}}\n",
+                "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s2\",\"model_provider\":\"switchplus\"}}\n",
                 "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s3\",\"model_provider\":\"my-private-relay\"}}\n",
                 "{\"type\":\"response_item\",\"payload\":{\"text\":\"openai\"}}\n",
             ),
@@ -1860,7 +1971,7 @@ base_url = "https://proxy.example/v1"
         let session_text = fs::read_to_string(&session_path).expect("read session");
         assert_eq!(
             session_text
-                .matches("\"model_provider\":\"custom\"")
+                .matches("\"model_provider\":\"switchplus\"")
                 .count(),
             2
         );
@@ -1887,7 +1998,7 @@ base_url = "https://proxy.example/v1"
             );
             INSERT INTO threads (id, model_provider) VALUES
                 ('openai-thread', 'openai'),
-                ('custom-thread', 'custom'),
+                ('custom-thread', 'switchplus'),
                 ('manual-thread', 'my-private-relay');",
         )
         .expect("seed state db");
@@ -1911,7 +2022,7 @@ base_url = "https://proxy.example/v1"
             )
             .expect("count provider")
         };
-        assert_eq!(count_provider("custom"), 2);
+        assert_eq!(count_provider("switchplus"), 2);
         assert_eq!(count_provider("openai"), 0);
         assert_eq!(count_provider("my-private-relay"), 1);
     }
@@ -1954,7 +2065,7 @@ base_url = "https://proxy.example/v1"
         let official_path = session_dir.join("official.jsonl");
         fs::write(
             &official_path,
-            "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s1\",\"model_provider\":\"custom\"}}\n",
+            "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s1\",\"model_provider\":\"switchplus\"}}\n",
         )
         .expect("write official session");
         let on_period_dir = codex_dir.join("sessions/2026/06/12");
@@ -1963,7 +2074,7 @@ base_url = "https://proxy.example/v1"
         fs::write(
             &on_period_path,
             concat!(
-                "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s2\",\"model_provider\":\"custom\"}}\n",
+                "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s2\",\"model_provider\":\"switchplus\"}}\n",
                 "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s3\",\"model_provider\":\"my-private-relay\"}}\n",
             ),
         )
@@ -1974,8 +2085,8 @@ base_url = "https://proxy.example/v1"
         conn.execute_batch(
             "CREATE TABLE threads (id TEXT PRIMARY KEY, model_provider TEXT NOT NULL);
             INSERT INTO threads (id, model_provider) VALUES
-                ('t1', 'custom'),
-                ('t2', 'custom'),
+                ('t1', 'switchplus'),
+                ('t2', 'switchplus'),
                 ('t3', 'openai');",
         )
         .expect("seed state db");
@@ -2005,7 +2116,7 @@ base_url = "https://proxy.example/v1"
         let official_text = fs::read_to_string(&official_path).expect("read official");
         assert!(official_text.contains("\"model_provider\":\"openai\""));
         let on_period_text = fs::read_to_string(&on_period_path).expect("read on-period");
-        assert!(on_period_text.contains("\"id\":\"s2\",\"model_provider\":\"custom\""));
+        assert!(on_period_text.contains("\"id\":\"s2\",\"model_provider\":\"switchplus\""));
         assert!(on_period_text.contains("\"model_provider\":\"my-private-relay\""));
 
         let conn = Connection::open(&state_db_path).expect("reopen state db");
@@ -2018,7 +2129,7 @@ base_url = "https://proxy.example/v1"
             .expect("thread provider")
         };
         assert_eq!(provider_of("t1"), "openai");
-        assert_eq!(provider_of("t2"), "custom");
+        assert_eq!(provider_of("t2"), "switchplus");
         assert_eq!(provider_of("t3"), "openai");
         drop(conn);
 
@@ -2070,7 +2181,7 @@ base_url = "https://proxy.example/v1"
         let session_path = session_dir.join("official.jsonl");
         fs::write(
             &session_path,
-            "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s1\",\"model_provider\":\"custom\"}}\n",
+            "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s1\",\"model_provider\":\"switchplus\"}}\n",
         )
         .expect("write session");
 
@@ -2083,7 +2194,7 @@ base_url = "https://proxy.example/v1"
         .expect("restore");
         assert_eq!(outcome.skipped_reason.as_deref(), Some("no_backup_ledger"));
         let text = fs::read_to_string(&session_path).expect("read session");
-        assert!(text.contains("\"model_provider\":\"custom\""));
+        assert!(text.contains("\"model_provider\":\"switchplus\""));
     }
 
     #[test]
@@ -2141,7 +2252,7 @@ base_url = "https://proxy.example/v1"
         fs::create_dir_all(&session_dir).expect("create session dir");
         fs::write(
             session_dir.join("session.jsonl"),
-            "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s1\",\"model_provider\":\"custom\"}}\n",
+            "{\"type\":\"session_meta\",\"payload\":{\"id\":\"s1\",\"model_provider\":\"switchplus\"}}\n",
         )
         .expect("write session");
 
@@ -2157,7 +2268,7 @@ base_url = "https://proxy.example/v1"
         assert_eq!(outcome.restored_state_rows, 0);
 
         let text = fs::read_to_string(session_dir.join("session.jsonl")).expect("read session");
-        assert!(text.contains("\"model_provider\":\"custom\""));
+        assert!(text.contains("\"model_provider\":\"switchplus\""));
     }
 
     #[test]
@@ -2210,7 +2321,7 @@ base_url = "https://proxy.example/v1"
         let raw = fs::read(&path).expect("read raw");
         assert_eq!(&raw[..4], &[0x28, 0xB5, 0x2F, 0xFD], "still zstd");
         let next = codex_rollout_file::read_to_string(&path).expect("read rewritten");
-        assert!(next.contains("\"model_provider\":\"custom\""));
+        assert!(next.contains("\"model_provider\":\"switchplus\""));
         assert!(next.ends_with("\"content\":\"hi\"}}\n"));
         let backup = fs::read(backup_root.join("jsonl/sessions/2026/05/20/rollout-test.jsonl.zst"))
             .expect("backup kept as zst");
@@ -2247,7 +2358,7 @@ base_url = "https://proxy.example/v1"
 
         assert!(changed);
         let next = fs::read_to_string(&path).expect("read rewritten");
-        assert!(next.contains("\"model_provider\":\"custom\""));
+        assert!(next.contains("\"model_provider\":\"switchplus\""));
         assert!(backup_root
             .join("jsonl/sessions/2026/05/20/rollout-test.jsonl")
             .exists());
@@ -2301,7 +2412,7 @@ base_url = "https://proxy.example/v1"
             INSERT INTO threads (id, model_provider) VALUES
                 ('a', 'aihubmix'),
                 ('b', 'openai'),
-                ('c', 'custom');",
+                ('c', 'switchplus');",
         )
         .expect("seed db");
         drop(conn);
@@ -2364,7 +2475,7 @@ base_url = "https://proxy.example/v1"
         let conn = Connection::open(&db_path).expect("reopen db");
         let custom_count: i64 = conn
             .query_row(
-                "SELECT COUNT(*) FROM threads WHERE model_provider = 'custom'",
+                "SELECT COUNT(*) FROM threads WHERE model_provider = 'switchplus'",
                 [],
                 |row| row.get(0),
             )
@@ -2553,14 +2664,14 @@ model_provider = "my-private-relay"
     }
 
     #[test]
-    fn collects_legacy_switchplus_provider_id_from_stored_config() {
+    fn collects_legacy_ccswitch_provider_id_from_stored_config() {
         let db = Database::memory().expect("memory db");
         let mut provider = Provider::with_id(
             "generated-uuid".to_string(),
             "Legacy Stable".to_string(),
             serde_json::json!({
                 "auth": {},
-                "config": "model_provider = \"switchplus\"\n\n[model_providers.switchplus]\nname = \"AIHubMix\"\nbase_url = \"https://aihubmix.example/v1\""
+                "config": "model_provider = \"ccswitch\"\n\n[model_providers.ccswitch]\nname = \"AIHubMix\"\nbase_url = \"https://aihubmix.example/v1\""
             }),
             None,
         );
@@ -2569,7 +2680,7 @@ model_provider = "my-private-relay"
         db.save_provider("codex", &provider).expect("save provider");
 
         let ids = collect_source_model_provider_ids(&db).expect("collect ids");
-        assert!(ids.contains("switchplus"));
+        assert!(ids.contains("ccswitch"));
         assert!(ids.contains("aihubmix"));
         assert!(!ids.contains("generated-uuid"));
     }
@@ -2618,7 +2729,7 @@ model = "gpt-5.4"
             parsed
                 .get("model_provider")
                 .and_then(|value| value.as_str()),
-            Some("custom")
+            Some("switchplus")
         );
         assert!(parsed
             .get("model_providers")
@@ -2627,7 +2738,7 @@ model = "gpt-5.4"
         assert_eq!(
             parsed
                 .get("model_providers")
-                .and_then(|value| value.get("custom"))
+                .and_then(|value| value.get("switchplus"))
                 .and_then(|value| value.get("base_url"))
                 .and_then(|value| value.as_str()),
             Some("https://aihubmix.example/v1")
@@ -2638,7 +2749,7 @@ model = "gpt-5.4"
                 .and_then(|value| value.get("work"))
                 .and_then(|value| value.get("model_provider"))
                 .and_then(|value| value.as_str()),
-            Some("custom")
+            Some("switchplus")
         );
 
         let backups: Vec<_> = fs::read_dir(backup_dir.path().join("providers"))
@@ -2655,16 +2766,16 @@ model = "gpt-5.4"
     }
 
     #[test]
-    fn migrates_legacy_switchplus_provider_template_to_custom() {
+    fn migrates_legacy_ccswitch_provider_template_to_custom() {
         let db = Database::memory().expect("memory db");
         let provider = Provider::with_id(
-            "legacy-switchplus".to_string(),
+            "legacy-ccswitch".to_string(),
             "Legacy CC Switch".to_string(),
             serde_json::json!({
                 "auth": {},
-                "config": r#"model_provider = "switchplus"
+                "config": r#"model_provider = "ccswitch"
 
-[model_providers.switchplus]
+[model_providers.ccswitch]
 name = "AIHubMix"
 base_url = "https://aihubmix.example/v1"
 "#
@@ -2676,11 +2787,11 @@ base_url = "https://aihubmix.example/v1"
         let (outcome, _backup_dir) = migrate_provider_templates_for_test(&db);
         assert_eq!(
             outcome.migrated_provider_ids,
-            vec!["legacy-switchplus".to_string()]
+            vec!["legacy-ccswitch".to_string()]
         );
 
         let saved = db
-            .get_provider_by_id("legacy-switchplus", "codex")
+            .get_provider_by_id("legacy-ccswitch", "codex")
             .expect("get provider")
             .expect("provider exists");
         let config_text = saved
@@ -2694,16 +2805,16 @@ base_url = "https://aihubmix.example/v1"
             parsed
                 .get("model_provider")
                 .and_then(|value| value.as_str()),
-            Some("custom")
+            Some("switchplus")
         );
         assert!(parsed
             .get("model_providers")
-            .and_then(|value| value.get("switchplus"))
+            .and_then(|value| value.get("ccswitch"))
             .is_none());
         assert_eq!(
             parsed
                 .get("model_providers")
-                .and_then(|value| value.get("custom"))
+                .and_then(|value| value.get("switchplus"))
                 .and_then(|value| value.get("base_url"))
                 .and_then(|value| value.as_str()),
             Some("https://aihubmix.example/v1")
@@ -2855,12 +2966,12 @@ model_provider = "aihubmix"
                 .and_then(|value| value.get("work"))
                 .and_then(|value| value.get("model_provider"))
                 .and_then(|value| value.as_str()),
-            Some("custom")
+            Some("switchplus")
         );
         assert_eq!(
             parsed
                 .get("model_providers")
-                .and_then(|value| value.get("custom"))
+                .and_then(|value| value.get("switchplus"))
                 .and_then(|value| value.get("base_url"))
                 .and_then(|value| value.as_str()),
             Some("https://current.example/v1")
@@ -2879,7 +2990,7 @@ model_provider = "aihubmix"
             }),
             None,
         );
-        provider.category = Some("custom".to_string());
+        provider.category = Some("switchplus".to_string());
         provider.created_at = Some(1);
 
         db.save_provider("codex", &provider).expect("save provider");
@@ -2901,7 +3012,7 @@ model_provider = "aihubmix"
             }),
             None,
         );
-        provider.category = Some("custom".to_string());
+        provider.category = Some("switchplus".to_string());
 
         db.save_provider("codex", &provider).expect("save provider");
 
@@ -2985,7 +3096,7 @@ model_provider = "aihubmix"
         let session_dir = codex_dir.join("sessions/2026/09/01");
         fs::create_dir_all(&session_dir).expect("create session dir");
         // 休眠 custom 表保持原样：迁移不碰 config.toml。
-        let config = "model = \"gpt-5.5\"\n\n[model_providers.switchplus]\nname = \"custom\"\nbase_url = \"http://127.0.0.1:15721/v1\"\nexperimental_bearer_token = \"SWITCHPLUS_PROXY_MANAGED\"\n";
+        let config = "model = \"gpt-5.5\"\n\n[model_providers.switchplus]\nname = \"switchplus\"\nbase_url = \"http://127.0.0.1:15721/v1\"\nexperimental_bearer_token = \"PROXY_MANAGED\"\n";
         fs::write(codex_dir.join("config.toml"), config).expect("write config");
 
         let plain = session_dir.join("rollout-legacy.jsonl");
@@ -3003,7 +3114,8 @@ model_provider = "aihubmix"
         )
         .expect("write zst session");
         let third_party = session_dir.join("rollout-custom.jsonl");
-        fs::write(&third_party, session_meta_line("s3", "custom")).expect("write custom session");
+        fs::write(&third_party, session_meta_line("s3", "switchplus"))
+            .expect("write custom session");
 
         let state_db = codex_dir.join(CODEX_STATE_DB_FILENAME);
         seed_threads(
@@ -3011,7 +3123,7 @@ model_provider = "aihubmix"
             &[
                 ("s1", "switchplus-official"),
                 ("s2", "switchplus-official"),
-                ("s3", "custom"),
+                ("s3", "switchplus"),
                 ("s4", "openai"),
             ],
         );
@@ -3035,12 +3147,12 @@ model_provider = "aihubmix"
         assert!(decoded.contains("\"model_provider\":\"openai\""));
         assert_eq!(
             fs::read_to_string(&third_party).expect("read custom"),
-            session_meta_line("s3", "custom")
+            session_meta_line("s3", "switchplus")
         );
 
         assert_eq!(thread_provider(&state_db, "s1"), "openai");
         assert_eq!(thread_provider(&state_db, "s2"), "openai");
-        assert_eq!(thread_provider(&state_db, "s3"), "custom");
+        assert_eq!(thread_provider(&state_db, "s3"), "switchplus");
         assert_eq!(thread_provider(&state_db, "s4"), "openai");
 
         assert_eq!(
@@ -3136,17 +3248,17 @@ model_provider = "aihubmix"
         .expect("write s1");
         fs::write(
             session_dir.join("rollout-s2.jsonl"),
-            session_meta_line("s2", "custom"),
+            session_meta_line("s2", "switchplus"),
         )
         .expect("write s2");
         let state_db = codex_dir.join(CODEX_STATE_DB_FILENAME);
-        seed_threads(&state_db, &[("s1", "openai"), ("s2", "custom")]);
+        seed_threads(&state_db, &[("s1", "openai"), ("s2", "switchplus")]);
 
         let first = maybe_migrate_codex_official_history_to_unified_bucket().expect("first pass");
         assert_eq!(first.skipped_reason, None);
         assert_eq!(first.migrated_jsonl_files, 1);
         assert_eq!(first.migrated_state_rows, 1);
-        assert_eq!(thread_provider(&state_db, "s1"), "custom");
+        assert_eq!(thread_provider(&state_db, "s1"), "switchplus");
 
         // 之后又冒出一个 openai 会话（例如开关关过又开、或绕过 CC Switch 用过 Codex）：
         // 完成标记不再挡住，下一次照样迁。
@@ -3165,10 +3277,10 @@ model_provider = "aihubmix"
         let second = maybe_migrate_codex_official_history_to_unified_bucket().expect("second pass");
         assert_eq!(second.skipped_reason, None);
         assert_eq!(second.migrated_state_rows, 1);
-        assert_eq!(thread_provider(&state_db, "s3"), "custom");
+        assert_eq!(thread_provider(&state_db, "s3"), "switchplus");
         assert!(fs::read_to_string(session_dir.join("rollout-s3.jsonl"))
             .expect("read s3")
-            .contains("\"model_provider\":\"custom\""));
+            .contains("\"model_provider\":\"switchplus\""));
 
         // 再没有 openai 线程：只查一次 state DB 就返回，不扫会话目录。
         let third = maybe_migrate_codex_official_history_to_unified_bucket().expect("third pass");
@@ -3224,7 +3336,7 @@ model_provider = "aihubmix"
         );
         assert_eq!(
             codex_config_text_history_bucket(UNIFIED_CONFIG).as_deref(),
-            Some("custom")
+            Some("switchplus")
         );
         assert_eq!(codex_config_text_history_bucket("not = [valid"), None);
     }
@@ -3242,15 +3354,15 @@ model_provider = "aihubmix"
             hint,
             Some(CodexHistorySplitHint {
                 previous_bucket: "openai".to_string(),
-                current_bucket: "custom".to_string(),
+                current_bucket: "switchplus".to_string(),
                 locked_threads: 3,
             })
         );
-        assert!(codex_history_split_hint_for("custom", official, |_| Some(2)).is_some());
+        assert!(codex_history_split_hint_for("switchplus", official, |_| Some(2)).is_some());
 
         // 没换组 / 换的不是 CC Switch 管的两组 / 旧组没线程 / 读不到 state DB：都不提示。
         assert_eq!(
-            codex_history_split_hint_for("custom", custom, |_| Some(9)),
+            codex_history_split_hint_for("switchplus", custom, |_| Some(9)),
             None
         );
         assert_eq!(

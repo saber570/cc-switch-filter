@@ -98,7 +98,6 @@ import {
   type FetchedModelSelection,
 } from "./FetchedModelPicker";
 import { LocalProxyRequestOverridesField } from "./LocalProxyRequestOverridesField";
-import { CodexV9FilterField } from "./CodexV9FilterField";
 import { cn } from "@/lib/utils";
 import { useCommittableRef } from "@/hooks/useLatestRef";
 import { useModelMetadataFill } from "@/hooks/useModelMetadataFill";
@@ -154,8 +153,6 @@ export function resolveCopilotReportedPromptLimit(
 }
 
 interface CodexFormFieldsProps {
-  codexV9Filter?: boolean;
-  onCodexV9FilterChange?: (enabled: boolean) => void;
   appId?: AppId;
   providerId?: string;
   isCopilotPreset?: boolean;
@@ -714,8 +711,6 @@ export function CodexFormFields({
   onLocalProxyHeadersOverrideChange,
   localProxyBodyOverride,
   onLocalProxyBodyOverrideChange,
-  codexV9Filter = false,
-  onCodexV9FilterChange,
   variant = "classic",
   directModeFormatNotice,
 }: CodexFormFieldsProps) {
@@ -774,7 +769,6 @@ export function CodexFormFields({
     localProxyHeadersOverride.trim() || localProxyBodyOverride.trim(),
   );
   const hasAnyAdvancedValue =
-    codexV9Filter ||
     isCopilotPreset ||
     !!customUserAgent ||
     hasRequestOverrides ||
@@ -1734,23 +1728,7 @@ export function CodexFormFields({
     </>
   );
 
-  const filterField =
-    !isGrokBuild &&
-    !isCodexOauthPreset &&
-    category !== "official" &&
-    onCodexV9FilterChange ? (
-      <CodexV9FilterField
-        enabled={codexV9Filter}
-        onChange={onCodexV9FilterChange}
-      />
-    ) : null;
-  const userAgentAndOverrides =
-    proxyOverrides || filterField ? (
-      <>
-        {proxyOverrides}
-        {filterField}
-      </>
-    ) : null;
+  const userAgentAndOverrides = proxyOverrides;
 
   // 模型映射 / 模型列表的行。
   const renderCatalogRows = () => (

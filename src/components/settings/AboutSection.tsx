@@ -56,8 +56,8 @@ export function AboutSection({ isPortable }: { isPortable: boolean }) {
       <div className="space-y-3 px-5 py-4 text-body text-fg-2">
         <p>
           {t(
-            "switchplus.updates",
-            "保留供应商管理、路由、摘要压缩和 V9 过滤。软件更新通过合并源码后重新构建，不连接官方自动更新源。",
+            "switchplus.features",
+            "保留供应商管理、路由和摘要压缩。第三方 Codex 请求默认启用历史过滤与自动重试。",
           )}
         </p>
         <p>

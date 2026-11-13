@@ -1435,12 +1435,12 @@ mod tests {
     #[test]
     fn the_proxy_base_url_matches_the_listen_address() {
         assert!(is_proxy_base_url(
-            "http://127.0.0.1:15721/v1",
+            "http://127.0.0.1:15731/v1",
             "127.0.0.1",
             15731
         ));
         assert!(is_proxy_base_url(
-            "http://127.0.0.1:15721/v1",
+            "http://127.0.0.1:15731/v1",
             "0.0.0.0",
             15731
         ));
@@ -1449,7 +1449,7 @@ mod tests {
             "127.0.0.1",
             15731
         ));
-        assert!(is_proxy_base_url("http://[::1]:15721/v1", "::", 15731));
+        assert!(is_proxy_base_url("http://[::1]:15731/v1", "::", 15731));
         // 端口 0：系统分配的端口，只核对主机和路径。
         assert!(is_proxy_base_url(
             "http://127.0.0.1:54321/v1",

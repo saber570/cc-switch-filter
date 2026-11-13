@@ -13,7 +13,7 @@ use crate::error::AppError;
 /// - `dirs::home_dir()` 在 Windows 上使用 `SHGetKnownFolderPath(FOLDERID_Profile)`，
 ///   返回的是真实用户目录（类似 `C:\\Users\\Alice`），与 v3.10.2 行为一致。
 /// - 不要直接使用 `HOME` 环境变量：它可能由 Git/Cygwin/MSYS 等第三方工具注入，
-///   且不一定等于用户目录，可能导致 `.switchplus/switchplus.db` 路径变化，从而“看起来像数据丢失”。
+///   且不一定等于用户目录，可能导致 `.switchplus/cc-switch.db` 路径变化，从而“看起来像数据丢失”。
 ///
 /// ## 测试隔离
 ///
@@ -312,7 +312,9 @@ pub fn get_claude_settings_path() -> PathBuf {
 /// 获取应用配置目录路径 (~/.switchplus)
 pub fn get_app_config_dir() -> PathBuf {
     if let Some(custom) = crate::app_store::get_app_config_dir_override() {
-        if !crate::identity::is_cc_switch_path(&custom) { return custom; }
+        if !crate::identity::is_cc_switch_path(&custom) {
+            return custom;
+        }
     }
 
     get_home_dir().join(".switchplus")
@@ -928,7 +930,8 @@ mod tests {
     #[ignore = "requires SWITCHPLUS_WSL_TEST_DIR to point to a WSL2 UNC directory"]
     fn atomic_write_replaces_existing_wsl_unc_file() {
         let root = PathBuf::from(
-            std::env::var_os("SWITCHPLUS_WSL_TEST_DIR").expect("SWITCHPLUS_WSL_TEST_DIR must be set"),
+            std::env::var_os("SWITCHPLUS_WSL_TEST_DIR")
+                .expect("SWITCHPLUS_WSL_TEST_DIR must be set"),
         );
         let home = get_home_dir();
         let temp = std::env::temp_dir();
@@ -1157,7 +1160,7 @@ mod tests {
 
     /// 回归：`SWITCHPLUS_TEST_HOME` 必须盖过 v3.10.3 的 `HOME` 兼容回退。
     ///
-    /// Windows 上回退只看"默认位置有没有 switchplus.db"，而测试临时目录里通常没有，
+    /// Windows 上回退只看"默认位置有没有 cc-switch.db"，而测试临时目录里通常没有，
     /// 于是会被引向 `HOME/.switchplus`——runner 的 HOME 下往往真有一份 db，测试就此
     /// 读写到真实用户数据（既污染用户库，又让断言读到别人写下的状态）。
     #[cfg(windows)]
@@ -1173,7 +1176,7 @@ mod tests {
         let legacy_home = tempfile::tempdir().expect("tempdir");
         let legacy_dir = legacy_home.path().join(".switchplus");
         std::fs::create_dir_all(&legacy_dir).expect("create legacy dir");
-        std::fs::write(legacy_dir.join("switchplus.db"), b"legacy").expect("seed legacy db");
+        std::fs::write(legacy_dir.join("cc-switch.db"), b"legacy").expect("seed legacy db");
 
         let test_home = tempfile::tempdir().expect("tempdir");
         let saved_home = std::env::var_os("HOME");

@@ -1793,6 +1793,18 @@ async fn startup_app(state: &AppState, app: &AppType) -> Result<(), String> {
         mode.mode.map_or(enabled, |mode| mode == Mode::Proxy)
     };
 
+    // A fresh SwitchPlus installation has no ownership record. A shared
+    // client file may still be managed by CC Switch or another local proxy.
+    // Only a saved mode, our legacy backup, or an explicitly enabled route
+    // authorizes restoring it. Keep an untouched direct client intact too.
+    if mode.mode.is_none() && !mode.attached && !had_backup && !want_proxy {
+        log::info!(
+            "{} 尚无本机接管记录，启动时保留现有客户端配置",
+            app.as_str()
+        );
+        return Ok(());
+    }
+
     if placeholder {
         // 旧版留下的接管态：客户端里是旧契约。按「已接上」处理，下面的投影会整体换掉它。
         mode.attached = true;
@@ -3292,7 +3304,10 @@ mod mode_tests {
                 state.db.get_live_backup("claude").await.unwrap().is_none(),
                 "the old version would replay a leftover backup row after a downgrade"
             );
-            let drained = home.dir.path().join(".switchplus/backups/proxy-live-backup");
+            let drained = home
+                .dir
+                .path()
+                .join(".switchplus/backups/proxy-live-backup");
             assert_eq!(
                 fs::read_dir(&drained).unwrap().count(),
                 1,
@@ -3539,7 +3554,7 @@ mod mode_tests {
             .proxy_service
             .live_has_proxy_placeholder(&AppType::Codex));
         // 第三方路由留下的 custom 表改成休眠形态：指向本地代理、只有占位 Key。
-        let dormant = &doc["model_providers"]["custom"];
+        let dormant = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
         assert_eq!(
             dormant["experimental_bearer_token"].as_str(),
             Some(PROXY_TOKEN_PLACEHOLDER)
@@ -3556,7 +3571,9 @@ mod mode_tests {
         assert!(doc.get("model_provider").is_none(), "{third_party}");
         assert_eq!(doc["openai_base_url"].as_str(), Some(base_url));
         assert_eq!(
-            doc["model_providers"]["custom"]["experimental_bearer_token"].as_str(),
+            doc["model_providers"][crate::live::project::codex::ROUTE_ID]
+                ["experimental_bearer_token"]
+                .as_str(),
             Some(PROXY_TOKEN_PLACEHOLDER)
         );
         assert!(!third_party.contains("sk-relay"), "{third_party}");
@@ -3614,7 +3631,7 @@ mod mode_tests {
                     .map(str::to_string)
             };
             let bucket = if unified {
-                Some("custom".to_string())
+                Some(crate::live::project::codex::ROUTE_ID.to_string())
             } else {
                 None
             };
@@ -3626,7 +3643,7 @@ mod mode_tests {
             let doc: toml::Table = toml::from_str(&contract).unwrap();
             if unified {
                 assert!(doc.get("openai_base_url").is_none(), "{contract}");
-                let mirror = &doc["model_providers"]["custom"];
+                let mirror = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
                 assert_eq!(mirror["name"].as_str(), Some("OpenAI"));
                 assert_eq!(mirror["requires_openai_auth"].as_bool(), Some(true));
                 assert_eq!(mirror["supports_websockets"].as_bool(), Some(false));
@@ -3782,6 +3799,82 @@ command = "fs-server"
         ]
     }
 
+    #[tokio::test]
+    #[serial]
+    async fn switchplus_first_launch_preserves_unowned_codex_configuration() {
+        for foreign_proxy in [false, true] {
+            let _home = Home::new();
+            let live = if foreign_proxy {
+                CODEX_USER_LIVE
+                    .replace("https://a.example/v1", "http://127.0.0.1:15721/v1")
+                    .replace("sk-a", "PROXY_MANAGED")
+                    .replace("switchplus", "custom")
+            } else {
+                CODEX_USER_LIVE.to_string()
+            };
+            let auth = json!({"OPENAI_API_KEY":"existing-client-key"});
+            seed_codex(&live, Some(&auth));
+            let state = state_with(AppType::Codex, &codex_a_b(), "a").await;
+            let before_config = fs::read(codex_config_path()).unwrap();
+            let before_auth = fs::read(codex_auth_path()).unwrap();
+
+            startup(&state).await;
+
+            assert_eq!(fs::read(codex_config_path()).unwrap(), before_config);
+            assert_eq!(fs::read(codex_auth_path()).unwrap(), before_auth);
+            assert_eq!(current::mode_state(&AppType::Codex), ModeState::default());
+            assert!(!state.proxy_service.is_running().await);
+        }
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn switchplus_upgrade_restores_saved_codex_route_and_port() {
+        let _home = Home::new();
+        seed_codex(CODEX_USER_LIVE, None);
+        let state = state_with(AppType::Codex, &codex_a_b(), "a").await;
+        let mut config = state.db.get_global_proxy_config().await.unwrap();
+        config.listen_port = 15722;
+        state.db.update_global_proxy_config(config).await.unwrap();
+        enter_with_route(&state, &AppType::Codex, false, Some("b"))
+            .await
+            .expect("enter route");
+        let port = state
+            .db
+            .get_global_proxy_config()
+            .await
+            .unwrap()
+            .listen_port;
+        detach_all(&state).await;
+        assert!(!current::mode_state(&AppType::Codex).attached);
+
+        // Simulate the route table and placeholder written by 4.0.28.
+        let old_route = codex_text()
+            .replace("switchplus", "custom")
+            .replace("SWITCHPLUS_PROXY_MANAGED", "PROXY_MANAGED");
+        std::fs::write(codex_config_path(), old_route).unwrap();
+
+        startup(&state).await;
+
+        let restored = current::mode_state(&AppType::Codex);
+        assert!(restored.is_proxy() && restored.attached);
+        assert_eq!(restored.proxy_route.as_deref(), Some("b"));
+        assert_eq!(
+            state
+                .db
+                .get_global_proxy_config()
+                .await
+                .unwrap()
+                .listen_port,
+            port
+        );
+        assert!(state.proxy_service.is_running().await);
+        assert!(state
+            .proxy_service
+            .live_has_proxy_placeholder(&AppType::Codex));
+        detach_all(&state).await;
+    }
+
     /// 关键字段之外的部分（用户的表、注释、MCP、项目信任）。
     fn codex_user_parts(text: &str) -> Vec<&str> {
         [
@@ -3808,9 +3901,12 @@ command = "fs-server"
         ProviderService::switch(&state, AppType::Codex, "b").expect("switch to b");
         let on_b = codex_text();
         let doc = codex_doc();
-        assert_eq!(doc["model_provider"].as_str(), Some("custom"));
+        assert_eq!(
+            doc["model_provider"].as_str(),
+            Some(crate::live::project::codex::ROUTE_ID)
+        );
         assert_eq!(doc["model"].as_str(), Some("gpt-b"));
-        let route = &doc["model_providers"]["custom"];
+        let route = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
         assert_eq!(route["base_url"].as_str(), Some("https://b.example/v1"));
         assert_eq!(route["experimental_bearer_token"].as_str(), Some("sk-b"));
         assert!(!on_b.contains("sk-a"), "A's key is gone: {on_b}");
@@ -4028,10 +4124,10 @@ command = "fs-server"
         set_preservation(true);
         // 旧版按行的 id 整份写进来的表：a（id 和地址都对得上 a 的行）、b 的地址被用户改过、
         // 被 profile 引用的 c、代理占位残留、用户自己的 ollama_local。
-        let live = r#"model_provider = "a"
+        let live = r#"model_provider = "switchplus-a"
 model = "gpt-a"
 
-[model_providers.a]
+[model_providers.switchplus-a]
 name = "a"
 base_url = "https://a.example/v1"
 experimental_bearer_token = "sk-a"
@@ -4057,14 +4153,25 @@ base_url = "http://localhost:11434/v1"
 model_provider = "c"
 "#;
         seed_codex(live, None);
-        let [a, b] = codex_a_b();
+        let [mut a, b] = codex_a_b();
+        a.settings_config["config"] = json!(a.settings_config["config"]
+            .as_str()
+            .unwrap()
+            .replace(
+                "model_provider = \"a\"",
+                "model_provider = \"switchplus-a\""
+            )
+            .replace("model_providers.a]", "model_providers.switchplus-a]"));
         let c = codex_row("c", "https://c.example/v1", "");
         let state = state_with(AppType::Codex, &[a, b, c], "a").await;
 
         ProviderService::switch(&state, AppType::Codex, "b").expect("switch to b");
         let text = codex_text();
         let providers = codex_doc()["model_providers"].as_table().unwrap().clone();
-        assert!(!providers.contains_key("a"), "provably ours: {text}");
+        assert!(
+            !providers.contains_key("switchplus-a"),
+            "provably ours: {text}"
+        );
         assert!(
             !providers.contains_key("deepseek"),
             "placeholder leftover: {text}"
@@ -4195,7 +4302,9 @@ model_provider = "c"
             "detaching keeps the login"
         );
         assert_eq!(
-            codex_doc()["model_providers"]["custom"]["requires_openai_auth"].as_bool(),
+            codex_doc()["model_providers"][crate::live::project::codex::ROUTE_ID]
+                ["requires_openai_auth"]
+                .as_bool(),
             Some(true),
             "Codex sees the login it keeps"
         );
@@ -4243,10 +4352,14 @@ model_provider = "c"
             .expect("route b");
         assert_eq!(codex_login_file(), None);
         let doc = codex_doc();
-        assert_eq!(doc["model_provider"].as_str(), Some("custom"));
+        assert_eq!(
+            doc["model_provider"].as_str(),
+            Some(crate::live::project::codex::ROUTE_ID)
+        );
         assert!(doc.get("openai_base_url").is_none(), "{}", codex_text());
         assert_eq!(
-            doc["model_providers"]["custom"]["requires_openai_auth"].as_bool(),
+            doc["model_providers"][crate::live::project::codex::ROUTE_ID]["requires_openai_auth"]
+                .as_bool(),
             Some(false)
         );
         exit(&state, &AppType::Codex).await.expect("exit");
@@ -4282,12 +4395,12 @@ model_provider = "c"
             let doc = codex_doc();
             assert_eq!(
                 doc.get("model_provider").and_then(|v| v.as_str()),
-                Some("custom"),
+                Some(crate::live::project::codex::ROUTE_ID),
                 "unified={unified}: {}",
                 codex_text()
             );
             assert!(doc.get("openai_base_url").is_none(), "{}", codex_text());
-            let table = &doc["model_providers"]["custom"];
+            let table = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
             assert_eq!(table["requires_openai_auth"].as_bool(), Some(true));
             if route == "slow" {
                 assert_eq!(table["stream_idle_timeout_ms"].as_integer(), Some(900000));
@@ -4339,12 +4452,12 @@ model_provider = "c"
             let doc = codex_doc();
             assert_eq!(
                 doc["model_provider"].as_str(),
-                Some("custom"),
+                Some(crate::live::project::codex::ROUTE_ID),
                 "{route}: {}",
                 codex_text()
             );
             assert!(doc.get("openai_base_url").is_none(), "{}", codex_text());
-            let table = &doc["model_providers"]["custom"];
+            let table = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
             assert_ne!(
                 table
                     .get("requires_openai_auth")
@@ -4577,7 +4690,9 @@ model_provider = "c"
             ProviderService::switch(&state, AppType::Codex, "b").expect("to b");
             let doc = codex_doc();
             assert_eq!(
-                doc["model_providers"]["custom"]["requires_openai_auth"].as_bool(),
+                doc["model_providers"][crate::live::project::codex::ROUTE_ID]
+                    ["requires_openai_auth"]
+                    .as_bool(),
                 Some(preserve),
                 "the login lives in the keyring, auth.json says nothing (preserve={preserve})"
             );
@@ -4865,7 +4980,9 @@ model_provider = "c"
             "model = \"gpt-a\"\nmodel_verbosity = \"high\"\n",
         );
         seed_codex(
-            &format!("profile = \"work\"\n{live}\n[profiles.work]\nmodel_provider = \"switchplus\"\n"),
+            &format!(
+                "profile = \"work\"\n{live}\n[profiles.work]\nmodel_provider = \"switchplus\"\n"
+            ),
             None,
         );
         let state = state_with(AppType::Codex, &codex_a_b(), "a").await;
@@ -4900,7 +5017,7 @@ model_provider = "c"
         );
         assert_eq!(
             doc["profiles"]["work"]["model_provider"].as_str(),
-            Some("custom")
+            Some(crate::live::project::codex::ROUTE_ID)
         );
         let stored = state.db.get_provider_by_id("a", "codex").unwrap().unwrap();
         assert!(!stored.settings_config["config"]
@@ -5262,7 +5379,10 @@ model_provider = "c"
         enter(&state, &AppType::Gemini, false).await.expect("enter");
         let proxy_url = state.proxy_service.build_proxy_urls().await.unwrap().0;
         let env = gemini_env();
-        assert!(env.contains("GEMINI_API_KEY=SWITCHPLUS_PROXY_MANAGED"), "{env}");
+        assert!(
+            env.contains("GEMINI_API_KEY=SWITCHPLUS_PROXY_MANAGED"),
+            "{env}"
+        );
         assert!(
             env.contains(&format!("GOOGLE_GEMINI_BASE_URL={proxy_url}")),
             "{env}"
@@ -7256,11 +7376,18 @@ model_provider = "c"
                 .expect("enter proxy");
             let check = |published_stack: bool| {
                 let doc = codex_doc();
-                assert_eq!(doc["model_provider"].as_str(), Some("custom"));
-                let proxy = &doc["model_providers"]["custom"];
+                assert_eq!(
+                    doc["model_provider"].as_str(),
+                    Some(crate::live::project::codex::ROUTE_ID)
+                );
+                let proxy = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
                 assert_eq!(
                     proxy["name"].as_str(),
-                    Some(if name == "OpenAI" { "OpenAI" } else { "custom" })
+                    Some(if name == "OpenAI" {
+                        "OpenAI"
+                    } else {
+                        crate::live::project::codex::ROUTE_ID
+                    })
                 );
                 assert_eq!(
                     proxy
@@ -7336,8 +7463,11 @@ model_provider = "c"
                 .await
                 .unwrap();
             let doc = codex_doc();
-            let proxy = &doc["model_providers"]["custom"];
-            assert_eq!(proxy["name"].as_str(), Some("custom"));
+            let proxy = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
+            assert_eq!(
+                proxy["name"].as_str(),
+                Some(crate::live::project::codex::ROUTE_ID)
+            );
             assert!(proxy.get("capabilities").is_none());
             assert!(proxy.get("stream_max_retries").is_none());
             assert!(proxy.get("stream_idle_timeout_ms").is_none());
@@ -9031,11 +9161,11 @@ model_provider = "c"
             let doc: toml::Table = toml::from_str(&shown).unwrap();
             assert_eq!(
                 doc["model_provider"].as_str(),
-                Some("custom"),
+                Some(crate::live::project::codex::ROUTE_ID),
                 "{label}: {shown}"
             );
             assert!(doc.get("openai_base_url").is_none(), "{label}: {shown}");
-            let route = &doc["model_providers"]["custom"];
+            let route = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
             assert_eq!(
                 route["requires_openai_auth"].as_bool(),
                 Some(true),
@@ -9106,7 +9236,8 @@ model_provider = "c"
             .expect("view")
             .settings;
         let mut doc: toml_edit::DocumentMut = base["config"].as_str().unwrap().parse().unwrap();
-        doc["model_providers"]["custom"]["requires_openai_auth"] = toml_edit::value(true);
+        doc["model_providers"][crate::live::project::codex::ROUTE_ID]["requires_openai_auth"] =
+            toml_edit::value(true);
         let mut edited = base.clone();
         edited["config"] = json!(doc.to_string());
         edited["auth"]["OPENAI_API_KEY"] = json!("");
