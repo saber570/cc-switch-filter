@@ -1121,7 +1121,7 @@ async fn handle_responses_for_app(
         Err(rejected) => return Ok(*rejected),
     };
 
-    let mut ctx = RequestContext::new(
+    let ctx = RequestContext::new(
         &state,
         &body,
         &headers,
@@ -1132,7 +1132,72 @@ async fn handle_responses_for_app(
     )
     .await?;
     let endpoint = endpoint_with_query(&uri, "/responses");
+    dispatch_responses_request(
+        state, ctx, app_type, method, endpoint, body, headers, extensions,
+    )
+    .await
+}
 
+#[allow(clippy::too_many_arguments)]
+async fn dispatch_responses_request(
+    state: ProxyState,
+    ctx: RequestContext,
+    app_type: AppType,
+    method: http::Method,
+    endpoint: String,
+    mut body: Value,
+    headers: http::HeaderMap,
+    extensions: http::Extensions,
+) -> Result<axum::response::Response, ProxyError> {
+    if super::codex_v9_filter::enabled(&app_type, &ctx.provider) {
+        if serde_json::to_vec(&body).map_or(true, |raw| raw.len() > super::codex_v9_filter::LIMIT) {
+            return Ok((
+                StatusCode::PAYLOAD_TOO_LARGE,
+                Json(json!({"error": {
+                    "code": "request_too_large", "message": "V9 request exceeds 64 MiB."
+                }})),
+            )
+                .into_response());
+        }
+        let (reasoning, ids) = super::codex_v9_filter::filter_request(&mut body)?;
+        log::info!(
+            "[CodexV9] filtered provider={} reasoning_items={reasoning} item_ids={ids}",
+            ctx.provider.id
+        );
+        let streaming = body.get("stream").and_then(Value::as_bool).unwrap_or(false);
+        return super::codex_v9_filter::handle(streaming, move || {
+            execute_responses_request(
+                state.clone(),
+                ctx.clone(),
+                app_type.clone(),
+                method.clone(),
+                endpoint.clone(),
+                body.clone(),
+                headers.clone(),
+                extensions.clone(),
+            )
+        })
+        .await;
+    }
+    execute_responses_request(
+        state, ctx, app_type, method, endpoint, body, headers, extensions,
+    )
+    .await
+}
+
+// One ordinary CC Switch attempt, including its existing failover and protocol
+// conversion. V9 wraps this function and sees exactly what a separate proxy saw.
+#[allow(clippy::too_many_arguments)]
+async fn execute_responses_request(
+    state: ProxyState,
+    mut ctx: RequestContext,
+    app_type: AppType,
+    method: http::Method,
+    endpoint: String,
+    body: Value,
+    headers: http::HeaderMap,
+    extensions: http::Extensions,
+) -> Result<axum::response::Response, ProxyError> {
     let is_stream = body
         .get("stream")
         .and_then(|v| v.as_bool())
@@ -1164,7 +1229,12 @@ async fn handle_responses_for_app(
             }
             ctx.outbound_model = err.outbound_model.take();
             log_forward_error(&state, &ctx, is_stream, &err.error).await;
-            return build_codex_proxy_error_response(&ctx, &endpoint, &err.error, is_stream);
+            let mut response =
+                build_codex_proxy_error_response(&ctx, &endpoint, &err.error, is_stream)?;
+            for (name, value) in forwarder.retry_after_headers().iter() {
+                response.headers_mut().insert(name.clone(), value.clone());
+            }
+            return Ok(response);
         }
     };
     drop(body);
@@ -1493,6 +1563,9 @@ async fn handle_responses_compact_for_app(
     )
     .await?;
     let endpoint = endpoint_with_query(&uri, "/responses/compact");
+    if super::codex_v9_filter::enabled(&app_type, &ctx.provider) {
+        return Err(super::codex_v9_filter::reject_compaction());
+    }
 
     let is_stream = body
         .get("stream")
@@ -4650,6 +4723,10 @@ data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"message\"}}\n
         assert_eq!(extract_gateway_token(&h), None);
     }
 }
+
+#[cfg(test)]
+#[path = "codex_v9_integration_tests.rs"]
+mod codex_v9_integration_tests;
 
 #[cfg(test)]
 mod copilot_native_responses_tests {

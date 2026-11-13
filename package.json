@@ -1,7 +1,7 @@
 {
   "name": "switchplus",
   "version": "4.0.29",
-  "description": "All-in-One Assistant for Claude Code, Codex & Gemini CLI",
+  "description": "SwitchPlus personal AI provider router with V9 filtering",
   "type": "module",
   "scripts": {
     "dev": "pnpm tauri dev",

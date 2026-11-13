@@ -4,7 +4,7 @@ version = "4.0.29"
 description = "All-in-One Assistant for Claude Code, Codex & Gemini CLI"
 authors = ["chow"]
 license = "MIT"
-repository = "https://github.com/farion1231/cc-switch"
+repository = "https://github.com/saber570/cc-switch-filter"
 edition = "2021"
 rust-version = "1.85.0"
 
@@ -16,6 +16,10 @@ name = "cc_switch_lib"
 # 带着它们每次构建（含 cargo test）都要多链一个 dylib、多写约 1 GB 的 .a 再复制一份到 target/。
 crate-type = ["rlib"]
 doctest = false
+
+[[bin]]
+name = "SwitchPlus"
+path = "src/main.rs"
 
 [features]
 default = []
@@ -52,6 +56,8 @@ futures = "0.3"
 rmcp = { version = "0.8.5", features = ["client", "transport-async-rw", "transport-sse-client-reqwest", "transport-streamable-http-client-reqwest"] }
 process-wrap = { version = "8.2", features = ["tokio1"] }
 async-stream = "0.3"
+async-compression = { version = "0.4", features = ["tokio", "gzip", "zlib", "brotli", "zstd"] }
+tokio-util = { version = "0.7", features = ["io"] }
 bytes = "1.5"
 prost = "0.14"
 axum = "0.7"

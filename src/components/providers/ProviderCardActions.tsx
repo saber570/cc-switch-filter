@@ -74,7 +74,7 @@ interface ProviderCardActionsProps {
   isTesting?: boolean;
   onConfigureUsage?: () => void;
   onOpenTerminal?: () => void;
-  /** 这张卡打开的终端是否与 CC Switch 的切换隔离（见 terminalIsIsolated），决定提示里带不带「环境隔离」 */
+  /** 这张卡打开的终端是否与 SwitchPlus 的切换隔离（见 terminalIsIsolated），决定提示里带不带「环境隔离」 */
   openTerminalIsolated?: boolean;
 }
 

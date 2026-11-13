@@ -1,3 +1,16 @@
+# SwitchPlus · 个人自用版
+
+此 fork 已改为独立应用 **SwitchPlus**，基于 CC Switch 4.0.28，包含 V9 历史过滤、重试和摘要压缩兼容。
+使用独立数据目录 `~/.switchplus`、默认代理端口 `15731`；默认关闭官方应用更新。
+
+- [SwitchPlus 使用与本地构建](docs/switchplus.md)
+- [V9 过滤说明](docs/codex-v9-filter.md)
+- [后续合并上游](docs/upstream-sync.md)
+
+以下保留上游介绍和署名，其中官方下载链接指向原版 CC Switch，不是 SwitchPlus 安装包。
+
+---
+
 <div align="center">
 
 # CC Switch

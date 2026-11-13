@@ -152,7 +152,7 @@ interface ClaudeOfficialSectionProps {
 }
 
 /**
- * 授权中心的 Claude 官方账号组。每个账号是 CC Switch 数据目录下的一个独立 Claude 配置目录，
+ * 授权中心的 Claude 官方账号组。每个账号是 SwitchPlus 数据目录下的一个独立 Claude 配置目录，
  * 在里面跑 `claude auth login` 登录；用哪个号由官方卡的绑定决定，所以没有「默认」。
  * `~/.claude` 里原来的登录是「默认登录」，不在这里列出，也永远不会被改动。
  */

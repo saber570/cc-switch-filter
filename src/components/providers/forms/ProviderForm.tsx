@@ -450,6 +450,7 @@ function ProviderFormFull({
     );
     setHasValidCodexOfficialSelection(true);
     setCodexFastMode(initialData?.meta?.codexFastMode ?? false);
+    setCodexV9Filter(initialData?.meta?.codexV9Filter ?? false);
     setCodexChatReasoning(initialData?.meta?.codexChatReasoning ?? {});
     setClaudeReasoningEffort(
       toClaudeReasoningEffortChoice(initialData?.meta?.claudeReasoningEffort),
@@ -818,6 +819,9 @@ function ProviderFormFull({
 
   const initialCodexCopilotApiFormat =
     initialData?.meta?.codexCopilotApiFormat ?? "auto";
+  const [codexV9Filter, setCodexV9Filter] = useState(
+    initialData?.meta?.codexV9Filter ?? false,
+  );
   const [localCodexApiFormat, setLocalCodexApiFormat] =
     useState<CodexApiFormat>(initialCodexApiFormat);
   // Preserve future selections verbatim unless the user changes the format.
@@ -2094,6 +2098,10 @@ function ProviderFormFull({
         codexCopilotApiFormat !== "auto"
           ? codexCopilotApiFormat
           : undefined,
+      codexV9Filter:
+        appId === "codex" && category !== "official"
+          ? codexV9Filter || undefined
+          : undefined,
       apiKeyField:
         appId === "claude" &&
         category !== "official" &&
@@ -2255,6 +2263,7 @@ function ProviderFormFull({
   });
 
   const handlePresetChange = (value: string) => {
+    setCodexV9Filter(false);
     setSelectedPresetId(value);
     // Stack 模型是这家自己的：换预设后回到跟着新预设的模型映射。
     setClaudeStackRows(null);
@@ -2803,6 +2812,8 @@ function ProviderFormFull({
 
           {appId === "codex" && (
             <CodexFormFields
+              codexV9Filter={codexV9Filter}
+              onCodexV9FilterChange={setCodexV9Filter}
               providerId={providerId}
               isCopilotPreset={isCopilotProvider}
               isCopilotAuthenticated={isCopilotAuthenticated}

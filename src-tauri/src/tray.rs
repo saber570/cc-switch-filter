@@ -1,8 +1,8 @@
 //! 托盘菜单（v7）
 //!
-//! 结构：问题区（出问题才有）→ 反馈行（托盘里刚做完要重启才生效的操作）→ 打开 CC Switch →
+//! 结构：问题区（出问题才有）→ 反馈行（托盘里刚做完要重启才生效的操作）→ 打开 SwitchPlus →
 //! 切换式应用的子菜单（Claude Code、Claude Desktop、Codex、Gemini CLI、Grok Build；在「应用」页
-//! 隐藏的不列）→ 轻量模式 → 打开官方网站 / 退出 CC Switch。累加式应用（OpenCode / OpenClaw /
+//! 隐藏的不列）→ 轻量模式 → 打开官方网站 / 退出 SwitchPlus。累加式应用（OpenCode / OpenClaw /
 //! Hermes / Pi / MiniMax Code）不进托盘；托盘里不切模式、不启停路由服务。
 //!
 //! 分三层：`collect_*` 从数据库和设备状态读出快照，`build_menu_model` 把快照变成纯数据的菜单
@@ -1981,7 +1981,7 @@ fn build_menu_model(
         menu.push(TrayEntry::Separator);
     }
 
-    // 窗口找不回来时托盘是唯一入口，「打开 CC Switch」一直放在最上面。
+    // 窗口找不回来时托盘是唯一入口，「打开 SwitchPlus」一直放在最上面。
     menu.push(TrayEntry::item("show_main", texts.show_main));
     menu.push(TrayEntry::Separator);
 
@@ -2500,8 +2500,7 @@ pub fn base_tray_icon(app: &tauri::AppHandle) -> Option<(Image<'static>, bool)> 
     BASE.get_or_init(|| {
         #[cfg(target_os = "macos")]
         {
-            const ICON_BYTES: &[u8] =
-                include_bytes!("../icons/tray/macos/statusbar_template_3x.png");
+            const ICON_BYTES: &[u8] = include_bytes!("../icons/switchplus/tray/66x66.png");
             match Image::from_bytes(ICON_BYTES) {
                 Ok(icon) => return Some((icon, true)),
                 Err(err) => {
@@ -2559,7 +2558,7 @@ fn icon_with_problem_dot(icon: &Image<'_>, template: bool) -> Image<'static> {
     Image::new_owned(rgba, width, height)
 }
 
-/// 悬停提示：平时 `CC Switch`，出问题时 `CC Switch · 需要处理：<问题区第一条>`。额度不算问题。
+/// 悬停提示：平时 `SwitchPlus`，出问题时 `SwitchPlus · 需要处理：<问题区第一条>`。额度不算问题。
 fn tray_tooltip(texts: &TrayTexts, problems: &[TrayProblem]) -> String {
     match problems.first() {
         None => "SwitchPlus".to_string(),

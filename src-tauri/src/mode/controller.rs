@@ -3942,10 +3942,10 @@ command = "fs-server"
         let text = codex_text();
         let doc = codex_doc();
         assert!(doc.get("model_provider").is_none(), "{text}");
-        let dormant = &doc["model_providers"]["custom"];
+        let dormant = &doc["model_providers"][crate::live::project::codex::ROUTE_ID];
         assert_eq!(
             dormant["base_url"].as_str(),
-            Some("http://127.0.0.1:15721/v1"),
+            Some("http://127.0.0.1:15731/v1"),
             "the dormant table points at the configured local proxy: {text}"
         );
         assert_eq!(

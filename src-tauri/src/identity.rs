@@ -2,6 +2,10 @@
 use std::path::{Path, PathBuf};
 use crate::error::AppError;
 
+pub const APP_NAME: &str = "SwitchPlus";
+pub const DATA_DIR: &str = ".switchplus";
+pub const APP_UPDATES_ENABLED: bool = false;
+
 pub const APP_IDENTIFIER: &str = "com.switchplus.desktop";
 pub const DEFAULT_PROXY_PORT: u16 = 15731;
 
