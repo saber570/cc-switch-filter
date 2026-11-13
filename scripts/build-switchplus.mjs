@@ -93,6 +93,15 @@ export function checkBuildConfig(
     config.bundle.windows.nsis.installerHooks === "nsis/hooks.nsh",
     "uninstaller icon hook missing",
   );
+  expect(
+    config.bundle.windows.nsis.template === "nsis/installer.nsi",
+    "legacy version migration template missing",
+  );
+  expect(
+    JSON.stringify(config.bundle.resources) ===
+      '["../LICENSE","../THIRD_PARTY_NOTICES.md"]',
+    "update the per-user MSI resource components when changing bundle.resources",
+  );
   if (platform === "win32")
     expect(
       JSON.stringify(config.bundle.targets) === '["nsis"]',

@@ -1273,7 +1273,7 @@ mod tests {
         let doc = apply_catalog(live, Path::new(r"C:\Users\user\.codex\config.toml"));
         assert_eq!(
             catalog_pointer(&doc),
-            r"C:\Users\user\.codex\cc-switch-model-catalog.json"
+            r"C:\Users\user\.codex\switchplus-model-catalog.json"
         );
     }
 
@@ -1286,7 +1286,7 @@ mod tests {
         let doc = apply_catalog(live, Path::new("/home/user/.codex/config.toml"));
         assert_eq!(
             catalog_pointer(&doc),
-            "/home/user/.codex/cc-switch-model-catalog.json"
+            "/home/user/.codex/switchplus-model-catalog.json"
         );
     }
 

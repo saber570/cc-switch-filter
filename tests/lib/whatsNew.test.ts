@@ -65,6 +65,11 @@ describe("entriesUpTo", () => {
 });
 
 describe("seen version", () => {
+  it("moves legacy personal releases onto the independent version series", () => {
+    expect(isNewerThanSeen("1.0.0", "4.0.29")).toBe(true);
+    expect(markSeen("4.0.28", "1.0.0")).toBe("1.0.0");
+    expect(markSeen("1.1.0", "1.0.0")).toBe("1.1.0");
+  });
   it("only moves forward", () => {
     expect(markSeen(undefined, "4.0.2")).toBe("4.0.2");
     expect(markSeen("4.0.1", "4.0.2")).toBe("4.0.2");
@@ -89,8 +94,10 @@ describe("language and links", () => {
 
   it("links to the website changelog, Traditional Chinese uses the zh pages", () => {
     expect(changelogUrl("en", "4.0.2")).toBe(
-      "https://ccswitch.io/en/changelog/4.0.2",
+      "https://github.com/saber570/cc-switch-filter/blob/switchplus-personal/docs/switchplus-changelog.md#402",
     );
-    expect(changelogUrl("zh-TW")).toBe("https://ccswitch.io/zh/changelog");
+    expect(changelogUrl("zh-TW")).toBe(
+      "https://github.com/saber570/cc-switch-filter/blob/switchplus-personal/docs/switchplus-changelog.md",
+    );
   });
 });

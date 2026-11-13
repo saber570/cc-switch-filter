@@ -54,6 +54,34 @@ fn filters_history_without_damaging_tools_or_current_effort() {
 }
 
 #[test]
+fn rejects_ciphertext_only_items_without_mutating_any_history() {
+    for item in [
+        json!({"type":"message","role":"assistant","content":[],"encrypted_content":"opaque"}),
+        json!({"type":"function_call","call_id":"c","name":"read","encrypted_function_args":"opaque"}),
+        json!({"type":"function_call","call_id":"c","name":"read","arguments":"invalid","encrypted_content":"opaque"}),
+        json!({"type":"future_type","content":"unknown semantics","encrypted_content":"opaque"}),
+        json!({"type":"web_search_call","encrypted_content":"opaque"}),
+    ] {
+        let mut body = json!({"store":true,"access_programs":["private"],"input":[
+            {"type":"reasoning","encrypted_content":"old reasoning"},
+            {"type":"message","role":"user","content":"keep this","encrypted_content":"auxiliary"}, item
+        ]});
+        let original = body.clone();
+        assert!(filter_request(&mut body).is_err());
+        assert_eq!(body, original);
+    }
+}
+
+#[test]
+fn removes_auxiliary_ciphertext_before_replaying_search() {
+    let mut body = json!({"input":[{"type":"web_search_call","encrypted_content":"secret-token-replay",
+        "action":{"type":"search","query":"kept query"}}]});
+    filter_request(&mut body).unwrap();
+    assert!(body.to_string().contains("kept query"));
+    assert!(!body.to_string().contains("secret-token-replay"));
+}
+
+#[test]
 fn rejects_context_references_before_mutating_history() {
     for extra in [
         json!({"previous_response_id":"resp_old"}),

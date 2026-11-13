@@ -139,9 +139,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     planKey: "payg",
     regionKey: "cn",
     providerKey: "switchplus-kimi",
-    websiteUrl:
-      "https://platform.kimi.com?track_id=track-7cf2b91dcde043eda6ef9a95951a042c&aff=cc-switch",
-    apiKeyUrl: "https://platform.kimi.com/console/api-keys?aff=cc-switch",
+    websiteUrl: "https://platform.kimi.com",
+    apiKeyUrl: "https://platform.kimi.com/console/api-keys",
     settingsConfig: {
       name: "Kimi",
       baseUrl: "https://api.moonshot.cn/v1",
@@ -197,9 +196,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     planKey: "payg",
     regionKey: "intl",
     providerKey: "switchplus-kimi-global",
-    websiteUrl:
-      "https://platform.kimi.ai?track_id=track-674ed6e2af924a5682a87421f7cf753a&aff=cc-switch",
-    apiKeyUrl: "https://platform.kimi.ai/console/api-keys?aff=cc-switch",
+    websiteUrl: "https://platform.kimi.ai",
+    apiKeyUrl: "https://platform.kimi.ai/console/api-keys",
     settingsConfig: {
       name: "Kimi",
       baseUrl: "https://api.moonshot.ai/v1",
@@ -253,8 +251,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     planKey: "coding",
     regionKey: "cn",
     providerKey: "switchplus-kimi-for-coding",
-    websiteUrl: "https://www.kimi.com/code/?aff=cc-switch",
-    apiKeyUrl: "https://platform.kimi.com/console/api-keys?aff=cc-switch",
+    websiteUrl: "https://www.kimi.com/code/",
+    apiKeyUrl: "https://platform.kimi.com/console/api-keys",
     settingsConfig: {
       name: "Kimi For Coding",
       baseUrl: "https://api.kimi.com/coding",
@@ -280,8 +278,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     planKey: "coding",
     regionKey: "intl",
     providerKey: "switchplus-kimi-for-coding-global",
-    websiteUrl: "https://www.kimi.ai/code?aff=cc-switch",
-    apiKeyUrl: "https://www.kimi.ai/code?aff=cc-switch",
+    websiteUrl: "https://www.kimi.ai/code",
+    apiKeyUrl: "https://www.kimi.ai/code",
     settingsConfig: {
       name: "Kimi For Coding",
       baseUrl: "https://api.kimi.ai/coding",
@@ -303,7 +301,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "PackyCode",
     providerKey: "switchplus-packy-code",
     websiteUrl: "https://www.packyapi.ai",
-    apiKeyUrl: "https://www.packyapi.ai/register?aff=cc-switch",
+    apiKeyUrl: "https://www.packyapi.ai/register",
     settingsConfig: {
       name: "PackyCode",
       baseUrl: "https://www.packyapi.ai",
@@ -449,7 +447,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "OpenModel",
     providerKey: "switchplus-open-model",
     websiteUrl: "https://www.openmodel.ai",
-    apiKeyUrl: "https://www.openmodel.ai?ref=cc-switch",
+    apiKeyUrl: "https://www.openmodel.ai",
     settingsConfig: {
       name: "OpenModel",
       baseUrl: "https://api.openmodel.ai",
@@ -493,7 +491,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "BuyToken",
     providerKey: "switchplus-buytoken",
     websiteUrl: "https://buytoken.work",
-    apiKeyUrl: "https://buytoken.work/sign-up?aff=cc-switch",
+    apiKeyUrl: "https://buytoken.work/sign-up",
     settingsConfig: {
       name: "BuyToken",
       baseUrl: "https://api.buytoken.work",
@@ -615,7 +613,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "AIGoCode",
     providerKey: "switchplus-aigo-code",
     websiteUrl: "https://aigocode.net",
-    apiKeyUrl: "https://aigocode.net/invite/CC-SWITCH",
+    apiKeyUrl: "https://aigocode.net/",
     settingsConfig: {
       name: "AIGoCode",
       baseUrl: "https://api.aigocode.dev",
@@ -666,7 +664,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "AICoding",
     providerKey: "switchplus-aicoding",
     websiteUrl: "https://aicoding.inc",
-    apiKeyUrl: "https://aicoding.inc/i/CCSWITCH",
+    apiKeyUrl: "https://aicoding.inc/",
     settingsConfig: {
       name: "AICoding",
       baseUrl: "https://api.aicoding.inc",
@@ -786,7 +784,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "APIKEY.FUN",
     providerKey: "switchplus-apikey-fun",
     websiteUrl: "https://apikey.fan",
-    apiKeyUrl: "https://apikey.fan/register?aff=CCSwitch",
+    apiKeyUrl: "https://apikey.fan/register",
     settingsConfig: {
       name: "APIKEY.FUN",
       baseUrl: "https://api.apikey.fan",
@@ -862,8 +860,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "TeamoRouter",
     providerKey: "switchplus-teamo-router",
     websiteUrl: "https://teamorouter.com",
-    apiKeyUrl:
-      "https://teamorouter.com/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
+    apiKeyUrl: "https://teamorouter.com/",
     settingsConfig: {
       name: "TeamoRouter",
       baseUrl: "https://api.teamorouter.com/v1",
@@ -886,8 +883,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "TeamoRouter Claude",
     providerKey: "switchplus-teamo-router-claude",
     websiteUrl: "https://teamorouter.com",
-    apiKeyUrl:
-      "https://teamorouter.com/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
+    apiKeyUrl: "https://teamorouter.com/",
     settingsConfig: {
       name: "TeamoRouter Claude",
       baseUrl: "https://api.teamorouter.com",
@@ -908,7 +904,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "PPIO",
     providerKey: "switchplus-ppio",
     websiteUrl: "https://ppio.com",
-    apiKeyUrl: "https://ppio.com/activity/ccswitch",
+    apiKeyUrl: "https://ppio.com/",
     settingsConfig: {
       name: "PPIO",
       baseUrl: "https://api.ppio.com/openai/v1",
@@ -968,10 +964,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     family: "volcengine",
     planKey: "agentPlan",
     providerKey: "switchplus-agentplan",
-    websiteUrl:
-      "https://www.volcengine.com/activity/agentplan?ac=MMAP8JTTCAQ2&rc=6J6FV5N2&utm_source=OWO&utm_medium=devrel-1&utm_campaign=hw&utm_term=ccswitch&utm_content=hw",
-    apiKeyUrl:
-      "https://www.volcengine.com/activity/agentplan?ac=MMAP8JTTCAQ2&rc=6J6FV5N2&utm_source=OWO&utm_medium=devrel-1&utm_campaign=hw&utm_term=ccswitch&utm_content=hw",
+    websiteUrl: "https://www.volcengine.com/activity/agentplan",
+    apiKeyUrl: "https://www.volcengine.com/activity/agentplan",
     settingsConfig: {
       name: "火山 Agent Plan",
       baseUrl: "https://ark.cn-beijing.volces.com/api/plan/v3",
@@ -994,10 +988,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     family: "volcengine",
     planKey: "codingPlan",
     providerKey: "switchplus-codingplan",
-    websiteUrl:
-      "https://www.volcengine.com/activity/codingplan?ac=MMAP8JTTCAQ2&rc=6J6FV5N2&utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
-    apiKeyUrl:
-      "https://www.volcengine.com/activity/codingplan?ac=MMAP8JTTCAQ2&rc=6J6FV5N2&utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+    websiteUrl: "https://www.volcengine.com/activity/codingplan",
+    apiKeyUrl: "https://www.volcengine.com/activity/codingplan",
     settingsConfig: {
       name: "火山 Coding Plan",
       baseUrl: "https://ark.cn-beijing.volces.com/api/coding/v3",
@@ -1018,10 +1010,8 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
   {
     name: "BytePlus",
     providerKey: "switchplus-byte-plus",
-    websiteUrl:
-      "https://www.byteplus.com/en/product/modelark?utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
-    apiKeyUrl:
-      "https://www.byteplus.com/en/product/modelark?utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+    websiteUrl: "https://www.byteplus.com/en/product/modelark",
+    apiKeyUrl: "https://www.byteplus.com/en/product/modelark",
     settingsConfig: {
       name: "BytePlus",
       baseUrl: "https://ark.ap-southeast.bytepluses.com/api/coding/v3",
@@ -1046,9 +1036,9 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     nameKey: "providerForm.presets.doubaoseed",
     providerKey: "switchplus-dou-bao-seed",
     websiteUrl:
-      "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D&utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+      "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
     apiKeyUrl:
-      "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D&utm_campaign=hw&utm_content=ccswitch&utm_medium=devrel_tool_web&utm_source=OWO&utm_term=ccswitch",
+      "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey",
     settingsConfig: {
       name: "Volcengine Doubao",
       baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
@@ -1140,7 +1130,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "SoleAPI",
     providerKey: "switchplus-sole-api",
     websiteUrl: "https://soleapi.com",
-    apiKeyUrl: "https://soleapi.com/r/ccswitch",
+    apiKeyUrl: "https://soleapi.com/",
     settingsConfig: {
       name: "SoleAPI",
       baseUrl: "https://soleapi.com",
@@ -1193,7 +1183,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "RightCode",
     providerKey: "switchplus-right-code",
     websiteUrl: "https://www.rightapi.ai",
-    apiKeyUrl: "https://www.rightapi.ai/register?aff=CCSWITCH",
+    apiKeyUrl: "https://www.rightapi.ai/register",
     settingsConfig: {
       name: "RightCode",
       baseUrl: "https://www.rightapi.ai/codex/v1",
@@ -1215,7 +1205,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "Cubence",
     providerKey: "switchplus-cubence",
     websiteUrl: "https://cubence.com",
-    apiKeyUrl: "https://cubence.com/signup?code=CCSWITCH&source=ccs",
+    apiKeyUrl: "https://cubence.com/signup",
     settingsConfig: {
       name: "Cubence",
       baseUrl: "https://api.cubence.com",
@@ -1240,7 +1230,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "CrazyRouter",
     providerKey: "switchplus-crazy-router",
     websiteUrl: "https://www.crazyrouter.com",
-    apiKeyUrl: "https://www.crazyrouter.com/register?aff=OZcm&ref=cc-switch",
+    apiKeyUrl: "https://www.crazyrouter.com/register",
     settingsConfig: {
       name: "CrazyRouter",
       baseUrl: "https://cn.crazyrouter.com",
@@ -1291,8 +1281,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     family: "sudocode",
     providerKey: "switchplus-sudo-code-chat",
     websiteUrl: "https://sudocode.chat",
-    apiKeyUrl:
-      "https://sudocode.chat/sign-up?aff=CC-SWITCH&utm_source=cc-switch&utm_medium=sponsor&utm_campaign=ccswitch",
+    apiKeyUrl: "https://sudocode.chat/sign-up",
     settingsConfig: {
       name: "SudoCode.chat",
       baseUrl: "https://api.sudocode.chat/v1",
@@ -1339,8 +1328,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     name: "Modelflare",
     providerKey: "switchplus-modelflare",
     websiteUrl: "https://modelflare.dev",
-    apiKeyUrl:
-      "https://modelflare.dev/sign-up?utm_medium=referral&utm_source=ccswitch",
+    apiKeyUrl: "https://modelflare.dev/sign-up",
     // Responses + /v1（docs.modelflare.dev/guides/endpoints，2026-10-15
     // 核对）；阵容同 OpenCode
     settingsConfig: {
@@ -1783,8 +1771,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     regionKey: "cn",
     providerKey: "switchplus-streamlake",
     websiteUrl: "https://www.streamlake.com",
-    apiKeyUrl:
-      "https://console.streamlake.com/console/wanqing/api-key?channel=ccswitch",
+    apiKeyUrl: "https://console.streamlake.com/console/wanqing/api-key",
     settingsConfig: {
       name: "StreamLake",
       baseUrl: "https://wanqing.streamlakeapi.com/api/gateway/v1/endpoints",
@@ -1805,7 +1792,7 @@ const piProviderPresetDefinitions: PiProviderPreset[] = [
     regionKey: "intl",
     providerKey: "switchplus-kat-coder",
     websiteUrl: "https://console.streamlake.ai",
-    apiKeyUrl: "https://console.streamlake.ai/console/api-key?channel=ccswitch",
+    apiKeyUrl: "https://console.streamlake.ai/console/api-key",
     settingsConfig: {
       name: "StreamLake en",
       baseUrl: "https://vanchin.streamlake.ai/api/gateway/v1/endpoints",

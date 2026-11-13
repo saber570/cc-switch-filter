@@ -2,7 +2,6 @@ export const APP_NAME = "SwitchPlus";
 export const APP_AUTHOR = "chow";
 export const DEFAULT_PROXY_PORT = 15731;
 export const PROJECT_URL = "https://github.com/saber570/cc-switch-filter";
-export const UPSTREAM_URL = "https://github.com/farion1231/cc-switch";
 
 // Keep upstream translation files easy to merge; brand only displayed text.
 export function brandTranslations<T>(value: T): T {

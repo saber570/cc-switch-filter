@@ -1,7 +1,8 @@
+import { PROJECT_URL } from "@/lib/brand";
 import { compareVersions } from "@/lib/version";
 
 /**
- * 更新摘要：每个版本一份 `src/whats-new/<version>.json`，构建时打进安装包。
+ * 更新摘要：每个版本一份 `src/whats-new/switchplus/<version>.json`，构建时打进安装包。
  * 新版安装包天然带着它自己和之前所有版本的摘要，弹窗不联网。格式见同目录 README。
  */
 
@@ -22,10 +23,22 @@ export interface WhatsNewEntry {
   items: WhatsNewItem[];
 }
 
-const modules = import.meta.glob<WhatsNewEntry>("../whats-new/*.json", {
-  eager: true,
-  import: "default",
-});
+const modules = import.meta.glob<WhatsNewEntry>(
+  "../whats-new/switchplus/*.json",
+  {
+    eager: true,
+    import: "default",
+  },
+);
+
+function migratedSeen(
+  seen: string | undefined,
+  current: string,
+): string | undefined {
+  return (seen === "4.0.28" || seen === "4.0.29") && current.startsWith("1.")
+    ? undefined
+    : seen;
+}
 
 /** 所有版本的摘要，新到旧 */
 export const WHATS_NEW_ENTRIES: WhatsNewEntry[] = Object.values(modules).sort(
@@ -37,6 +50,7 @@ export function isNewerThanSeen(
   current: string,
   seen: string | undefined,
 ): boolean {
+  seen = migratedSeen(seen, current);
   return !seen || compareVersions(current, seen) > 0;
 }
 
@@ -49,6 +63,7 @@ export function entriesSince(
   seen: string | undefined,
   current: string,
 ): WhatsNewEntry[] {
+  seen = migratedSeen(seen, current);
   return entries.filter((entry) => {
     if (entry.items.length === 0) return false;
     if (!seen) return entry.version === current;
@@ -79,6 +94,7 @@ export function markSeen(
   current: string | undefined,
 ): string | undefined {
   if (!current) return seen;
+  seen = migratedSeen(seen, current);
   return seen && compareVersions(seen, current) > 0 ? seen : current;
 }
 
@@ -88,12 +104,11 @@ export function resolveWhatsNewLanguage(language: string): WhatsNewLanguage {
     : "en";
 }
 
-/** 官网更新日志：不带版本是列表页。官网只有 zh / en / ja，繁中用简中页面 */
+/** SwitchPlus 自己的更新记录；所有语言共用同一份源码文档。 */
 export function changelogUrl(
-  language: WhatsNewLanguage,
+  _language: WhatsNewLanguage,
   version?: string,
 ): string {
-  const siteLanguage = language === "zh-TW" ? "zh" : language;
-  const base = `https://ccswitch.io/${siteLanguage}/changelog`;
-  return version ? `${base}/${version}` : base;
+  const base = `${PROJECT_URL}/blob/switchplus-personal/docs/switchplus-changelog.md`;
+  return version ? `${base}#${version.replace(/[^a-zA-Z0-9-]/g, "")}` : base;
 }

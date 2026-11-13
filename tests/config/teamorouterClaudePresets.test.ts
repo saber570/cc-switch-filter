@@ -15,7 +15,7 @@ const CLAUDE_MODELS = [
   "claude-fable-5-1",
 ];
 const API_KEY_URL =
-  "https://teamorouter.com/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory";
+  "https://teamorouter.com/";
 
 function find<T extends { name: string }>(list: T[], name: string): T {
   const preset = list.find((item) => item.name === name);

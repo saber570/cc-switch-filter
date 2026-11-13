@@ -14,10 +14,13 @@ const MAX_LENGTH: Record<WhatsNewLanguage, number> = {
   en: 100,
 };
 
-const files = import.meta.glob<unknown>("../../src/whats-new/*.json", {
-  eager: true,
-  import: "default",
-});
+const files = import.meta.glob<unknown>(
+  "../../src/whats-new/switchplus/*.json",
+  {
+    eager: true,
+    import: "default",
+  },
+);
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

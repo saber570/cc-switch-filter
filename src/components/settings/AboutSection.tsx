@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, Github, Loader2 } from "lucide-react";
+import { Github, Loader2 } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { settingsApi } from "@/lib/api";
-import { APP_NAME, APP_AUTHOR, PROJECT_URL, UPSTREAM_URL } from "@/lib/brand";
+import { APP_NAME, APP_AUTHOR, PROJECT_URL } from "@/lib/brand";
 import switchplusLogo from "@/assets/icons/switchplus.svg";
 
 export function AboutSection({ isPortable }: { isPortable: boolean }) {
@@ -63,13 +63,13 @@ export function AboutSection({ isPortable }: { isPortable: boolean }) {
         <p>
           {t(
             "switchplus.coexist",
-            "使用独立的数据目录 ~/.switchplus，默认代理端口 15731。接管同一个客户端前，请先退出 CC Switch 或其他配置管理软件，避免覆盖彼此的配置。",
+            "使用独立的数据目录 ~/.switchplus，默认代理端口 15731。接管同一个客户端前，请先退出其他配置管理软件，避免覆盖彼此的配置。",
           )}
         </p>
         <p>
           {t(
             "switchplus.attribution",
-            "基于 CC Switch 与 AgentRouter-Codex-Filter（MIT）修改。原作者版权与许可证保留在安装资源中。",
+            "本软件包含 MIT 许可的开源组件，原作者版权与许可证保留在安装资源中。",
           )}
         </p>
       </div>
@@ -81,14 +81,6 @@ export function AboutSection({ isPortable }: { isPortable: boolean }) {
         >
           <Github className="h-3.5 w-3.5" />
           {t("switchplus.source", "个人仓库")}
-        </Button>
-        <Button
-          variant="neutral"
-          size="compact"
-          onClick={() => settingsApi.openExternal(UPSTREAM_URL)}
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          {t("switchplus.upstream", "上游 CC Switch")}
         </Button>
       </div>
     </div>

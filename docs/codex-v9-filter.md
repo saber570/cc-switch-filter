@@ -18,6 +18,10 @@
   去掉资源 ID。正文里的搜索回答和引用原样保留，成功响应中的搜索调用也原样交给客户端。
   避免清理推理后留下缺少必需 `reasoning` 的搜索调用，导致下一轮 HTTP 400。
 - 设置 `store: false`，移除 `include` 中的 `reasoning.encrypted_content`。
+- 移除仅官方支持的 `output.encrypted_content`、`access_programs`、推理摘要推送选项、
+  `configuration_update` 和内部元数据。已知消息/工具条目带有可回放明文时，可清掉附带密文；
+  仅有密文或未知类型仍拒绝，且保持原请求不变。缺少 `call_id` 的工具回执在原生 Responses
+  路径转为消息保留正文；工具参数 JSON 出现重复键时按最后一次值归并。
 - 整轮 SSE 暂存到 `response.completed` 再交付，保留成功响应里的推理。
   失败尝试中的文本和工具调用不会交给客户端；不可重试的失败只交付错误事件。
   `response.incomplete` 原样返回且不重放。

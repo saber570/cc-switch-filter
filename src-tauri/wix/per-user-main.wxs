@@ -68,13 +68,25 @@
         <Property Id="CREATEDESKTOPSHORTCUT" Secure="yes" />
         <!-- Initialize only once so the execute sequence does not reset an unchecked checkbox. -->
         <SetProperty Id="CREATEDESKTOPSHORTCUT" Value="1" Before="CostFinalize" Sequence="first">
-            NOT CREATEDESKTOPSHORTCUT AND (NOT (Installed OR WIX_UPGRADE_DETECTED) OR DESKTOPSHORTCUTEXISTS)
+            NOT CREATEDESKTOPSHORTCUT AND (NOT (Installed OR WIX_UPGRADE_DETECTED OR SWITCHPLUS_LEGACY_4028 OR SWITCHPLUS_LEGACY_4029) OR DESKTOPSHORTCUTEXISTS)
         </SetProperty>
 
         {{#if allow_downgrades}}
             <MajorUpgrade Schedule="afterInstallInitialize" AllowDowngrades="yes" />
         {{else}}
-            <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="!(loc.DowngradeErrorMessage)" AllowSameVersionUpgrades="yes" />
+            <!-- Only the two early personal releases precede the 1.x series. -->
+            <Upgrade Id="{{upgrade_code}}">
+                <UpgradeVersion Minimum="0.0.0" IncludeMinimum="yes" Maximum="{{version}}" IncludeMaximum="yes" Property="WIX_UPGRADE_DETECTED" />
+                <UpgradeVersion Minimum="4.0.28" IncludeMinimum="yes" Maximum="4.0.28" IncludeMaximum="yes" Property="SWITCHPLUS_LEGACY_4028" />
+                <UpgradeVersion Minimum="4.0.29" IncludeMinimum="yes" Maximum="4.0.29" IncludeMaximum="yes" Property="SWITCHPLUS_LEGACY_4029" />
+                <UpgradeVersion Minimum="{{version}}" IncludeMinimum="no" Maximum="4.0.28" IncludeMaximum="no" OnlyDetect="yes" Property="WIX_DOWNGRADE_DETECTED" />
+                <UpgradeVersion Minimum="4.0.28" IncludeMinimum="no" Maximum="4.0.29" IncludeMaximum="no" OnlyDetect="yes" Property="SWITCHPLUS_NEWER_BETWEEN" />
+                <UpgradeVersion Minimum="4.0.29" IncludeMinimum="no" OnlyDetect="yes" Property="SWITCHPLUS_NEWER_AFTER" />
+            </Upgrade>
+            <Condition Message="!(loc.DowngradeErrorMessage)">Installed OR NOT (WIX_DOWNGRADE_DETECTED OR SWITCHPLUS_NEWER_BETWEEN OR SWITCHPLUS_NEWER_AFTER)</Condition>
+            <InstallExecuteSequence>
+                <RemoveExistingProducts After="InstallInitialize" />
+            </InstallExecuteSequence>
         {{/if}}
 
         <InstallExecuteSequence>
@@ -100,12 +112,12 @@
                       Execute="deferred" Impersonate="yes" Return="ignore" />
         <SetProperty Id="RemoveDesktopShortcut" Before="RemoveDesktopShortcut" Sequence="execute"
                      Value="&quot;[SystemFolder]cmd.exe&quot; /c del /f /q &quot;[DesktopFolder]{{product_name}}.lnk&quot;">
-            (REMOVE = "ALL" AND NOT UPGRADINGPRODUCTCODE) OR (WIX_UPGRADE_DETECTED AND DESKTOPSHORTCUTEXISTS AND NOT REMOVE AND CREATEDESKTOPSHORTCUT &lt;&gt; "1")
+            (REMOVE = "ALL" AND NOT UPGRADINGPRODUCTCODE) OR ((WIX_UPGRADE_DETECTED OR SWITCHPLUS_LEGACY_4028 OR SWITCHPLUS_LEGACY_4029) AND DESKTOPSHORTCUTEXISTS AND NOT REMOVE AND CREATEDESKTOPSHORTCUT &lt;&gt; "1")
         </SetProperty>
 
         <InstallExecuteSequence>
             <Custom Action="RemoveDesktopShortcut" After="RemoveShortcuts">
-                (REMOVE = "ALL" AND NOT UPGRADINGPRODUCTCODE) OR (WIX_UPGRADE_DETECTED AND DESKTOPSHORTCUTEXISTS AND NOT REMOVE AND CREATEDESKTOPSHORTCUT &lt;&gt; "1")
+                (REMOVE = "ALL" AND NOT UPGRADINGPRODUCTCODE) OR ((WIX_UPGRADE_DETECTED OR SWITCHPLUS_LEGACY_4028 OR SWITCHPLUS_LEGACY_4029) AND DESKTOPSHORTCUTEXISTS AND NOT REMOVE AND CREATEDESKTOPSHORTCUT &lt;&gt; "1")
             </Custom>
             <Custom Action="CreateDesktopShortcut" After="CreateShortcuts">NOT REMOVE AND CREATEDESKTOPSHORTCUT = "1"</Custom>
         </InstallExecuteSequence>
@@ -262,7 +274,21 @@
                 <File Id="UpdateTaskUninstaller" Source="uninstall-task.ps1" KeyPath="yes" Checksum="yes"/>
             </Component>
             {{/if}}
-            {{resources}}
+            <!-- Tauri's generic resource components use directory key paths,
+                 which fail ICE38/ICE64 for per-user installs. The build guard
+                 keeps this explicit resource list in sync with bundle.resources.
+                 tauri-build copies these files next to the built executable. -->
+            <Directory Id="SwitchPlusNoticesDir" Name="_up_">
+                <Component Id="SwitchPlusLicenseComponent" Guid="d2aca013-dd0b-5e0f-9dc5-20311d8d3bbe" Win64="$(var.Win64)">
+                    <File Id="SwitchPlusLicense" Source="$(sys.SOURCEFILEDIR)..\..\_up_\LICENSE" Name="LICENSE" />
+                    <RegistryValue Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="License" Type="integer" Value="1" KeyPath="yes" />
+                    <RemoveFolder Id="RemoveNoticesDir" On="uninstall" />
+                </Component>
+                <Component Id="SwitchPlusNoticesComponent" Guid="12cee937-598f-5c6a-887d-91b32786bcd6" Win64="$(var.Win64)">
+                    <File Id="SwitchPlusThirdPartyNotices" Source="$(sys.SOURCEFILEDIR)..\..\_up_\THIRD_PARTY_NOTICES.md" Name="THIRD_PARTY_NOTICES.md" />
+                    <RegistryValue Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="ThirdPartyNotices" Type="integer" Value="1" KeyPath="yes" />
+                </Component>
+            </Directory>
             <Component Id="CMP_UninstallShortcut" Guid="*">
 
                 <Shortcut Id="UninstallShortcut"
@@ -321,9 +347,8 @@
 
             <ComponentRef Id="RegistryEntries"/>
 
-            {{#each resource_file_ids as |resource_file_id| ~}}
-                <ComponentRef Id="{{ resource_file_id }}"/>
-            {{/each~}}
+            <ComponentRef Id="SwitchPlusLicenseComponent"/>
+            <ComponentRef Id="SwitchPlusNoticesComponent"/>
 
             {{#if enable_elevated_update_task}}
                 <ComponentRef Id="UpdateTask" />

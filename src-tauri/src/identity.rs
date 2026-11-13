@@ -69,7 +69,7 @@ pub fn cc_switch_running() -> Result<bool, AppError> {
         let size = (pids.len() * std::mem::size_of::<u32>()) as u32;
         if unsafe { K32EnumProcesses(pids.as_mut_ptr(), size, &mut needed) } == 0 {
             return Err(AppError::Config(
-                "无法检查 CC Switch 运行状态，请稍后重试".into(),
+                "无法检查其他配置管理程序的运行状态，请稍后重试".into(),
             ));
         }
         if needed < size {
@@ -113,7 +113,7 @@ pub fn cc_switch_running() -> Result<bool, AppError> {
 
 pub fn ensure_no_cc_switch() -> Result<(), AppError> {
     if cc_switch_running()? {
-        Err(AppError::Config("CC Switch 正在运行。请先退出 CC Switch，再启动 SwitchPlus，避免两个程序同时修改客户端配置。".into()))
+        Err(AppError::Config("其他配置管理程序正在运行。请先退出该程序，再启动 SwitchPlus，避免两个程序同时修改客户端配置。".into()))
     } else {
         Ok(())
     }
@@ -122,7 +122,7 @@ pub fn ensure_no_cc_switch() -> Result<(), AppError> {
 pub fn ensure_read_allowed(path: &Path) -> Result<(), AppError> {
     if is_cc_switch_path(path) {
         return Err(AppError::Config(
-            "SwitchPlus 不允许读取 CC Switch 数据目录".into(),
+            "SwitchPlus 不允许读取 其他配置管理程序的数据目录".into(),
         ));
     }
     Ok(())
@@ -132,7 +132,7 @@ pub fn ensure_write_allowed(path: &Path) -> Result<(), AppError> {
     if is_cc_switch_path(path) || is_cc_switch_path(&device_dir()) || is_cc_switch_path(&data_dir())
     {
         return Err(AppError::Config(
-            "SwitchPlus 不允许写入 CC Switch 数据目录".into(),
+            "SwitchPlus 不允许写入 其他配置管理程序的数据目录".into(),
         ));
     }
     #[cfg(test)]

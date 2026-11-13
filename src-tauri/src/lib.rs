@@ -2010,7 +2010,7 @@ pub fn run() {
         // 处理退出请求（所有平台）
         if let RunEvent::ExitRequested { api, code, .. } = &event {
             if identity::cc_switch_running().unwrap_or(true) {
-                log::warn!("CC Switch 已启动，退出时跳过客户端配置改写");
+                log::warn!("其他配置管理程序已启动，退出时跳过客户端配置改写");
                 return;
             }
             match classify_exit_request(*code) {

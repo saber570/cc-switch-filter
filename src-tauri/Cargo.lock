@@ -770,7 +770,7 @@ dependencies = [
 
 [[package]]
 name = "switchplus"
-version = "4.0.29"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "arboard",

@@ -14,7 +14,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 use tempfile::{Builder, NamedTempFile};
 
-const SWITCHPLUS_SQL_EXPORT_HEADER: &str = "-- CC Switch SQLite 导出";
+const SWITCHPLUS_SQL_EXPORT_HEADER: &str = "-- SwitchPlus SQLite 导出";
+const LEGACY_SQL_EXPORT_HEADER: &str = "-- CC Switch SQLite 导出";
 
 /// Bound combined INSERT batches while still amortizing statement parsing.
 /// A row larger than this cap is emitted alone because it cannot be split.
@@ -282,7 +283,9 @@ impl Database {
 
     fn validate_cc_switch_sql_export(sql: &str) -> Result<(), AppError> {
         let trimmed = sql.trim_start();
-        if trimmed.starts_with(SWITCHPLUS_SQL_EXPORT_HEADER) {
+        if trimmed.starts_with(SWITCHPLUS_SQL_EXPORT_HEADER)
+            || trimmed.starts_with(LEGACY_SQL_EXPORT_HEADER)
+        {
             return Ok(());
         }
 
@@ -710,7 +713,7 @@ impl Database {
             .unwrap_or(0);
 
         output.push_str(&format!(
-            "-- CC Switch SQLite 导出\n-- 生成时间: {timestamp}\n-- user_version: {user_version}\n"
+            "{SWITCHPLUS_SQL_EXPORT_HEADER}\n-- 生成时间: {timestamp}\n-- user_version: {user_version}\n"
         ));
         output.push_str("PRAGMA foreign_keys=OFF;\n");
         output.push_str(&format!("PRAGMA user_version={user_version};\n"));
@@ -1307,17 +1310,25 @@ mod tests {
             )?;
         }
         let exported = source.export_sql_string()?;
-
-        let target = Database::memory()?;
-        target.import_sql_string(&exported)?;
-
-        let conn = crate::database::lock_conn!(target.conn);
-        let name: String = conn.query_row(
-            "SELECT name FROM providers WHERE id = 'p1' AND app_type = 'claude'",
-            [],
-            |row| row.get(0),
-        )?;
-        assert_eq!(name, "Provider One");
+        assert!(exported.starts_with(super::SWITCHPLUS_SQL_EXPORT_HEADER));
+        for sql in [
+            exported.clone(),
+            exported.replacen(
+                super::SWITCHPLUS_SQL_EXPORT_HEADER,
+                super::LEGACY_SQL_EXPORT_HEADER,
+                1,
+            ),
+        ] {
+            let target = Database::memory()?;
+            target.import_sql_string(&sql)?;
+            let conn = crate::database::lock_conn!(target.conn);
+            let name: String = conn.query_row(
+                "SELECT name FROM providers WHERE id = 'p1' AND app_type = 'claude'",
+                [],
+                |row| row.get(0),
+            )?;
+            assert_eq!(name, "Provider One");
+        }
         Ok(())
     }
 

@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "items": [
+    {
+      "type": "new",
+      "zh": "SwitchPlus 独立版本从 1.0.0 开始",
+      "zh-TW": "SwitchPlus 獨立版本從 1.0.0 開始",
+      "en": "SwitchPlus starts its own version series at 1.0.0",
+      "ja": "SwitchPlus 独自バージョン 1.0.0 を開始"
+    },
+    {
+      "type": "fix",
+      "zh": "改善请求兼容、工具回执和用量记录",
+      "zh-TW": "改善請求相容、工具回覆與用量記錄",
+      "en": "Improved request compatibility, tool results and usage tracking",
+      "ja": "リクエスト互換性、ツール結果、使用量記録を改善"
+    }
+  ]
+}

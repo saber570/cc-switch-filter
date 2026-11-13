@@ -70,6 +70,73 @@ async fn send_compaction_test_request(
 }
 
 #[tokio::test]
+async fn codex_v9_and_native_compat_preserve_plaintext_model_and_tool_results() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    let seen = Arc::new(Mutex::new(Vec::<Value>::new()));
+    let records = seen.clone();
+    let app = axum::Router::new().fallback(axum::routing::post(move |Json(body): Json<Value>| {
+        let records = records.clone();
+        async move {
+            records.lock().await.push(body);
+            ([("content-type", "text/event-stream")],
+             "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\",\"output\":[]}}\n\n")
+        }
+    }));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    let state = ProxyState::for_test(Arc::new(Database::memory().unwrap()));
+    send_compaction_test_request(&state, compaction_test_provider(addr, "openai_responses"), json!({
+        "model":"test-model","stream":true,"reasoning":{"effort":"high"},
+        "include":["reasoning.encrypted_content","output.encrypted_content"],
+        "access_programs":["private"],"stream_options":{"reasoning_summary_delivery":"auto"},
+        "input":[
+            {"type":"reasoning","encrypted_content":"old reasoning"},
+            {"type":"configuration_update","reasoning":{"effort":"low"}},
+            {"type":"message","role":"user","content":"Keep this question","encrypted_content":"auxiliary",
+             "internal_chat_message_metadata_passthrough":{"private":true}},
+            {"type":"function_call","call_id":"pair","name":"read","arguments":"{\"path\":\"old\",\"path\":\"new\"}",
+             "encrypted_content":"auxiliary","encrypted_function_args":"auxiliary"},
+            {"type":"function_call_output","call_id":"pair","output":"paired result"},
+            {"type":"function_call_output","output":"unpaired result"}
+        ]
+    })).await;
+    let requests = seen.lock().await;
+    assert_eq!(requests.len(), 1);
+    let sent = &requests[0];
+    assert_eq!(sent["model"], "test-model");
+    assert_eq!(sent["reasoning"]["effort"], "high");
+    assert!(sent.get("access_programs").is_none());
+    assert!(sent.get("stream_options").is_none());
+    let serialized = sent.to_string();
+    for private in [
+        "encrypted_content",
+        "encrypted_function_args",
+        "configuration_update",
+        "internal_chat_message_metadata_passthrough",
+    ] {
+        assert!(!serialized.contains(private), "{serialized}");
+    }
+    let input = sent["input"].as_array().unwrap();
+    assert!(serialized.contains("Keep this question"));
+    let call = input
+        .iter()
+        .find(|item| item["type"] == "function_call")
+        .unwrap();
+    assert_eq!(call["call_id"], "pair");
+    assert_eq!(call["arguments"], "{\"path\":\"new\"}");
+    assert!(input
+        .iter()
+        .any(|item| item["type"] == "function_call_output"
+            && item["call_id"] == "pair"
+            && item["output"] == "paired result"));
+    assert!(input
+        .iter()
+        .any(|item| item["type"] == "message" && item.to_string().contains("unpaired result")));
+    server.abort();
+}
+
+#[tokio::test]
 async fn codex_v9_compaction_roundtrips_and_replays_across_provider_protocols() {
     use crate::proxy::providers::codex_compaction::{decode_compaction_summary, COMPACT_PROMPT};
     const SUMMARY: &str = "已完成：修复路由；下一步：保留工具结果并运行测试。";

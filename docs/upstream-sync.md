@@ -6,6 +6,21 @@
 [`farion1231/cc-switch`](https://github.com/farion1231/cc-switch)，两者默认分支均为 `main`。
 过滤功能可以与上游更新一起保留；同一位置的修改可能需要人工解决冲突。
 
+## 2026-11-13：1.0.0 选择合入
+
+本轮保留 `8656ebd`（上游 4.0.28）为全量基线，选择合入以下修复，提交附有 `cherry picked from` 来源：
+
+- Codex 请求兼容：`72e826e`、`a6200c1`、`08ec82a`、`74f0d41`。
+- Windows/WSL 模型目录：`5c46226`；用量扫描与旧会话补记：`4376e5d`、`457f898`。
+- 窗口/托盘：`5628bb1`、`479e632`、`063c22d`。
+- 编辑页性能：`d0e47b2`；请求状态码筛选：`72fe4ed`。
+
+不等同于完整升级到上游 4.0.31。隐私脱敏、新应用和新语言暂未引入，数据库保持 schema 24。
+后续评估先用 `git log --cherry-pick` 或 `git cherry` 检查已移植提交，避免重复引入。
+个人版从 1.0.0 独立编号，不同步上游版本号。NSIS 模板基于 Tauri CLI 2.12.4，
+后续升级构建工具时需对比模板变化，保留版本迁移、当前用户 MSI 检测和安装路径恢复逻辑；
+可用 `powershell -ExecutionPolicy Bypass -File scripts/test-installer-version.ps1` 验证真实 NSIS 版本判断。
+
 ## 首次准备
 
 合并更新前，先检查并提交需要保留的本地改动，确保工作区干净。

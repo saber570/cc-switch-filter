@@ -56,7 +56,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "PackyCode",
     websiteUrl: "https://www.packyapi.ai",
-    apiKeyUrl: "https://www.packyapi.ai/register?aff=cc-switch",
+    apiKeyUrl: "https://www.packyapi.ai/register",
     settingsConfig: {
       env: {
         GOOGLE_GEMINI_BASE_URL: "https://www.packyapi.ai",
@@ -204,7 +204,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "OpenModel",
     websiteUrl: "https://www.openmodel.ai",
-    apiKeyUrl: "https://www.openmodel.ai?ref=cc-switch",
+    apiKeyUrl: "https://www.openmodel.ai",
     settingsConfig: {
       env: {
         GOOGLE_GEMINI_BASE_URL: "https://api.openmodel.ai",
@@ -243,7 +243,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "BuyToken",
     websiteUrl: "https://buytoken.work",
-    apiKeyUrl: "https://buytoken.work/sign-up?aff=cc-switch",
+    apiKeyUrl: "https://buytoken.work/sign-up",
     // 官网定价页列出 gemini-3.8-flash / gemini-4-argon；/v1beta 用假 Key 探测为 401、乱写路径 404
     // （2026-10-31）。Key 按分组发，要用 Gemini 分组的 Key
     settingsConfig: {
@@ -312,7 +312,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "AIGoCode",
     websiteUrl: "https://aigocode.net",
-    apiKeyUrl: "https://aigocode.net/invite/CC-SWITCH",
+    apiKeyUrl: "https://aigocode.net/",
     settingsConfig: {
       env: {
         GOOGLE_GEMINI_BASE_URL: "https://api.aigocode.dev",
@@ -358,7 +358,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "AICoding",
     websiteUrl: "https://aicoding.inc",
-    apiKeyUrl: "https://aicoding.inc/i/CCSWITCH",
+    apiKeyUrl: "https://aicoding.inc/",
     settingsConfig: {
       env: {
         GOOGLE_GEMINI_BASE_URL: "https://api.aicoding.inc",
@@ -438,7 +438,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "APIKEY.FUN",
     websiteUrl: "https://apikey.fan",
-    apiKeyUrl: "https://apikey.fan/register?aff=CCSwitch",
+    apiKeyUrl: "https://apikey.fan/register",
     settingsConfig: {
       env: {
         GOOGLE_GEMINI_BASE_URL: "https://api.apikey.fan",
@@ -486,8 +486,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "TeamoRouter",
     websiteUrl: "https://teamorouter.com",
-    apiKeyUrl:
-      "https://teamorouter.com/?utm_source=cc_switch&utm_medium=referral&utm_campaign=ai_directory",
+    apiKeyUrl: "https://teamorouter.com/",
     // 接入文档 teamorouter.com/zh/docs/install-gemini-cli（2026-10-31）：Key 以 Bearer 发送
     settingsConfig: {
       env: {
@@ -544,8 +543,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
     name: "Compshare",
     nameKey: "providerForm.presets.ucloud",
     websiteUrl: "https://www.compshare.cn",
-    apiKeyUrl:
-      "https://www.compshare.cn/coding-plan?ytag=GPU_YY_YX_git_cc-switch",
+    apiKeyUrl: "https://www.compshare.cn/coding-plan",
     // api.modelverse.cn/v1beta/models（2026-10-31）公开列出 gemini-3.8-flash 等原生模型；
     // 编程套餐地址 cp.compshare.cn 没有 /v1beta，所以只收按量版
     settingsConfig: {
@@ -612,7 +610,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "SoleAPI",
     websiteUrl: "https://soleapi.com",
-    apiKeyUrl: "https://soleapi.com/r/ccswitch",
+    apiKeyUrl: "https://soleapi.com/",
     settingsConfig: {
       env: {
         GOOGLE_GEMINI_BASE_URL: "https://soleapi.com",
@@ -654,7 +652,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "Cubence",
     websiteUrl: "https://cubence.com",
-    apiKeyUrl: "https://cubence.com/signup?code=CCSWITCH&source=ccs",
+    apiKeyUrl: "https://cubence.com/signup",
     settingsConfig: {
       env: {
         GOOGLE_GEMINI_BASE_URL: "https://api.cubence.com",
@@ -679,7 +677,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "CrazyRouter",
     websiteUrl: "https://www.crazyrouter.com",
-    apiKeyUrl: "https://www.crazyrouter.com/register?aff=OZcm&ref=cc-switch",
+    apiKeyUrl: "https://www.crazyrouter.com/register",
     settingsConfig: {
       env: {
         GOOGLE_GEMINI_BASE_URL: "https://cn.crazyrouter.com",
@@ -720,8 +718,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "SudoCode.chat",
     websiteUrl: "https://sudocode.chat",
-    apiKeyUrl:
-      "https://sudocode.chat/sign-up?aff=CC-SWITCH&utm_source=cc-switch&utm_medium=sponsor&utm_campaign=ccswitch",
+    apiKeyUrl: "https://sudocode.chat/sign-up",
     // /v1beta 用假 Key 探测为 401、乱写路径 404（2026-10-31）；模型列表要登录才能看，模型 ID 按官方最新填写，未用真 Key 验证
     settingsConfig: {
       env: {
@@ -784,8 +781,7 @@ export const geminiProviderPresets: GeminiProviderPreset[] = [
   {
     name: "Modelflare",
     websiteUrl: "https://modelflare.dev",
-    apiKeyUrl:
-      "https://modelflare.dev/sign-up?utm_medium=referral&utm_source=ccswitch",
+    apiKeyUrl: "https://modelflare.dev/sign-up",
     // 官方 Gemini CLI 文档（docs.modelflare.dev/guides/clients/gemini-cli，
     // 2026-10-15 核对）：base 用站点根。Gemini CLI 走 /v1beta，只有
     // modelflare.dev 提供，origin 子域不提供，故不加备用端点

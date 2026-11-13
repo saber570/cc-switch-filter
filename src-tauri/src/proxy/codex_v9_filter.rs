@@ -46,8 +46,52 @@ fn rejection(code: &str, message: &str) -> ProxyError {
 pub(crate) fn reject_compaction() -> ProxyError {
     ProxyError::UpstreamError { status: 409, body: Some(json!({"error": {
         "type": "invalid_request_error", "code": "encrypted_compaction_disabled",
-        "message": "V9 filtering supports text summaries and CC Switch summary compaction, but not the encrypted compact endpoint or server-managed compaction."
+        "message": "V9 filtering supports text summaries and SwitchPlus summary compaction, but not the encrypted compact endpoint or server-managed compaction."
     }}).to_string()) }
+}
+
+// Only discard auxiliary ciphertext when the known item still carries its
+// replayable payload. Never infer that an unknown/new item is safe to erase.
+fn has_plaintext_payload(item: &Value) -> bool {
+    let text = |key: &str| item[key].as_str().is_some_and(|s| !s.trim().is_empty());
+    let object = |key: &str| item[key].as_object().is_some_and(|v| !v.is_empty());
+    match item["type"].as_str() {
+        Some("message") => {
+            text("role")
+                && (text("content")
+                    || item["content"].as_array().is_some_and(|parts| {
+                        !parts.is_empty()
+                            && parts.iter().all(|part| match part["type"].as_str() {
+                                Some("input_text" | "output_text") => {
+                                    part["text"].as_str().is_some_and(|s| !s.is_empty())
+                                }
+                                Some("refusal") => {
+                                    part["refusal"].as_str().is_some_and(|s| !s.is_empty())
+                                }
+                                Some("input_image") => ["image_url", "file_id"]
+                                    .iter()
+                                    .any(|key| part[key].as_str().is_some_and(|s| !s.is_empty())),
+                                Some("input_file") => ["file_data", "file_url", "file_id"]
+                                    .iter()
+                                    .any(|key| part[key].as_str().is_some_and(|s| !s.is_empty())),
+                                _ => false,
+                            })
+                    }))
+        }
+        Some("function_call") => {
+            text("call_id")
+                && text("name")
+                && item["arguments"]
+                    .as_str()
+                    .is_some_and(|s| serde_json::from_str::<Value>(s).is_ok())
+        }
+        Some("custom_tool_call") => text("call_id") && text("name") && text("input"),
+        Some("local_shell_call") => text("call_id") && object("action"),
+        Some("web_search_call") => object("action"),
+        Some("tool_search_call") => object("arguments") || text("arguments"),
+        Some("image_generation_call") => text("result"),
+        _ => false,
+    }
 }
 
 pub(crate) fn filter_request(body: &mut Value) -> Result<(usize, usize), ProxyError> {
@@ -96,12 +140,13 @@ pub(crate) fn filter_request(body: &mut Value) -> Result<(usize, usize), ProxyEr
                     .as_str()
                     .and_then(codex_compaction::decode_compaction_summary)
                     .filter(|text| !text.trim().is_empty())
-                    .ok_or_else(|| rejection("encrypted_context_not_portable", "V9 filter cannot read this compaction item. Only intact CC Switch text summaries can cross providers. History has not been discarded."))?;
+                    .ok_or_else(|| rejection("encrypted_context_not_portable", "V9 filter cannot read this compaction item. Only intact SwitchPlus text summaries can cross providers. History has not been discarded."))?;
                 summaries.push((index, summary));
             } else if item["type"] == "item_reference"
-                || item
-                    .get("encrypted_content")
-                    .is_some_and(|v| !v.is_null() && v != "")
+                || (["encrypted_content", "encrypted_function_args"]
+                    .iter()
+                    .any(|key| item.get(*key).is_some_and(|v| !v.is_null() && v != ""))
+                    && !has_plaintext_payload(item))
             {
                 return Err(rejection("encrypted_context_not_portable", "V9 filter cannot transfer opaque encrypted context or context references. History has not been discarded. Save a text summary and start a new session."));
             }
@@ -119,6 +164,11 @@ pub(crate) fn filter_request(body: &mut Value) -> Result<(usize, usize), ProxyEr
                 codex_compaction::SUMMARY_PREFIX
             ));
         }
+    }
+    // Validation above must finish before any mutation. Clear private fields
+    // before replaying web search as text so ciphertext cannot leak into it.
+    super::providers::strip_codex_openai_only_request_fields(body);
+    if let Some(items) = body.get_mut("input").and_then(Value::as_array_mut) {
         items.retain(|item| {
             let remove = item["type"] == "reasoning";
             reasoning += usize::from(remove);
