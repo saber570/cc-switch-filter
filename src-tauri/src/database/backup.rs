@@ -1296,6 +1296,151 @@ mod tests {
 
     #[test]
     #[serial]
+    fn import_v26_preserves_new_app_flags_after_edits_and_export() -> Result<(), AppError> {
+        let _test_home = TestHomeGuard::new();
+        let source = Database::memory()?;
+        {
+            let conn = crate::database::lock_conn!(source.conn);
+            Database::set_user_version(&conn, 26)?;
+            conn.execute_batch(
+                "INSERT INTO providers (id, app_type, name, settings_config)
+                 VALUES ('v26-provider', 'codex', 'V26 Provider', '{\"apiKey\":\"test-key\"}');
+                 INSERT INTO mcp_servers
+                    (id, name, server_config, enabled_codex, enabled_copilot, enabled_workbuddy)
+                 VALUES ('v26-mcp', 'V26 MCP', '{\"command\":\"echo\"}', 1, 1, 1);
+                 INSERT INTO skills
+                    (id, name, directory, enabled_codex, enabled_copilot, enabled_workbuddy)
+                 VALUES ('v26-skill', 'V26 Skill', 'v26-skill', 1, 1, 1);",
+            )?;
+        }
+        let sql = source.export_sql_string()?.replacen(
+            super::SWITCHPLUS_SQL_EXPORT_HEADER,
+            super::LEGACY_SQL_EXPORT_HEADER,
+            1,
+        );
+        let target = Database::memory()?;
+        target.import_sql_string(&sql)?;
+
+        let mut server = target
+            .get_all_mcp_servers()?
+            .shift_remove("v26-mcp")
+            .expect("imported server");
+        server.name = "Edited MCP".into();
+        server.apps.claude = true;
+        target.save_mcp_server(&server)?;
+        let mut skill = target
+            .get_installed_skill("v26-skill")?
+            .expect("imported skill");
+        skill.name = "Edited Skill".into();
+        skill.apps.claude = true;
+        target.save_skill(&skill)?;
+
+        let roundtrip = Database::memory()?;
+        roundtrip.import_sql_string(&target.export_sql_string()?)?;
+        let conn = crate::database::lock_conn!(roundtrip.conn);
+        assert_eq!(Database::get_user_version(&conn)?, 26);
+        for table in ["mcp_servers", "skills"] {
+            let flags: (bool, bool, bool, bool) = conn.query_row(
+                &format!("SELECT enabled_codex, enabled_claude, enabled_copilot, enabled_workbuddy FROM {table}"),
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )?;
+            assert_eq!(flags, (true, true, true, true));
+        }
+        let config: String = conn.query_row(
+            "SELECT settings_config FROM providers WHERE id = 'v26-provider'",
+            [],
+            |row| row.get(0),
+        )?;
+        assert_eq!(config, "{\"apiKey\":\"test-key\"}");
+        Ok(())
+    }
+
+    /// Validate a user's backup without changing any real application data.
+    #[test]
+    #[serial]
+    fn import_rejects_schema_after_v26_without_replacing_data() -> Result<(), AppError> {
+        let _test_home = TestHomeGuard::new();
+        let source = Database::memory()?;
+        {
+            let conn = crate::database::lock_conn!(source.conn);
+            Database::set_user_version(&conn, crate::database::SCHEMA_VERSION + 1)?;
+        }
+        let target = Database::memory()?;
+        target.set_setting("live-sentinel", "preserved")?;
+        let error = target
+            .import_sql_string(&source.export_sql_string()?)
+            .expect_err("unknown future schema must remain rejected");
+        assert!(error.to_string().contains("数据库版本过新"));
+        assert_eq!(
+            target.get_setting("live-sentinel")?.as_deref(),
+            Some("preserved")
+        );
+        Ok(())
+    }
+
+    /// Validate a user's backup without changing any real application data.
+    #[test]
+    #[ignore = "requires SWITCHPLUS_TEST_BACKUP_SQL pointing to a local SQL backup"]
+    #[serial]
+    fn import_local_backup_preserves_all_source_rows() -> Result<(), AppError> {
+        let path = std::env::var_os("SWITCHPLUS_TEST_BACKUP_SQL")
+            .expect("set SWITCHPLUS_TEST_BACKUP_SQL to the backup path");
+        let sql = std::fs::read_to_string(&path)
+            .map_err(|e| AppError::io(std::path::Path::new(&path), e))?;
+        let _test_home = TestHomeGuard::new();
+        let source = Connection::open_in_memory()?;
+        source.authorizer(Some(super::import_authorizer));
+        source.execute_batch(sql.trim_start_matches('\u{feff}'))?;
+        source.authorizer(
+            None::<fn(rusqlite::hooks::AuthContext<'_>) -> rusqlite::hooks::Authorization>,
+        );
+        let target = Database::memory()?;
+        target.import_sql_string(&sql)?;
+        let target_conn = crate::database::lock_conn!(target.conn);
+        let tables = source.prepare(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+        )?.query_map([], |row| row.get::<_, String>(0))?.collect::<Result<Vec<_>, _>>()?;
+        let mut total = 0;
+        for table in tables {
+            let quoted_table = Database::quote_identifier(&table);
+            let columns = Database::get_table_columns(&source, &table)?;
+            let selection = columns
+                .iter()
+                .map(|c| Database::quote_identifier(c))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let query = format!("SELECT {selection} FROM {quoted_table} ORDER BY {selection}");
+            let read_rows =
+                |conn: &Connection| -> Result<Vec<Vec<rusqlite::types::Value>>, rusqlite::Error> {
+                    let mut stmt = conn.prepare(&query)?;
+                    let rows = stmt
+                        .query_map([], |row| {
+                            (0..columns.len())
+                                .map(|i| row.get::<_, rusqlite::types::Value>(i))
+                                .collect::<Result<Vec<_>, _>>()
+                        })?
+                        .collect::<Result<Vec<_>, _>>()?;
+                    Ok(rows)
+                };
+            let original = read_rows(&source)?;
+            let imported = read_rows(&target_conn)?;
+            // Report only the table name, never credentials or SQL row values.
+            assert!(
+                original == imported,
+                "import changed source rows in {table}"
+            );
+            println!("Verified {table}: {} rows", original.len());
+            total += original.len();
+        }
+        println!(
+            "Verified local backup import: {total} rows; original file and live database untouched"
+        );
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
     fn import_still_accepts_a_genuine_export() -> Result<(), AppError> {
         let _test_home = TestHomeGuard::new();
         // 白名单收得紧，必须有一条回归防线证明它没误伤自家导出格式——

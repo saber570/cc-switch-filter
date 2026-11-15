@@ -102,6 +102,8 @@ impl Database {
             enabled_agy BOOLEAN NOT NULL DEFAULT 0,
             enabled_kimi BOOLEAN NOT NULL DEFAULT 0,
             enabled_dsh BOOLEAN NOT NULL DEFAULT 0,
+            enabled_copilot BOOLEAN NOT NULL DEFAULT 0,
+            enabled_workbuddy BOOLEAN NOT NULL DEFAULT 0,
             enabled_hermes BOOLEAN NOT NULL DEFAULT 0,
             enabled_pi BOOLEAN NOT NULL DEFAULT 0,
             enabled_omp BOOLEAN NOT NULL DEFAULT 0
@@ -137,6 +139,8 @@ impl Database {
             enabled_agy BOOLEAN NOT NULL DEFAULT 0,
             enabled_kimi BOOLEAN NOT NULL DEFAULT 0,
             enabled_dsh BOOLEAN NOT NULL DEFAULT 0,
+            enabled_copilot BOOLEAN NOT NULL DEFAULT 0,
+            enabled_workbuddy BOOLEAN NOT NULL DEFAULT 0,
             enabled_hermes BOOLEAN NOT NULL DEFAULT 0,
             installed_at INTEGER NOT NULL DEFAULT 0,
             content_hash TEXT,
@@ -678,6 +682,47 @@ impl Database {
                             )?;
                         }
                         Self::set_user_version(conn, 24)?;
+                    }
+                    24 => {
+                        // Keep the upstream v25 schema for imported Copilot CLI flags.
+                        for table in ["mcp_servers", "skills"] {
+                            if Self::table_exists(conn, table)? {
+                                Self::add_column_if_missing(
+                                    conn,
+                                    table,
+                                    "enabled_copilot",
+                                    "BOOLEAN NOT NULL DEFAULT 0",
+                                )?;
+                            }
+                        }
+                        Self::set_user_version(conn, 25)?;
+                    }
+                    25 => {
+                        // Match upstream v26, including early WorkBuddy development
+                        // databases that used older version numbers with missing flags.
+                        if Self::table_exists(conn, "mcp_servers")? {
+                            Self::add_column_if_missing(
+                                conn,
+                                "mcp_servers",
+                                "enabled_omp",
+                                "BOOLEAN NOT NULL DEFAULT 0",
+                            )?;
+                        }
+                        for table in ["mcp_servers", "skills"] {
+                            if Self::table_exists(conn, table)? {
+                                for column in
+                                    ["enabled_dsh", "enabled_copilot", "enabled_workbuddy"]
+                                {
+                                    Self::add_column_if_missing(
+                                        conn,
+                                        table,
+                                        column,
+                                        "BOOLEAN NOT NULL DEFAULT 0",
+                                    )?;
+                                }
+                            }
+                        }
+                        Self::set_user_version(conn, 26)?;
                     }
                     _ => {
                         return Err(AppError::Database(format!(
@@ -3972,6 +4017,81 @@ impl Database {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn schema_v24_through_v26_preserves_upstream_app_flags() -> Result<(), AppError> {
+        // Include an early WorkBuddy v25 database without the Copilot column.
+        for (version, copilot, workbuddy) in [
+            (24, false, false),
+            (25, true, false),
+            (25, false, true),
+            (26, true, true),
+        ] {
+            let conn = Connection::open_in_memory()?;
+            for table in ["mcp_servers", "skills"] {
+                conn.execute_batch(&format!(
+                    "CREATE TABLE {table} (
+                        id TEXT PRIMARY KEY,
+                        enabled_kimi BOOLEAN NOT NULL DEFAULT 0,
+                        enabled_dsh BOOLEAN NOT NULL DEFAULT 0
+                    );
+                    INSERT INTO {table} VALUES ('existing', 1, 1);"
+                ))?;
+                if copilot {
+                    Database::add_column_if_missing(
+                        &conn,
+                        table,
+                        "enabled_copilot",
+                        "BOOLEAN NOT NULL DEFAULT 1",
+                    )?;
+                }
+                if workbuddy {
+                    Database::add_column_if_missing(
+                        &conn,
+                        table,
+                        "enabled_workbuddy",
+                        "BOOLEAN NOT NULL DEFAULT 1",
+                    )?;
+                }
+            }
+            Database::add_column_if_missing(
+                &conn,
+                "mcp_servers",
+                "enabled_omp",
+                "BOOLEAN NOT NULL DEFAULT 1",
+            )?;
+            Database::set_user_version(&conn, version)?;
+            Database::apply_schema_migrations_on_conn(&conn)?;
+            Database::apply_schema_migrations_on_conn(&conn)?;
+            assert_eq!(Database::get_user_version(&conn)?, 26);
+            for table in ["mcp_servers", "skills"] {
+                let flags: (bool, bool, bool, bool) = conn.query_row(
+                    &format!(
+                        "SELECT enabled_kimi, enabled_dsh, enabled_copilot, enabled_workbuddy FROM {table}"
+                    ),
+                    [],
+                    |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+                )?;
+                assert_eq!(flags, (true, true, copilot, workbuddy));
+            }
+            let omp: bool =
+                conn.query_row("SELECT enabled_omp FROM mcp_servers", [], |row| row.get(0))?;
+            assert!(omp);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn new_schema_has_upstream_v26_app_columns() -> Result<(), AppError> {
+        let db = Database::memory()?;
+        let conn = lock_conn!(db.conn);
+        for table in ["mcp_servers", "skills"] {
+            for column in ["enabled_copilot", "enabled_workbuddy"] {
+                assert!(Database::has_column(&conn, table, column)?);
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn migrate_v23_to_v24_preserves_existing_session_cursors() -> Result<(), AppError> {
