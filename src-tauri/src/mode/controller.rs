@@ -4190,6 +4190,99 @@ model_provider = "c"
 
     #[tokio::test]
     #[serial]
+    async fn codex_switch_retires_cc_switch_custom_and_reuses_switchplus_route() {
+        let _home = Home::new();
+        set_preservation(true);
+        let live = r#"model_provider = "custom"
+model = "gpt-a"
+
+[model_providers.custom]
+name = "a"
+base_url = "https://a.example/v1"
+wire_api = "responses"
+experimental_bearer_token = "sk-a"
+
+[model_providers.ollama_local]
+name = "Ollama"
+base_url = "http://localhost:11434/v1"
+"#;
+        seed_codex(live, None);
+        let [mut a, b] = codex_a_b();
+        a.settings_config["config"] = json!(a.settings_config["config"]
+            .as_str()
+            .unwrap()
+            .replace("model_provider = \"a\"", "model_provider = \"custom\"")
+            .replace("model_providers.a]", "model_providers.custom]"));
+        let state = state_with(AppType::Codex, &[a, b], "a").await;
+
+        ProviderService::switch(&state, AppType::Codex, "b").expect("switch to b");
+        let text = codex_text();
+        let mut providers = codex_doc()["model_providers"].as_table().unwrap().clone();
+        assert!(
+            !providers.contains_key("custom"),
+            "old CC Switch table: {text}"
+        );
+        assert!(providers.contains_key("switchplus"), "active route: {text}");
+        assert!(providers.contains_key("ollama_local"), "user table: {text}");
+
+        ProviderService::switch(&state, AppType::Codex, "a").expect("switch to a");
+        ProviderService::switch(&state, AppType::Codex, "b").expect("switch back to b");
+        providers = codex_doc()["model_providers"].as_table().unwrap().clone();
+        assert!(providers.contains_key("switchplus"));
+        assert!(!providers.contains_key("custom"));
+        assert_eq!(direct(&state, &AppType::Codex).as_deref(), Some("b"));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn codex_switch_keeps_cc_switch_custom_table_referenced_by_a_profile() {
+        let _home = Home::new();
+        set_preservation(true);
+        let live = r#"model_provider = "custom"
+
+[model_providers.custom]
+name = "a"
+base_url = "https://a.example/v1"
+wire_api = "responses"
+experimental_bearer_token = "sk-a"
+
+[profiles.legacy]
+model_provider = "custom"
+"#;
+        seed_codex(live, None);
+        let [mut a, b] = codex_a_b();
+        a.settings_config["config"] = json!(a.settings_config["config"]
+            .as_str()
+            .unwrap()
+            .replace("model_provider = \"a\"", "model_provider = \"custom\"")
+            .replace("model_providers.a]", "model_providers.custom]"));
+        let state = state_with(AppType::Codex, &[a, b], "a").await;
+
+        ProviderService::switch(&state, AppType::Codex, "b").expect("switch to b");
+        let text = codex_text();
+        let doc = codex_doc();
+        assert!(
+            doc["model_providers"]
+                .as_table()
+                .unwrap()
+                .contains_key("custom"),
+            "{text}"
+        );
+        assert!(
+            doc["model_providers"]
+                .as_table()
+                .unwrap()
+                .contains_key("switchplus"),
+            "{text}"
+        );
+        assert_eq!(
+            doc["profiles"]["legacy"]["model_provider"].as_str(),
+            Some("custom")
+        );
+    }
+
+    #[tokio::test]
+    #[serial]
     async fn codex_switch_crash_rolls_every_file_forward() {
         let _home = Home::new();
         set_preservation(false);
