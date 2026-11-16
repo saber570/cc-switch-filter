@@ -37,12 +37,17 @@ Windows 上检测到 CC Switch 正在运行时拒绝启动；原版目录及指�
 
 ## 覆盖安装已有 SwitchPlus
 
-1.0.0 保持原应用标识、程序名、当前用户安装范围和数据目录，安装器识别 4.0.28/4.0.29 并使用
+Windows：1.0.0 保持原应用标识、程序名、当前用户安装范围和数据目录，安装器识别 4.0.28/4.0.29 并使用
 原安装路径。安装前从托盘退出 SwitchPlus，结束当前请求后再运行新版安装包。
 安装器的维护页面选择 `Do not uninstall`（保留原安装并覆盖），无需手动卸载或重新导入数据库。
 供应商、代理端口、路由/聚合设置、用量和 `live-state.json` 沿用原数据；旧 V9 关闭值自动忽略。
 新版安装器禁用覆盖和静默降级。已发出的旧安装器不受这项限制，不要用它覆盖新版。
 数据库正常迁移和迁移前备份仍保留。
+
+macOS：结束当前请求并完全退出 SwitchPlus，打开新版 DMG，将 `SwitchPlus.app` 拖到原来的安装位置并选择替换
+（通常为 `/Applications/SwitchPlus.app`）。1.0.0 沿用原应用标识和 `~/.switchplus` 数据目录，
+替换应用不会删除该目录中的供应商、路由和用量数据，无需先卸载或重新导入。已有自定义数据目录也继续沿用。
+Finder 可能因旧版编号为 4.x 而提示版本较旧，核对应用名和源码提交后仍可替换；Windows 安装器的维护选项不适用于 Mac。
 
 新版首次启动若没有本机接管记录、旧备份或已启用路由，会保留已有客户端配置；
 已有路由安装按保存的模式恢复。不要在请求运行中安装，安装器关闭旧进程会终止进行中的请求。
@@ -56,7 +61,7 @@ Windows 上检测到 CC Switch 正在运行时拒绝启动；原版目录及指�
 需要 Node.js 20.19+ 或 22.12+、Corepack、pnpm 10.12.3、`rust-toolchain.toml` 固定的 Rust 1.95。
 若 Node 安装包没有附带 Corepack，先运行 `npm install --global corepack`。
 Windows 还需要 Visual Studio C++ 桌面构建工具和 Windows SDK；
-macOS 需要 Xcode Command Line Tools。
+macOS 需要 Xcode Command Line Tools（首次使用运行 `xcode-select --install`），应用最低支持 macOS 12.0。
 
 ```sh
 corepack pnpm install --frozen-lockfile
@@ -68,7 +73,12 @@ corepack pnpm build
 记录源码提交、未提交状态、图标和产物 SHA256。换电脑时对比这些字段，不再靠版本号判断是不是同一份代码。
 Windows 默认只生成 EXE 安装包，产物在 `src-tauri/target/<target>/release/bundle/nsis/`，新安装默认路径为
 `%LOCALAPPDATA%\SwitchPlus`，已安装时沿用保存的路径。Mac 生成 `bundle/macos/SwitchPlus.app` 和 `bundle/dmg/` 下的 DMG。
-Mac 如需指定芯片，可使用 `corepack pnpm build --target aarch64-apple-darwin` 或 `--target x86_64-apple-darwin`。
+Mac 默认生成当前 Rust 工具链架构的包，不会自动生成 Universal 通用包。
+Apple 芯片使用 `corepack pnpm build --target aarch64-apple-darwin`，Intel 使用 `corepack pnpm build --target x86_64-apple-darwin`。
+指定另一种架构前，先用 `rustup target add aarch64-apple-darwin` 或 `rustup target add x86_64-apple-darwin` 安装对应目标。
+两种架构均需在 Mac 上构建。APP、Dock 和 DMG 使用同套 SwitchPlus 图标，菜单栏使用单色图标适配深浅色。
+本地入口跳过 Developer ID 签名和 Apple 公证，无需开发者证书；README 中保留的上游签名/公证说明不适用于这些个人构建产物。
+`corepack pnpm build:check` 只校验配置，不执行编译或打包。
 入口始终明确指定目标架构：优先命令行 `--target`，其次 `CARGO_BUILD_TARGET`，否则使用本机 Rust 工具链的架构。
 64 位 Intel/AMD Windows 的 `<target>` 为 `x86_64-pc-windows-msvc`。自定义 Cargo 输出目录时以命令末尾打印的实际路径为准。
 旧命令 `pnpm tauri build --config src-tauri/tauri.local-build.conf.json` 保留兼容，配置与默认构建一致。
