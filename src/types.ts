@@ -50,7 +50,9 @@ export interface EndpointCandidate {
   isCustom?: boolean;
 }
 
+import type { AppId } from "./lib/api/types";
 import type { TemplateType } from "./config/constants";
+import type { Language } from "./i18n/languages";
 
 // 用量查询脚本配置
 export interface UsageScript {
@@ -224,8 +226,8 @@ export interface ProviderMeta {
   impersonateClaudeCode?: boolean;
   // Codex → Anthropic path: override the Anthropic max_tokens (output ceiling).
   // Codex does not forward model_max_output_tokens in the request body; without
-  // this the path falls back to a conservative 8192 default, which can truncate
-  // long/thinking-heavy responses. When set (>0) it takes precedence over the
+  // this the path falls back to a 32000 default (DEFAULT_CODEX_ANTHROPIC_MAX_TOKENS),
+  // which a low-ceiling gateway may reject. When set (>0) it takes precedence over the
   // request value and the default.
   maxOutputTokens?: number;
   // Custom User-Agent for local proxy routing. Only applied by the local proxy.
@@ -309,22 +311,7 @@ export interface CodexCatalogModel {
 export type ClaudeApiKeyField = "ANTHROPIC_AUTH_TOKEN" | "ANTHROPIC_API_KEY";
 
 // 主页面显示的应用配置
-export interface VisibleApps {
-  claude: boolean;
-  "claude-desktop": boolean;
-  codex: boolean;
-  gemini: boolean;
-  grokbuild: boolean;
-  opencode: boolean;
-  openclaw: boolean;
-  hermes: boolean;
-  pi: boolean;
-  mcode: boolean;
-  kimi: boolean;
-  dsh?: boolean;
-  agy: boolean;
-  omp: boolean;
-}
+export type VisibleApps = Record<AppId, boolean>;
 
 // WebDAV 同步状态
 export interface WebDavSyncStatus {
@@ -488,7 +475,7 @@ export interface Settings {
   // User has confirmed the common config first-run notice
   commonConfigConfirmed?: boolean;
   // 首选语言（可选，默认中文）
-  language?: "en" | "zh" | "zh-TW" | "ja" | "tr";
+  language?: Language;
   // 按档的额度百分比写剩余还是已用（默认剩余；余额、Credits 不受影响）
   quotaDisplay?: "left" | "used";
 
@@ -842,7 +829,9 @@ export interface McpApps {
   mcode?: boolean;
   kimi?: boolean;
   dsh?: boolean;
+  workbuddy?: boolean;
   agy?: boolean;
+  copilot?: boolean;
   claude: boolean;
   "claude-desktop"?: boolean;
   codex: boolean;

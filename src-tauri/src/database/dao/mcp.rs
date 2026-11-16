@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use rusqlite::{params, OptionalExtension, Row};
 
 const MCP_SERVER_SELECT: &str =
-    "SELECT id, name, server_config, description, homepage, docs, tags, enabled_claude, enabled_codex, enabled_gemini, enabled_grokbuild, enabled_opencode, enabled_hermes, enabled_mcode, enabled_pi, enabled_agy, enabled_kimi, enabled_omp, enabled_dsh FROM mcp_servers";
+    "SELECT id, name, server_config, description, homepage, docs, tags, enabled_claude, enabled_codex, enabled_gemini, enabled_grokbuild, enabled_opencode, enabled_hermes, enabled_mcode, enabled_pi, enabled_agy, enabled_kimi, enabled_omp, enabled_dsh, enabled_copilot, enabled_workbuddy FROM mcp_servers";
 
 fn row_to_mcp_server(row: &Row<'_>) -> rusqlite::Result<(String, McpServer)> {
     let id: String = row.get(0)?;
@@ -48,6 +48,8 @@ fn row_to_mcp_server(row: &Row<'_>) -> rusqlite::Result<(String, McpServer)> {
                 kimi: row.get(16)?,
                 omp: row.get(17)?,
                 dsh: row.get(18)?,
+                copilot: row.get(19)?,
+                workbuddy: row.get(20)?,
             },
             description,
             homepage,
@@ -100,6 +102,8 @@ impl Database {
             AppType::Mcode => Some("enabled_mcode"),
             AppType::Kimi => Some("enabled_kimi"),
             AppType::Dsh => Some("enabled_dsh"),
+            AppType::Copilot => Some("enabled_copilot"),
+            AppType::WorkBuddy => Some("enabled_workbuddy"),
             AppType::Pi => Some("enabled_pi"),
             AppType::Omp => Some("enabled_omp"),
             AppType::ClaudeDesktop | AppType::OpenClaw => None,
@@ -130,25 +134,10 @@ impl Database {
     pub fn save_mcp_server(&self, server: &McpServer) -> Result<(), AppError> {
         let conn = lock_conn!(self.conn);
         conn.execute(
-            // Update only fields understood by SwitchPlus; preserve imported
-            // Copilot/WorkBuddy flags until those applications are supported.
-            "INSERT INTO mcp_servers (
+            "INSERT OR REPLACE INTO mcp_servers (
                 id, name, server_config, description, homepage, docs, tags,
-                enabled_claude, enabled_codex, enabled_gemini, enabled_grokbuild, enabled_opencode, enabled_hermes, enabled_mcode, enabled_pi, enabled_agy, enabled_kimi, enabled_omp, enabled_dsh
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
-            ON CONFLICT(id) DO UPDATE SET
-                name = excluded.name, server_config = excluded.server_config,
-                description = excluded.description, homepage = excluded.homepage,
-                docs = excluded.docs, tags = excluded.tags,
-                enabled_claude = excluded.enabled_claude,
-                enabled_codex = excluded.enabled_codex,
-                enabled_gemini = excluded.enabled_gemini,
-                enabled_grokbuild = excluded.enabled_grokbuild,
-                enabled_opencode = excluded.enabled_opencode,
-                enabled_hermes = excluded.enabled_hermes,
-                enabled_mcode = excluded.enabled_mcode, enabled_pi = excluded.enabled_pi,
-                enabled_agy = excluded.enabled_agy, enabled_kimi = excluded.enabled_kimi,
-                enabled_omp = excluded.enabled_omp, enabled_dsh = excluded.enabled_dsh",
+                enabled_claude, enabled_codex, enabled_gemini, enabled_grokbuild, enabled_opencode, enabled_hermes, enabled_mcode, enabled_pi, enabled_agy, enabled_kimi, enabled_omp, enabled_dsh, enabled_copilot, enabled_workbuddy
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21)",
             params![
                 server.id,
                 server.name,
@@ -172,6 +161,8 @@ impl Database {
                 server.apps.kimi,
                 server.apps.omp,
                 server.apps.dsh,
+                server.apps.copilot,
+                server.apps.workbuddy,
             ],
         )
         .map_err(|e| AppError::Database(e.to_string()))?;

@@ -64,6 +64,11 @@ import {
 import { isTextEditableTarget } from "@/utils/domUtils";
 import { setZoom, stepZoom } from "@/lib/interfacePrefs";
 import { deepClone } from "@/utils/deepClone";
+import { isOfficialAccount } from "@/utils/providerCapabilities";
+import {
+  COPILOT_PROVIDER_ID_MAX,
+  normalizeCopilotProviderId,
+} from "@/config/copilotConfig";
 import { isLinux, isMac, isWindows } from "@/lib/platform";
 import {
   APP_STORAGE_KEY,
@@ -102,7 +107,6 @@ import { EnvWarningBanner } from "@/components/env/EnvWarningBanner";
 import { SwitchModePanel } from "@/components/providers/mode/SwitchModePanel";
 import { proxyApi } from "@/lib/api/proxy";
 import type { AppMode, StartupAttachFailure } from "@/types/proxy";
-import { PROMPT_APP_IDS } from "@/lib/query/prompts";
 import { DeepLinkImportDialog } from "@/components/DeepLinkImportDialog";
 import { FirstRunNoticeDialog } from "@/components/FirstRunNoticeDialog";
 import { WhatsNewNotice } from "@/components/WhatsNewDialog";
@@ -124,17 +128,16 @@ import {
 } from "@/lib/query/omo";
 import { invalidatePiProviderCaches, usePiCurrentState } from "@/lib/query/pi";
 import OpenClawHealthBanner from "@/components/openclaw/OpenClawHealthBanner";
-import {
-  APP_IDS,
-  DEFAULT_VISIBLE_APPS,
-  isModeAppId,
-  isPiFamilyApp,
-  orderAppIds,
-} from "@/config/appConfig";
-import type { PiFamilyAppId } from "@/lib/api/pi";
+import { DEFAULT_VISIBLE_APPS, orderAppIds } from "@/config/appConfig";
 import { EditProviderHost } from "@/components/providers/EditProviderHost";
 import { preloadOnIdle } from "@/lib/preloadOnIdle";
 import { useCreateEditProviderStore } from "@/components/providers/editProviderStore";
+import {
+  APP_IDS,
+  APP_IDS_WITH,
+  type AppIdWith,
+  appHas,
+} from "@/config/appSpecs";
 
 // Keep the provider page and event listeners ready at startup. Editors, charts
 // and secondary pages are loaded when the user first opens them.
@@ -234,7 +237,7 @@ function App() {
   const [openclawConfigTab, setOpenclawConfigTab] =
     useState<OpenClawConfigTab>("env");
   const [promptsApp, setPromptsApp] = useState<AppId>(() =>
-    PROMPT_APP_IDS.includes(sharedFeatureApp) ? sharedFeatureApp : "claude",
+    appHas(sharedFeatureApp, "prompts") ? sharedFeatureApp : "claude",
   );
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [hasOpenedAdd, setHasOpenedAdd] = useState(false);
@@ -378,7 +381,7 @@ function App() {
   }, [activeApp, currentView]);
 
   const { isRunning: isProxyRunning, takeoverStatus } = useProxyStatus();
-  const modeAppId = isModeAppId(activeApp) ? activeApp : null;
+  const modeAppId = appHas(activeApp, "routeMode") ? activeApp : null;
   // 换了应用、新面板还没报上来时为 undefined：表单按应用实际生效的模式
   const currentModeView =
     providerModeView?.app === activeApp ? providerModeView.view : undefined;
@@ -413,7 +416,7 @@ function App() {
   );
   const handleEnablePiProvider = async (
     provider: Provider,
-    app: PiFamilyAppId,
+    app: AppIdWith<"piFamily">,
   ) => {
     try {
       await providersApi.switch(provider.id, app);
@@ -445,10 +448,14 @@ function App() {
     }
   };
 
-  // Kimi「添加」只写进 config.toml、不改默认模型；「切换」走 switchProvider
-  const handleAddKimiProvider = async (provider: Provider) => {
+  // Kimi「添加」只写进 config.toml、不改默认模型；「切换」走 switchProvider。
+  // Copilot CLI 的自带模型卡同理：「添加」只写进 providers.json，默认模型在 copilot 里用 /model 选
+  const handleAddNativeProvider = async (
+    provider: Provider,
+    app: "kimi" | "copilot",
+  ) => {
     try {
-      await providersApi.addToLiveConfig(provider.id, "kimi");
+      await providersApi.addToLiveConfig(provider.id, app);
     } catch (error) {
       toast.error(
         t("notifications.addFailed", {
@@ -458,7 +465,7 @@ function App() {
       );
       return;
     } finally {
-      await queryClient.invalidateQueries({ queryKey: ["providers", "kimi"] });
+      await queryClient.invalidateQueries({ queryKey: ["providers", app] });
     }
     toast.success(
       t("notifications.addToConfigSuccess", { defaultValue: "已添加到配置" }),
@@ -872,7 +879,9 @@ function App() {
           activeApp === "mcode" ||
           activeApp === "dsh" ||
           activeApp === "kimi" ||
-          activeApp === "agy"
+          activeApp === "agy" ||
+          activeApp === "copilot" ||
+          activeApp === "workbuddy"
         )
           return;
         const conflicts = await checkEnvConflicts(activeApp);
@@ -973,7 +982,7 @@ function App() {
     if (page === "prompts" && currentViewRef.current !== "prompts") {
       // 提示词页默认选中侧栏里最后选的那个应用
       setPromptsApp(
-        PROMPT_APP_IDS.includes(sharedFeatureApp) ? sharedFeatureApp : "claude",
+        appHas(sharedFeatureApp, "prompts") ? sharedFeatureApp : "claude",
       );
     }
     setCurrentView(page);
@@ -1092,7 +1101,7 @@ function App() {
 
   // 累加式应用的「已添加」和「默认」都现读客户端文件，移除前后重读一遍
   const refreshAdditiveLiveState = async (app: AppId) => {
-    if (isPiFamilyApp(app)) {
+    if (appHas(app, "piFamily")) {
       await invalidatePiProviderCaches(queryClient, app);
     } else if (app === "opencode") {
       await Promise.all([
@@ -1114,7 +1123,13 @@ function App() {
         queryClient.invalidateQueries({ queryKey: hermesKeys.liveProviderIds }),
         queryClient.invalidateQueries({ queryKey: hermesKeys.modelConfig }),
       ]);
-    } else if (app === "mcode" || app === "dsh" || app === "kimi") {
+    } else if (
+      app === "mcode" ||
+      app === "dsh" ||
+      app === "kimi" ||
+      app === "copilot" ||
+      app === "workbuddy"
+    ) {
       await queryClient.invalidateQueries({ queryKey: ["providers", app] });
     }
   };
@@ -1131,7 +1146,7 @@ function App() {
       } catch (error) {
         const detail = extractErrorMessage(error);
         const description =
-          (isPiFamilyApp(activeApp)
+          (appHas(activeApp, "piFamily")
             ? translatePiProviderMutationError(detail, t)
             : activeApp === "kimi"
               ? translateKimiProviderMutationError(detail, t)
@@ -1146,7 +1161,7 @@ function App() {
       }
       await refreshAdditiveLiveState(activeApp);
       toast.success(
-        isPiFamilyApp(activeApp)
+        appHas(activeApp, "piFamily")
           ? t(`${activeApp}.provider.removed`, {
               defaultValue: "已从 Pi 移除",
             })
@@ -1307,6 +1322,30 @@ function App() {
         );
         duplicatedProvider.addToLive = false;
       }
+    } else if (activeApp === "workbuddy") {
+      // WorkBuddy model IDs are unique across models.json, so a copy that kept
+      // the same models would collide; keep it out of the file until edited.
+      duplicatedProvider.providerKey = generateUniqueProviderCopyKey(
+        provider.id,
+        Object.keys(providers),
+      );
+      duplicatedProvider.addToLive = false;
+    } else if (activeApp === "copilot") {
+      // 自带模型卡的 id 就是 providers.json 里的供应商名，副本另起一个；官方卡仍用随机 id。
+      // 副本都先不写进 providers.json（官方卡本来就不写）
+      if (!isOfficialAccount(activeApp, provider)) {
+        // 后端要求供应商名不超过 64 个字符：给「-copy-N」留出位置再截断
+        const base =
+          normalizeCopilotProviderId(provider.id).slice(
+            0,
+            COPILOT_PROVIDER_ID_MAX - "-copy-999".length,
+          ) || "copilot";
+        duplicatedProvider.providerKey = generateUniqueProviderCopyKey(
+          base,
+          Object.keys(providers),
+        );
+      }
+      duplicatedProvider.addToLive = false;
     }
 
     if (provider.sortIndex !== undefined) {
@@ -1493,6 +1532,7 @@ function App() {
             activeApp !== "mcode" &&
             activeApp !== "dsh" &&
             activeApp !== "kimi" &&
+            activeApp !== "workbuddy" &&
             (settingsData?.showProfileSwitcher ?? false) && (
               <ProfileSwitcher activeApp={activeApp} />
             )}
@@ -1597,7 +1637,8 @@ function App() {
       activeApp === "claude" ||
       activeApp === "codex" ||
       activeApp === "agy" ||
-      activeApp === "grokbuild"
+      activeApp === "grokbuild" ||
+      activeApp === "copilot"
         ? setTerminalProvider
         : undefined,
     onCreate: () => openAddProvider(currentModeView),
@@ -1651,21 +1692,14 @@ function App() {
             appId={activeApp}
             isLoading={isLoading}
             onSwitch={(provider) =>
-              void (isPiFamilyApp(activeApp)
+              void (appHas(activeApp, "piFamily")
                 ? handleEnablePiProvider(provider, activeApp)
-                : activeApp === "kimi"
-                  ? handleAddKimiProvider(provider)
+                : activeApp === "kimi" || activeApp === "copilot"
+                  ? handleAddNativeProvider(provider, activeApp)
                   : switchProvider(provider))
             }
             onRemoveFromConfig={
-              activeApp === "opencode" ||
-              activeApp === "openclaw" ||
-              activeApp === "hermes" ||
-              activeApp === "pi" ||
-              activeApp === "mcode" ||
-              activeApp === "kimi" ||
-              activeApp === "dsh" ||
-              activeApp === "omp"
+              appHas(activeApp, "additive")
                 ? (provider) => setConfirmAction({ provider, action: "remove" })
                 : undefined
             }
@@ -1817,7 +1851,7 @@ function App() {
           <div id="main-content" className="flex min-h-0 flex-1 flex-col">
             <PromptPanel
               appId={promptsApp}
-              apps={PROMPT_APP_IDS.filter(
+              apps={APP_IDS_WITH.prompts.filter(
                 (app) =>
                   visibleApps[app] ||
                   (app === "claude" && visibleApps["claude-desktop"]) ||

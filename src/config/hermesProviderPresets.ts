@@ -8,8 +8,9 @@ import type { PresetFamilyFields } from "./presetFamilies";
 
 /**
  * Marker field and source values that `hermes_config.rs::get_providers`
- * injects onto each settings payload. Kept in sync with the Rust constants
- * `PROVIDER_SOURCE_FIELD` / `PROVIDER_SOURCE_CUSTOM_LIST` / `PROVIDER_SOURCE_DICT`.
+ * injects onto each settings payload. Same values as the Rust constants
+ * `PROVIDER_SOURCE_FIELD` / `PROVIDER_SOURCE_CUSTOM_LIST` / `PROVIDER_SOURCE_DICT`;
+ * tests/config/backendConstants.test.ts checks both.
  */
 export const HERMES_PROVIDER_SOURCE_FIELD = "_cc_source";
 export const HERMES_PROVIDER_SOURCE_CUSTOM_LIST = "custom_providers";
@@ -141,6 +142,138 @@ export interface HermesProviderSettingsConfig {
   [key: string]: unknown;
 }
 
+// Model lists that several presets share, each named after the first preset
+// that uses it. Every call builds fresh objects, so presets never share state.
+const kimiModels = (): HermesModel[] => [
+  {
+    id: "kimi-k3.1-pro",
+    name: "Kimi K3.1 Pro",
+    context_length: 1048576,
+  },
+  { id: "kimi-k2.7-code", name: "Kimi K2.7 Code" },
+  { id: "kimi-k3", name: "Kimi K3", context_length: 1048576 },
+  {
+    id: "kimi-k2.7-code-highspeed",
+    name: "Kimi K2.7 Code HighSpeed",
+    context_length: 262144,
+  },
+  { id: "kimi-k2.6", name: "Kimi K2.6", context_length: 262144 },
+];
+
+const packyCodeModels = (): HermesModel[] => [
+  {
+    id: "claude-opus-5-5",
+    name: "Claude Opus 5.5",
+    context_length: 1000000,
+  },
+  {
+    id: "claude-sonnet-5-5",
+    name: "Claude Sonnet 5.5",
+    context_length: 1000000,
+  },
+  {
+    id: "claude-haiku-5-5",
+    name: "Claude Haiku 5.5",
+    context_length: 1000000,
+  },
+  {
+    id: "claude-fable-5-1",
+    name: "Claude Fable 5.1",
+    context_length: 1000000,
+  },
+];
+
+const apiNebulaModels = (): HermesModel[] => [
+  { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
+  { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
+];
+
+const grooRouteProModels = (): HermesModel[] => [
+  {
+    id: "claude-opus-5-5",
+    name: "Claude Opus 5.5",
+    context_length: 1000000,
+  },
+  {
+    id: "claude-sonnet-5-5",
+    name: "Claude Sonnet 5.5",
+    context_length: 1000000,
+  },
+];
+
+const vApiModels = (): HermesModel[] => [
+  {
+    id: "claude-opus-5-5",
+    name: "Claude Opus 5.5",
+    context_length: 1000000,
+  },
+  {
+    id: "claude-sonnet-5-5",
+    name: "Claude Sonnet 5.5",
+    context_length: 1000000,
+  },
+  {
+    id: "claude-fable-5-1",
+    name: "Claude Fable 5.1",
+    context_length: 1000000,
+  },
+];
+
+const aiCodingModels = (): HermesModel[] => [
+  {
+    id: "claude-opus-5-5",
+    name: "Claude Opus 5.5",
+    context_length: 1000000,
+  },
+  {
+    id: "claude-sonnet-5-5",
+    name: "Claude Sonnet 5.5",
+    context_length: 1000000,
+  },
+  {
+    id: "claude-haiku-5-5",
+    name: "Claude Haiku 5.5",
+    context_length: 1000000,
+  },
+];
+
+const subRouterModels = (): HermesModel[] => [
+  { id: "gpt-6.1-sol", name: "GPT-6.1 Sol", context_length: 272000 },
+  { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
+];
+
+const volcengineAgentPlanModels = (): HermesModel[] => [
+  {
+    id: "ark-code-latest",
+    name: "Ark Code Latest",
+  },
+];
+
+const sudoCodeUsModels = (): HermesModel[] => [
+  { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
+  { id: "gpt-6-sol", name: "GPT-6 Sol", context_length: 272000 },
+  { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
+];
+
+const zhipuGlmModels = (): HermesModel[] => [
+  { id: "glm-5.3", name: "GLM-5.3" },
+  { id: "glm-5.3-flash", name: "GLM-5.3-Flash", context_length: 1048576 },
+];
+
+const qwenAiPlatformModels = (): HermesModel[] => [
+  { id: "qwen3.8-max", name: "Qwen3.8 Max", context_length: 983616 },
+  { id: "qwen3.8-flash", name: "Qwen3.8 Flash", context_length: 983616 },
+];
+
+const miniMaxModels = (): HermesModel[] => [
+  {
+    id: "MiniMax-M3.1-Flash",
+    name: "MiniMax M3.1 Flash",
+    supports_vision: true,
+  },
+  { id: "MiniMax-M3", name: "MiniMax M3" },
+];
+
 export const hermesProviderPresets: HermesProviderPreset[] = [
   {
     name: "TokenPlus",
@@ -178,21 +311,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.moonshot.cn/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        {
-          id: "kimi-k3.1-pro",
-          name: "Kimi K3.1 Pro",
-          context_length: 1048576,
-        },
-        { id: "kimi-k2.7-code", name: "Kimi K2.7 Code" },
-        { id: "kimi-k3", name: "Kimi K3", context_length: 1048576 },
-        {
-          id: "kimi-k2.7-code-highspeed",
-          name: "Kimi K2.7 Code HighSpeed",
-          context_length: 262144,
-        },
-        { id: "kimi-k2.6", name: "Kimi K2.6", context_length: 262144 },
-      ],
+      models: kimiModels(),
     },
     category: "cn_official",
     partnerPromotionKey: "kimi",
@@ -216,21 +335,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.moonshot.ai/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        {
-          id: "kimi-k3.1-pro",
-          name: "Kimi K3.1 Pro",
-          context_length: 1048576,
-        },
-        { id: "kimi-k2.7-code", name: "Kimi K2.7 Code" },
-        { id: "kimi-k3", name: "Kimi K3", context_length: 1048576 },
-        {
-          id: "kimi-k2.7-code-highspeed",
-          name: "Kimi K2.7 Code HighSpeed",
-          context_length: 262144,
-        },
-        { id: "kimi-k2.6", name: "Kimi K2.6", context_length: 262144 },
-      ],
+      models: kimiModels(),
     },
     category: "cn_official",
     partnerPromotionKey: "kimi",
@@ -293,28 +398,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://www.packyapi.ai",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -333,10 +417,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://apinebula.ai/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: apiNebulaModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -437,28 +518,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://runapi.host",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     isPartner: true,
@@ -484,28 +544,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.openmodel.ai",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -524,18 +563,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://grooroute.pro",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: grooRouteProModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -554,18 +582,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.buytoken.work",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: grooRouteProModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -584,23 +601,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.gpt.ge",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: vApiModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -691,28 +692,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.aigocode.dev",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -761,23 +741,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.aicoding.inc",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: aiCodingModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -797,10 +761,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://subrouter.ai/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol", context_length: 272000 },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: subRouterModels(),
     },
     category: "aggregator",
     isPartner: true,
@@ -819,23 +780,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://open.ospreyai.cn",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: vApiModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -882,28 +827,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.88api.ai",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     isPartner: true,
@@ -922,28 +846,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.apikey.fan",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -955,35 +858,14 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
   },
   {
     name: "9527CODE",
-    websiteUrl: "https://9527.codes",
-    apiKeyUrl: "https://9527.codes/register?aff=e5zI",
+    websiteUrl: "https://9527.codes/register?channel=ccs",
+    apiKeyUrl: "https://9527.codes/register?channel=ccs",
     settingsConfig: {
       name: "9527code",
       base_url: "https://9527.codes",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     isPartner: true,
@@ -1002,10 +884,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://code0.ai/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: apiNebulaModels(),
     },
     category: "aggregator",
     icon: "code0",
@@ -1045,23 +924,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.teamorouter.com",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: vApiModels(),
     },
     category: "aggregator",
     isPartner: true,
@@ -1115,28 +978,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://claudecn.top",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -1164,12 +1006,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://ark.cn-beijing.volces.com/api/plan",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "ark-code-latest",
-          name: "Ark Code Latest",
-        },
-      ],
+      models: volcengineAgentPlanModels(),
     },
     category: "cn_official",
     isPartner: true,
@@ -1194,12 +1031,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://ark.cn-beijing.volces.com/api/coding",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "ark-code-latest",
-          name: "Ark Code Latest",
-        },
-      ],
+      models: volcengineAgentPlanModels(),
     },
     category: "cn_official",
     isPartner: true,
@@ -1222,12 +1054,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://ark.ap-southeast.bytepluses.com/api/coding",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "ark-code-latest",
-          name: "Ark Code Latest",
-        },
-      ],
+      models: volcengineAgentPlanModels(),
     },
     category: "cn_official",
     isPartner: true,
@@ -1356,10 +1183,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.a6api.vip/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: apiNebulaModels(),
     },
     category: "aggregator",
     isPartner: true,
@@ -1441,7 +1265,6 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
     },
     category: "aggregator",
     isPartner: true,
-    partnerPromotionKey: "ccsub",
     icon: "ccsub",
     suggestedDefaults: {
       model: { default: "gpt-6.1-sol", provider: "ccsub" },
@@ -1456,23 +1279,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://node-hk.sssaicodeapi.com/api",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: aiCodingModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -1492,23 +1299,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://soleapi.com",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: aiCodingModels(),
     },
     category: "aggregator",
     isPartner: true,
@@ -1527,28 +1318,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://www.micuapi.ai",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -1568,23 +1338,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://www.rightapi.ai/claude",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: aiCodingModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -1604,23 +1358,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.cubence.com",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: aiCodingModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -1640,28 +1378,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://cn.crazyrouter.com",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -1726,11 +1443,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://sudocode.us/v1",
       api_key: "",
       api_mode: "codex_responses",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
-        { id: "gpt-6-sol", name: "GPT-6 Sol", context_length: 272000 },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: sudoCodeUsModels(),
     },
     category: "third_party",
     isPartner: true,
@@ -1748,10 +1461,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://apicdn.xycai.us/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: apiNebulaModels(),
     },
     category: "aggregator",
     isPartner: true,
@@ -1772,10 +1482,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://modelflare.dev/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol", context_length: 272000 },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: subRouterModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -1822,10 +1529,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://alltokens.si/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol", context_length: 272000 },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: subRouterModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -1846,28 +1550,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.tu-zi.com",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     icon: "tuzi",
@@ -1884,10 +1567,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.amux.ai/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: apiNebulaModels(),
     },
     category: "aggregator",
     icon: "amux",
@@ -2116,10 +1796,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://open.bigmodel.cn/api/coding/paas/v4",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "glm-5.3", name: "GLM-5.3" },
-        { id: "glm-5.3-flash", name: "GLM-5.3-Flash", context_length: 1048576 },
-      ],
+      models: zhipuGlmModels(),
     },
     category: "cn_official",
     icon: "zhipu",
@@ -2139,10 +1816,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.z.ai/api/coding/paas/v4",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "glm-5.3", name: "GLM-5.3" },
-        { id: "glm-5.3-flash", name: "GLM-5.3-Flash", context_length: 1048576 },
-      ],
+      models: zhipuGlmModels(),
     },
     category: "cn_official",
     icon: "zhipu",
@@ -2386,10 +2060,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://maas.qianwenaiapi.com/compatible-mode/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "qwen3.8-max", name: "Qwen3.8 Max", context_length: 983616 },
-        { id: "qwen3.8-flash", name: "Qwen3.8 Flash", context_length: 983616 },
-      ],
+      models: qwenAiPlatformModels(),
     },
     category: "cn_official",
     icon: "qianwenai",
@@ -2440,10 +2111,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://token-plan.maas.qianwenaiapi.com/apps/anthropic",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        { id: "qwen3.8-max", name: "Qwen3.8 Max", context_length: 983616 },
-        { id: "qwen3.8-flash", name: "Qwen3.8 Flash", context_length: 983616 },
-      ],
+      models: qwenAiPlatformModels(),
     },
     category: "cn_official",
     icon: "qianwenai",
@@ -2666,14 +2334,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.minimax.cn/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        {
-          id: "MiniMax-M3.1-Flash",
-          name: "MiniMax M3.1 Flash",
-          supports_vision: true,
-        },
-        { id: "MiniMax-M3", name: "MiniMax M3" },
-      ],
+      models: miniMaxModels(),
       // M3.1 can't disable thinking; Hermes' title request sends reasoning_effort:none
       title_generation_model: "MiniMax-M3",
     },
@@ -2697,14 +2358,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.minimax.io/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        {
-          id: "MiniMax-M3.1-Flash",
-          name: "MiniMax M3.1 Flash",
-          supports_vision: true,
-        },
-        { id: "MiniMax-M3", name: "MiniMax M3" },
-      ],
+      models: miniMaxModels(),
       // M3.1 can't disable thinking; Hermes' title request sends reasoning_effort:none
       title_generation_model: "MiniMax-M3",
     },
@@ -2745,10 +2399,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://aihubmix.com/v1",
       api_key: "",
       api_mode: "chat_completions",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: apiNebulaModels(),
     },
     category: "aggregator",
     icon: "aihubmix",
@@ -2799,28 +2450,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://e-flowcode.cc",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "third_party",
     icon: "eflowcode",
@@ -3669,23 +3299,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://cc-api.pipellm.ai",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: aiCodingModels(),
     },
     category: "aggregator",
     icon: "pipellm",
@@ -3800,11 +3414,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.aicodewith.ai/v1",
       api_key: "",
       api_mode: "codex_responses",
-      models: [
-        { id: "gpt-6.1-sol", name: "GPT-6.1 Sol" },
-        { id: "gpt-6-sol", name: "GPT-6 Sol", context_length: 272000 },
-        { id: "gpt-6-astra", name: "GPT-6 Astra", context_length: 272000 },
-      ],
+      models: sudoCodeUsModels(),
     },
     category: "aggregator",
     icon: "aicodewith",
@@ -3822,28 +3432,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://ai.soruxgpt.com",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -3860,28 +3449,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.ikuncode.ai",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -3898,28 +3466,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://www.runtoken.ai",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -3936,28 +3483,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://botcf.com",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -3975,28 +3501,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://app.yylx.io",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -4013,28 +3518,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://tokenflux.com",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -4054,23 +3538,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       extra_headers: {
         "User-Agent": "claude-cli/2.1.161 (external, cli)",
       },
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-      ],
+      models: aiCodingModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
@@ -4087,28 +3555,7 @@ export const hermesProviderPresets: HermesProviderPreset[] = [
       base_url: "https://api.aicoming.top",
       api_key: "",
       api_mode: "anthropic_messages",
-      models: [
-        {
-          id: "claude-opus-5-5",
-          name: "Claude Opus 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-sonnet-5-5",
-          name: "Claude Sonnet 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-haiku-5-5",
-          name: "Claude Haiku 5.5",
-          context_length: 1000000,
-        },
-        {
-          id: "claude-fable-5-1",
-          name: "Claude Fable 5.1",
-          context_length: 1000000,
-        },
-      ],
+      models: packyCodeModels(),
     },
     category: "aggregator",
     suggestedDefaults: {
