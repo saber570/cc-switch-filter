@@ -418,7 +418,8 @@ mod tests {
             .expect("global default must not block removal");
         assert!(!crate::pi_config::pi_provider_exists("switchplus-test").unwrap());
 
-        ProviderService::switch(&state, AppType::Pi, "switchplus-test").expect("re-enable provider");
+        ProviderService::switch(&state, AppType::Pi, "switchplus-test")
+            .expect("re-enable provider");
         ProviderService::delete(&state, AppType::Pi, "switchplus-test")
             .expect("global default must not block deletion");
         assert!(state
@@ -867,7 +868,8 @@ mod tests {
 
         ProviderService::remove_from_live_config(&state, AppType::Pi, "switchplus-test")
             .expect("global selection is advisory for removal");
-        ProviderService::switch(&state, AppType::Pi, "switchplus-test").expect("re-enable provider");
+        ProviderService::switch(&state, AppType::Pi, "switchplus-test")
+            .expect("re-enable provider");
         ProviderService::delete(&state, AppType::Pi, "switchplus-test")
             .expect("global selection is advisory for deletion");
         assert!(!crate::pi_config::pi_provider_exists("switchplus-test").unwrap());

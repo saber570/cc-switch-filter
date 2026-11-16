@@ -90,7 +90,9 @@ pub fn set_app_config_dir_to_store(
             let trimmed = p.trim();
             if !trimmed.is_empty() {
                 if crate::identity::is_cc_switch_path(&resolve_path(trimmed)) {
-                    return Err(AppError::Config("SwitchPlus 不能使用 其他配置管理程序的数据目录，请选择独立目录".into()));
+                    return Err(AppError::Config(
+                        "SwitchPlus 不能使用 其他配置管理程序的数据目录，请选择独立目录".into(),
+                    ));
                 }
                 store.set(STORE_KEY_APP_CONFIG_DIR, Value::String(trimmed.to_string()));
                 log::info!("已将 app_config_dir 写入 Store: {trimmed}");

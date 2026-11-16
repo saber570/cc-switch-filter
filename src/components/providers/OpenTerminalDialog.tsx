@@ -33,7 +33,8 @@ const MAX_RECENT = 5;
 const skipPermissionsKey = (appId: AppId) =>
   `switchplus:terminal:skip-permissions:${appId}`;
 /** 附加参数同样按应用记住：各个 CLI 的参数互不通用 */
-const extraArgsKey = (appId: AppId) => `switchplus:terminal:extra-args:${appId}`;
+const extraArgsKey = (appId: AppId) =>
+  `switchplus:terminal:extra-args:${appId}`;
 
 function readRecent(): string[] {
   try {

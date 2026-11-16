@@ -227,8 +227,11 @@ mod tests {
             }}),
             false,
         );
-        let contract =
-            GeminiProjection::proxy_contract(&route, "http://127.0.0.1:15721", "SWITCHPLUS_PROXY_MANAGED");
+        let contract = GeminiProjection::proxy_contract(
+            &route,
+            "http://127.0.0.1:15721",
+            "SWITCHPLUS_PROXY_MANAGED",
+        );
         assert_eq!(
             contract.env,
             vec![

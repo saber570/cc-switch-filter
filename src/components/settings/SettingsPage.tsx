@@ -536,9 +536,7 @@ export function SettingsPage({
           </>
         );
       case "about":
-        return (
-          <AboutSection isPortable={isPortable} />
-        );
+        return <AboutSection isPortable={isPortable} />;
     }
   };
 

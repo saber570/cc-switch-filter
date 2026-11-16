@@ -2255,7 +2255,10 @@ mod tests {
         let profile: Value = read_json_file(&paths.profile_path).expect("read profile");
         assert_eq!(
             profile["inferenceGatewayBaseUrl"],
-            json!(format!("http://127.0.0.1:{}/claude-desktop", crate::identity::DEFAULT_PROXY_PORT))
+            json!(format!(
+                "http://127.0.0.1:{}/claude-desktop",
+                crate::identity::DEFAULT_PROXY_PORT
+            ))
         );
         assert_eq!(profile["inferenceGatewayAuthScheme"], json!("bearer"));
         assert_eq!(profile["coworkEgressAllowedHosts"], json!(["*"]));
@@ -2289,7 +2292,10 @@ mod tests {
             let profile: Value = read_json_file(&paths.profile_path).expect("read profile");
             assert_eq!(
                 profile["inferenceGatewayBaseUrl"],
-                json!(format!("http://127.0.0.1:{}/claude-desktop", crate::identity::DEFAULT_PROXY_PORT))
+                json!(format!(
+                    "http://127.0.0.1:{}/claude-desktop",
+                    crate::identity::DEFAULT_PROXY_PORT
+                ))
             );
             assert_eq!(
                 profile["inferenceModels"],

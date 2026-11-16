@@ -5837,7 +5837,6 @@ mod tests {
         assert_eq!(fs::read_to_string(dest.join("SKILL.md")).unwrap(), "old");
     }
 
-
     #[test]
     fn copy_entry_within_budget_stops_before_exceeding_the_limit() {
         // 预算逐块累加，超限时中止且不再继续写——压缩炸弹声明的 size 不可信，

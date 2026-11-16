@@ -66,7 +66,9 @@ function copilotProtocol(
 
 /** 预设的默认卡片 id：Pi 预设键去掉 `cc-switch-` 前缀（`/model` 里显示成 `deep-seek/<模型>`）。 */
 export function copilotPresetProviderId(providerKey: string): string {
-  return normalizeCopilotProviderId(providerKey.replace(/^(?:cc-switch|switchplus)-/, ""));
+  return normalizeCopilotProviderId(
+    providerKey.replace(/^(?:cc-switch|switchplus)-/, ""),
+  );
 }
 
 // 复用 Pi 已维护的供应商目录（分组、合作信息、地址、模型），换算成 providers.json 的条目。
