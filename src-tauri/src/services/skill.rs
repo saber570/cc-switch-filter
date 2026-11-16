@@ -1721,13 +1721,16 @@ impl SkillService {
         }
 
         // 备份旧文件
-        let _ = Self::create_uninstall_backup(&skill);
+        if let Err(e) = Self::create_uninstall_backup(&skill) {
+            log::warn!("更新前备份 Skill {} 失败: {e}", skill.directory);
+        }
 
-        if !(skill.apps.mcode || skill.apps.agy || skill.apps.kimi || skill.apps.dsh) {
-            if dest.exists() {
-                fs::remove_dir_all(&dest)?;
-            }
-            Self::copy_dir_recursive(&source, &dest)?;
+        if !(skill.apps.mcode
+            || skill.apps.agy
+            || skill.apps.kimi
+            || skill.apps.dsh)
+        {
+            Self::replace_dir_staged(&source, &dest)?;
         }
 
         // 计算新哈希 + 解析新元数据
@@ -1819,6 +1822,44 @@ impl SkillService {
 
         log::info!("Skill {} 更新成功", updated_skill.name);
         Ok(updated_skill)
+    }
+
+    /// Copy a downloaded Skill into a sibling staging directory before swapping it in.
+    /// If copying fails, the existing installed directory remains untouched.
+    fn replace_dir_staged(source: &Path, dest: &Path) -> Result<()> {
+        let parent = dest.parent().context("Skill destination has no parent")?;
+        fs::create_dir_all(parent)?;
+        let staging = tempfile::Builder::new()
+            .prefix(".skill-update-")
+            .tempdir_in(parent)?;
+        let replacement = staging.path().join("new");
+        Self::copy_dir_recursive(source, &replacement)?;
+
+        let previous = staging.path().join("old");
+        let existed = dest.exists() || Self::is_symlink(dest);
+        if existed {
+            fs::rename(dest, &previous)?;
+        }
+        if let Err(error) = fs::rename(&replacement, dest) {
+            if existed {
+                if let Err(restore_error) = fs::rename(&previous, dest) {
+                    let kept = staging.keep();
+                    return Err(anyhow!(
+                        "{error}; restoring the previous skill failed: {restore_error}; previous copy kept at {}",
+                        kept.join("old").display()
+                    ));
+                }
+            }
+            return Err(error.into());
+        }
+        let staging_path = staging.path().to_path_buf();
+        if let Err(error) = staging.close() {
+            log::warn!(
+                "Skill updated, but removing staging dir {} failed: {error}",
+                staging_path.display()
+            );
+        }
+        Ok(())
     }
 
     // Keep the old SSOT and native copies until metadata is committed. In particular,
@@ -5391,6 +5432,36 @@ mod tests {
         assert!(
             SkillService::build_skill_doc_url("owner", "repo", "../../../issues", "x").is_none()
         );
+    }
+
+    #[test]
+    fn replace_dir_staged_keeps_existing_skill_when_copy_fails() {
+        let root = tempdir().expect("tempdir");
+        let dest = root.path().join("skills").join("demo");
+        fs::create_dir_all(&dest).unwrap();
+        fs::write(dest.join("SKILL.md"), "old").unwrap();
+
+        let missing_source = root.path().join("missing");
+        assert!(SkillService::replace_dir_staged(&missing_source, &dest).is_err());
+        assert_eq!(fs::read_to_string(dest.join("SKILL.md")).unwrap(), "old");
+    }
+
+    #[test]
+    fn replace_dir_staged_swaps_in_new_contents() {
+        let root = tempdir().expect("tempdir");
+        let source = root.path().join("source");
+        fs::create_dir_all(source.join("nested")).unwrap();
+        fs::write(source.join("SKILL.md"), "new").unwrap();
+        fs::write(source.join("nested").join("a.txt"), "a").unwrap();
+        let dest = root.path().join("skills").join("demo");
+        fs::create_dir_all(&dest).unwrap();
+        fs::write(dest.join("SKILL.md"), "old").unwrap();
+        fs::write(dest.join("stale.txt"), "stale").unwrap();
+
+        SkillService::replace_dir_staged(&source, &dest).unwrap();
+        assert_eq!(fs::read_to_string(dest.join("SKILL.md")).unwrap(), "new");
+        assert_eq!(fs::read_to_string(dest.join("nested").join("a.txt")).unwrap(), "a");
+        assert!(!dest.join("stale.txt").exists());
     }
 
     #[test]
