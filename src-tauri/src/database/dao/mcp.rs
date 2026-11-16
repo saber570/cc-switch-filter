@@ -130,10 +130,25 @@ impl Database {
     pub fn save_mcp_server(&self, server: &McpServer) -> Result<(), AppError> {
         let conn = lock_conn!(self.conn);
         conn.execute(
-            "INSERT OR REPLACE INTO mcp_servers (
+            // Update only fields understood by SwitchPlus; preserve imported
+            // Copilot/WorkBuddy flags until those applications are supported.
+            "INSERT INTO mcp_servers (
                 id, name, server_config, description, homepage, docs, tags,
                 enabled_claude, enabled_codex, enabled_gemini, enabled_grokbuild, enabled_opencode, enabled_hermes, enabled_mcode, enabled_pi, enabled_agy, enabled_kimi, enabled_omp, enabled_dsh
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
+            ON CONFLICT(id) DO UPDATE SET
+                name = excluded.name, server_config = excluded.server_config,
+                description = excluded.description, homepage = excluded.homepage,
+                docs = excluded.docs, tags = excluded.tags,
+                enabled_claude = excluded.enabled_claude,
+                enabled_codex = excluded.enabled_codex,
+                enabled_gemini = excluded.enabled_gemini,
+                enabled_grokbuild = excluded.enabled_grokbuild,
+                enabled_opencode = excluded.enabled_opencode,
+                enabled_hermes = excluded.enabled_hermes,
+                enabled_mcode = excluded.enabled_mcode, enabled_pi = excluded.enabled_pi,
+                enabled_agy = excluded.enabled_agy, enabled_kimi = excluded.enabled_kimi,
+                enabled_omp = excluded.enabled_omp, enabled_dsh = excluded.enabled_dsh",
             params![
                 server.id,
                 server.name,

@@ -21,6 +21,12 @@
 后续升级构建工具时需对比模板变化，保留版本迁移、当前用户 MSI 检测和安装路径恢复逻辑；
 可用 `powershell -ExecutionPolicy Bypass -File scripts/test-installer-version.ps1` 验证真实 NSIS 版本判断。
 
+## 2026-11-15：1.0.1 数据库备份兼容
+
+补入上游 schema 25（Copilot CLI 开关）和 schema 26（WorkBuddy 开关及早期开发库补列）的数据库迁移。
+数据库支持提升到 schema 26，MCP/Skills 保存时保留尚未在本版界面中开放的应用开关。
+这是数据库兼容修复，不代表已全量升级到上游 4.0.31，也不代表已引入 Copilot CLI、WorkBuddy 应用管理功能。
+
 ## 首次准备
 
 合并更新前，先检查并提交需要保留的本地改动，确保工作区干净。

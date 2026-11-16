@@ -1,6 +1,6 @@
 {
   "name": "switchplus",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SwitchPlus personal AI provider router with V9 filtering",
   "type": "module",
   "scripts": {

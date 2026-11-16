@@ -506,12 +506,13 @@ fn row_facts(db: &Database) -> Result<RowFacts, AppError> {
                 .and_then(Item::as_str)
                 .map(|url| url.trim().to_string())
         };
-        // 旧版整份写入时，路由表用的是行自己的 id（custom 是 CC Switch 现在写的，不算）。
+        // 旧版整份写入时，路由表用过行自己的 id；CC Switch 则固定用 `custom`。
+        // 只把供应商行配置里同 id、同 base_url 的表记作可回收，避免误删用户自建表。
         let selector = doc
             .get("model_provider")
             .and_then(Item::as_str)
             .map(str::trim)
-            .filter(|id| id.starts_with("switchplus-") && *id != ROUTE_ID);
+            .filter(|id| *id == "custom" || (id.starts_with("switchplus-") && *id != ROUTE_ID));
         if let Some((id, base_url)) = selector.and_then(|id| Some((id, base_url_of(id)?))) {
             facts.retired.push(KnownTable {
                 id: id.to_string(),
