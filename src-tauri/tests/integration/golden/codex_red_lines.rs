@@ -429,7 +429,7 @@ fn normalization_never_overwrites_a_user_table() {
     let _guard = test_mutex().lock().unwrap_or_else(|e| e.into_inner());
     reset_test_fs();
     set_login_preservation(false);
-    let user_table = "[model_providers.switchplus]\nname = \"Mine\"\nbase_url = \"https://mine.example/v1\"\nwire_api = \"responses\"\nhttp_headers = { X-Tenant = \"t1\" }\n";
+    let user_table = "[model_providers.personal]\nname = \"Mine\"\nbase_url = \"https://mine.example/v1\"\nwire_api = \"responses\"\nhttp_headers = { X-Tenant = \"t1\" }\n";
     let state = setup(
         vec![codex(
             "legacy",
@@ -447,9 +447,9 @@ fn normalization_never_overwrites_a_user_table() {
 
     let doc = live_config();
     assert_key_in_route(&doc, "https://relay.example/v1", "sk-legacy");
-    let mine = table(&doc["model_providers"]["switchplus"], "switchplus");
+    let mine = table(&doc["model_providers"]["personal"], "personal");
     let expected: Table = toml::from_str::<Table>(user_table).expect("parse user table")
-        ["model_providers"]["switchplus"]
+        ["model_providers"]["personal"]
         .as_table()
         .expect("user table")
         .clone();
@@ -469,7 +469,7 @@ fn inline_model_providers_keep_the_key_inside() {
         vec![codex(
             "inline",
             Some("sk-inline"),
-            "model_provider = \"switchplus\"\nmodel = \"gpt-5\"\nmodel_providers = { custom = { name = \"Inline\", base_url = \"https://inline.example/v1\", wire_api = \"responses\" } }\n",
+            "model_provider = \"switchplus\"\nmodel = \"gpt-5\"\nmodel_providers = { switchplus = { name = \"Inline\", base_url = \"https://inline.example/v1\", wire_api = \"responses\" } }\n",
         )],
         false,
     );

@@ -4,6 +4,10 @@ import { createRequire } from "node:module";
 import {
   existsSync,
   mkdirSync,
+  mkdtempSync,
+  renameSync,
+  rmSync,
+  symlinkSync,
   readFileSync,
   readdirSync,
   statSync,
@@ -163,6 +167,39 @@ function filesUnder(directory) {
   });
 }
 
+// Build the installer without a Finder session. Seal all bundle resources before
+// copying the app to the image. Publish only an image hdiutil could verify.
+function createMacDmg(bundleDir, info) {
+  const app = join(bundleDir, "macos", "SwitchPlus.app");
+  const output = join(bundleDir, "dmg");
+  mkdirSync(output, { recursive: true });
+  const work = mkdtempSync(join(output, ".build-"));
+  try {
+    const staging = join(work, "contents");
+    mkdirSync(staging);
+    execFileSync("codesign", ["--force", "--sign", "-", app]);
+    execFileSync("codesign", ["--verify", "--deep", "--strict", app]);
+    execFileSync("ditto", [app, join(staging, "SwitchPlus.app")]);
+    symlinkSync("/Applications", join(staging, "Applications"));
+    const image = join(work, "SwitchPlus.dmg");
+    execFileSync("hdiutil", [
+      "create",
+      "-volname",
+      "SwitchPlus",
+      "-srcfolder",
+      staging,
+      "-format",
+      "UDZO",
+      image,
+    ]);
+    execFileSync("hdiutil", ["verify", image]);
+    const arch = info.target.split("-")[0];
+    renameSync(image, join(output, `SwitchPlus_${info.version}_${arch}.dmg`));
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+}
+
 export function collectArtifacts(bundleDir, formats, startedAt) {
   return formats
     .filter((format) => format !== "app")
@@ -259,6 +296,7 @@ export function main(args = process.argv.slice(2)) {
     );
   const cli = require.resolve("@tauri-apps/cli/tauri.js");
   const buildArgs = [cli, "build", "--ci", "--no-sign"];
+  if (platform === "macos") buildArgs.push("--bundles", "app");
   if (target) buildArgs.push("--target", target);
   buildArgs.push("--", "--locked");
   const startedAt = Date.now();
@@ -289,6 +327,7 @@ export function main(args = process.argv.slice(2)) {
     ...(target ? [target] : []),
     "release/bundle",
   );
+  if (platform === "macos") createMacDmg(bundleDir, info);
   const formats = Array.isArray(config.bundle.targets)
     ? config.bundle.targets
     : ["appimage", "deb", "rpm"];

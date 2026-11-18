@@ -241,6 +241,7 @@ async fn codex_v9_defaults_filter_and_retry_through_real_http_forwarder() {
         (Some(false), "stream_incomplete"),
         (Some(true), "server_error"),
         (None, "bad_response"),
+        (None, "gateway_queue_full"),
     ] {
         let seen = Arc::new(Mutex::new(Vec::<Value>::new()));
         let records = seen.clone();
@@ -249,12 +250,18 @@ async fn codex_v9_defaults_filter_and_retry_through_real_http_forwarder() {
             async move {
                 let mut calls = records.lock().await;
                 calls.push(body);
+                if calls.len() == 1 && error_code == "gateway_queue_full" {
+                    return (StatusCode::TOO_MANY_REQUESTS, Json(json!({"error":{
+                        "code":error_code, "type":"rate_limit_error",
+                        "message":"Too many pending requests, please retry later"
+                    }}))).into_response();
+                }
                 let events = if calls.len() == 1 {
                     vec![json!({"type":"response.output_item.added","item":{"type":"function_call","name":"never_run"}}),
                         json!({"type":"response.failed","response":{"error":{"code":error_code}}})]
                 } else { vec![json!({"type":"response.completed","response":{"id":"resp_ok","status":"completed","output":[]}})] };
                 let text = events.into_iter().map(|event| format!("event: {}\ndata: {event}\n\n",event["type"].as_str().unwrap())).collect::<String>();
-                ([("content-type","text/event-stream")],text)
+                ([("content-type","text/event-stream")],text).into_response()
             }
         }));
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();

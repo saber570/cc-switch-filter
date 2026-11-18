@@ -307,7 +307,7 @@ requires_openai_auth = true
 
     assert_eq!(
         parsed.get("model_provider").and_then(|v| v.as_str()),
-        Some("custom"),
+        Some("switchplus"),
         "every third-party route is written as the custom table"
     );
 
@@ -317,7 +317,7 @@ requires_openai_auth = true
         .expect("model_providers table exists");
     assert_eq!(
         model_providers
-            .get("custom")
+            .get("switchplus")
             .and_then(|v| v.get("base_url"))
             .and_then(|v| v.as_str()),
         Some("https://aihubmix.example/v1"),
@@ -472,13 +472,13 @@ requires_openai_auth = true
     let parsed_live: toml::Value = toml::from_str(&live_config).expect("parse live config");
     assert_eq!(
         parsed_live.get("model_provider").and_then(|v| v.as_str()),
-        Some("custom"),
+        Some("switchplus"),
         "third-party routes are always written as the custom table"
     );
     assert_eq!(
         parsed_live
             .get("model_providers")
-            .and_then(|v| v.get("custom"))
+            .and_then(|v| v.get("switchplus"))
             .and_then(|v| v.get("experimental_bearer_token"))
             .and_then(|v| v.as_str()),
         Some("bridge-key"),
@@ -487,7 +487,7 @@ requires_openai_auth = true
     assert_eq!(
         parsed_live
             .get("model_providers")
-            .and_then(|v| v.get("custom"))
+            .and_then(|v| v.get("switchplus"))
             .and_then(|v| v.get("requires_openai_auth"))
             .and_then(|v| v.as_bool()),
         Some(true)
@@ -570,7 +570,7 @@ wire_api = "responses"
             .expect("read config.toml");
         let doc: toml::Value = toml::from_str(&text).expect("parse live config");
         doc.get("model_providers")
-            .and_then(|v| v.get("custom"))
+            .and_then(|v| v.get("switchplus"))
             .and_then(|v| v.get("requires_openai_auth"))
             .and_then(|v| v.as_bool())
     };
@@ -1585,9 +1585,13 @@ fn reapply_codex_official_live_rewrites_only_the_session_routing() {
     assert!(cc_switch_lib::reapply_current_codex_official_live(&state).expect("reapply"));
     let unified = read_live();
     let doc: toml::Value = toml::from_str(&unified).expect("parse");
-    assert_eq!(doc["model_provider"].as_str(), Some("custom"), "{unified}");
     assert_eq!(
-        doc["model_providers"]["custom"]["requires_openai_auth"].as_bool(),
+        doc["model_provider"].as_str(),
+        Some("switchplus"),
+        "{unified}"
+    );
+    assert_eq!(
+        doc["model_providers"]["switchplus"]["requires_openai_auth"].as_bool(),
         Some(true),
         "the unified bucket is the official mirror: {unified}"
     );
@@ -3106,6 +3110,14 @@ fn recover_from_crash_without_backup_cleans_placeholder_instead_of_writing_it_ba
         .set_current_provider(&AppType::Claude, "default")
         .expect("set current provider");
 
+    // An existing device owns this Claude installation. A fresh device leaves shared live files alone.
+    cc_switch_lib::mode::state::update(
+        &cc_switch_lib::live::engine::DeviceStore::for_device(),
+        |state| {
+            state.apps.entry("claude".into()).or_default().attached = true;
+        },
+    )
+    .unwrap();
     // 启动时处理旧版遗留的接管态：没开代理（enabled=0），写回直连。
     futures::executor::block_on(cc_switch_lib::mode::controller::startup(&state));
 
