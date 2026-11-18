@@ -49,13 +49,13 @@ Windows：1.0.1 保持原应用标识、程序名、当前用户安装范围和�
 数据库正常迁移和迁移前备份仍保留。
 
 macOS：结束当前请求并完全退出 SwitchPlus，打开新版 DMG，将 `SwitchPlus.app` 拖到原来的安装位置并选择替换
-（通常为 `/Applications/SwitchPlus.app`）。1.0.1 沿用原应用标识和 `~/.switchplus` 数据目录，
+（通常为 `/Applications/SwitchPlus.app`）。1.0.2 沿用原应用标识和 `~/.switchplus` 数据目录，
 替换应用不会删除该目录中的供应商、路由和用量数据，无需先卸载或重新导入。已有自定义数据目录也继续沿用。
 Finder 可能因旧版编号为 4.x 而提示版本较旧，核对应用名和源码提交后仍可替换；Windows 安装器的维护选项不适用于 Mac。
 
 新版首次启动若没有本机接管记录、旧备份或已启用路由，会保留已有客户端配置；
 已有路由安装按保存的模式恢复。不要在请求运行中安装，安装器关闭旧进程会终止进行中的请求。
-已有安装继续使用保存的端口；15731 只作为新数据库的默认端口。合并后的源码需要重新构建安装包，尚未进行覆盖安装实测。
+已有安装继续使用保存的端口；15731 只作为新数据库的默认端口。已在 Apple 芯片 Mac 上验证从 DMG 覆盖临时目录中的 1.0.1 应用副本，并检查 1.0.2 的签名、架构和应用标识。旧数据库迁移和保存的路由恢复使用隔离数据测试。
 
 旧安装的第三方会话从 `custom` 迁到独立的 `switchplus` 标识前会备份；只有本机旧迁移记录和接管记录都存在时才执行。旧压缩摘要继续可读。
 
@@ -81,7 +81,7 @@ Mac 默认生成当前 Rust 工具链架构的包，不会自动生成 Universal
 Apple 芯片使用 `corepack pnpm build --target aarch64-apple-darwin`，Intel 使用 `corepack pnpm build --target x86_64-apple-darwin`。
 指定另一种架构前，先用 `rustup target add aarch64-apple-darwin` 或 `rustup target add x86_64-apple-darwin` 安装对应目标。
 两种架构均需在 Mac 上构建。APP、Dock 和 DMG 使用同套 SwitchPlus 图标，菜单栏使用单色图标适配深浅色。
-本地入口跳过 Developer ID 签名和 Apple 公证，无需开发者证书；README 中保留的上游签名/公证说明不适用于这些个人构建产物。
+本地入口使用 ad hoc 签名，在生成 DMG 前验证应用签名。个人构建未经 Apple 公证，无需开发者证书。README 中保留的上游签名/公证说明不适用于这些个人构建产物。
 `corepack pnpm build:check` 只校验配置，不执行编译或打包。
 入口始终明确指定目标架构：优先命令行 `--target`，其次 `CARGO_BUILD_TARGET`，否则使用本机 Rust 工具链的架构。
 64 位 Intel/AMD Windows 的 `<target>` 为 `x86_64-pc-windows-msvc`。自定义 Cargo 输出目录时以命令末尾打印的实际路径为准。
@@ -89,7 +89,7 @@ Apple 芯片使用 `corepack pnpm build --target aarch64-apple-darwin`，Intel �
 显式构建 MSI 时新安装路径也保持 `%LOCALAPPDATA%\SwitchPlus`；已有 MSI 仍沿用其注册的路径。
 此前采用 `com.switchplus.desktop` / publisher `chow` 打出的包属于另一套安装身份，不能保证自动覆盖识别；本仓库统一沿用最早已安装版本的身份。
 无需更新签名密钥，个人版已移除应用更新界面、检查、下载命令和更新插件。
-CLI 工具自身的安装更新功能仍然保留。这里提供源码；未完成 Windows/macOS 安装实测。
+CLI 工具自身的安装更新功能仍然保留。本轮未验证 Windows 安装。
 
 原版 GitHub 发布流程是上游的基础设施，个人版以本地构建为准；
 若以后启用自动发布，需要另配 SwitchPlus 的产物名称与签名。

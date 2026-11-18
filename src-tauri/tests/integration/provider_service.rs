@@ -237,17 +237,17 @@ command = "say"
 }
 
 #[test]
-/// 第三方路由一律写成 `custom`：行里用什么 id 都一样，行本身不改写。
-fn provider_service_switch_codex_writes_every_third_party_route_as_custom() {
+/// 第三方路由一律写成 `switchplus`：行里用什么 id 都一样，行本身不改写。
+fn provider_service_switch_codex_replaces_legacy_custom_route_with_switchplus() {
     let _guard = test_mutex().lock().unwrap_or_else(|e| e.into_inner());
     reset_test_fs();
     let _home = ensure_test_home();
 
     let legacy_auth = json!({ "OPENAI_API_KEY": "rightcode-key" });
-    let legacy_config = r#"model_provider = "rightcode"
+    let legacy_config = r#"model_provider = "custom"
 model = "gpt-5.4"
 
-[model_providers.rightcode]
+[model_providers.custom]
 name = "RightCode"
 base_url = "https://rightcode.example/v1"
 wire_api = "responses"
@@ -308,7 +308,7 @@ requires_openai_auth = true
     assert_eq!(
         parsed.get("model_provider").and_then(|v| v.as_str()),
         Some("switchplus"),
-        "every third-party route is written as the custom table"
+        "every third-party route is written as the switchplus table"
     );
 
     let model_providers = parsed
@@ -321,15 +321,15 @@ requires_openai_auth = true
             .and_then(|v| v.get("base_url"))
             .and_then(|v| v.as_str()),
         Some("https://aihubmix.example/v1"),
-        "the custom table points at the newly selected supplier endpoint"
+        "the switchplus table points at the newly selected supplier endpoint"
     );
     assert!(
         model_providers.get("aihubmix").is_none(),
         "the row's own table id is not written"
     );
     assert!(
-        model_providers.get("rightcode").is_none(),
-        "the old version's table for old-provider (same id and address as its row) is retired"
+        model_providers.get("custom").is_none(),
+        "the legacy custom table with the matching provider URL is retired"
     );
 
     let providers = state
@@ -473,7 +473,7 @@ requires_openai_auth = true
     assert_eq!(
         parsed_live.get("model_provider").and_then(|v| v.as_str()),
         Some("switchplus"),
-        "third-party routes are always written as the custom table"
+        "third-party routes are always written as the switchplus table"
     );
     assert_eq!(
         parsed_live
@@ -493,14 +493,11 @@ requires_openai_auth = true
         Some(true)
     );
 
-    // 旧版按行的 id 写进 live 的表（id 和地址都对得上 legacy-provider 的投影）被清掉，
-    // 里面的真实 Key 不再留在 live 里。
-    assert!(
-        parsed_live
-            .get("model_providers")
-            .and_then(|v| v.get("rightcode"))
-            .is_none(),
-        "the table an old version wrote for legacy-provider is retired: {live_config}"
+    let legacy_doc: toml::Value = toml::from_str(legacy_config).expect("parse legacy config");
+    assert_eq!(
+        parsed_live["model_providers"].get("rightcode"),
+        Some(&legacy_doc["model_providers"]["rightcode"]),
+        "preserve the user's third-party table even when a provider row uses the same URL"
     );
 
     ProviderService::switch(&state, AppType::Codex, "plain-provider")
