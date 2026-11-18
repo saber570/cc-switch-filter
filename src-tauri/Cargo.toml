@@ -151,6 +151,11 @@ opt-level = "s"
 panic = "unwind"
 strip = "symbols"
 
+# rustc loads these host-side proc macros during the build. Stripping their
+# Mach-O symbol tables can produce a LINKEDIT layout rejected by macOS dyld.
+[profile.release.build-override]
+strip = "none"
+
 [dev-dependencies]
 serial_test = "3"
 tempfile = "3"
