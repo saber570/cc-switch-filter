@@ -292,10 +292,10 @@ async fn gateway_concurrency_shares_rate_budget_and_preserves_permanent_errors()
     let response = run(
         || {
             calls += 1;
-            let code = if calls % 2 == 1 {
-                "gateway_concurrency_limit"
-            } else {
-                "rate_limit_exceeded"
+            let code = match calls % 3 {
+                1 => "gateway_concurrency_limit",
+                2 => "rate_limit_exceeded",
+                _ => "gateway_queue_full",
             };
             async move { Ok(sse(&[json!({"type":"error","code":code})])) }
         },
@@ -308,11 +308,12 @@ async fn gateway_concurrency_shares_rate_budget_and_preserves_permanent_errors()
     let body = text(response).await;
     assert_eq!(calls, 21);
     assert_eq!(body.matches("event: error").count(), 1);
-    assert!(body.contains("gateway_concurrency_limit"));
+    assert!(body.contains("gateway_queue_full"));
     assert!(!body.contains("response.completed"));
 
     for error in [
         json!({"code":"gateway_concurrency_limit","message":"Account quota exhausted"}),
+        json!({"code":"gateway_queue_full","type":"insufficient_quota"}),
         json!({"code":"invalid_api_key","message":"Gateway concurrency limit reached"}),
         json!({"code":"invalid_request_error","message":"Gateway concurrency limit reached"}),
     ] {
@@ -516,6 +517,14 @@ async fn v12_http_wrappers_gateway_failures_and_200_error_envelopes_recover() {
         ),
         (504, "<html>Gateway timeout</html>".into()),
         (429, json!({"error":{"code":429}}).to_string()),
+        (
+            429,
+            json!({"error":{
+                "code":"gateway_queue_full", "type":"rate_limit_error",
+                "message":"Too many pending requests, please retry later"
+            }})
+            .to_string(),
+        ),
         (400, json!({"error":{"code":"rate_limit"}}).to_string()),
         (
             200,

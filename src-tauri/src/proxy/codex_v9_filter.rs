@@ -315,7 +315,7 @@ fn classify_event(value: &Value, event: &str) -> Option<Kind> {
     {
         return Some(Kind::Resource);
     }
-    // Gateway concurrency throttling shares the rate-limit backoff and budget.
+    // Both saturated gateway queues and concurrency limits use the rate-limit backoff.
     if matches!(
         code.as_str(),
         "429"
@@ -324,6 +324,7 @@ fn classify_event(value: &Value, event: &str) -> Option<Kind> {
             | "rate_limit_error"
             | "too_many_requests"
             | "gateway_concurrency_limit"
+            | "gateway_queue_full"
     ) || lower.contains("exceeded token rate limit")
         || (lower.contains("rate limit exceeded")
             && ["your requests", "token", "requests per minute"]
@@ -710,12 +711,9 @@ where
         let attempt = tokio::time::timeout_at(deadline, async {
             match tokio::time::timeout(idle, send()).await {
                 Ok(Ok(response)) => collect(response, limit, idle).await,
-                Err(_)
-                | Ok(Err(
-                    ProxyError::Timeout(_)
-                    | ProxyError::StreamIdleTimeout(_)
-                    | ProxyError::ForwardFailed(_),
-                )) => transport_failure(),
+                Err(_) | Ok(Err(ProxyError::Timeout(_) | ProxyError::ForwardFailed(_))) => {
+                    transport_failure()
+                }
                 Ok(Err(error)) => collect(error.into_response(), limit, idle).await,
             }
         })

@@ -54,6 +54,7 @@ async fn send_compaction_test_request(
         body,
         http::HeaderMap::new(),
         http::Extensions::new(),
+        ResponsesEndpoint::Responses,
     )
     .await
     .unwrap();
@@ -301,6 +302,7 @@ async fn codex_v9_defaults_filter_and_retry_through_real_http_forwarder() {
             body,
             http::HeaderMap::new(),
             http::Extensions::new(),
+            ResponsesEndpoint::Responses,
         )
         .await
         .unwrap();

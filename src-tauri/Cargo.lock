@@ -5384,7 +5384,7 @@ dependencies = [
 
 [[package]]
 name = "switchplus"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -5418,7 +5418,6 @@ dependencies = [
  "objc2-app-kit 0.2.2",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
- "once_cell",
  "png 0.18.1",
  "process-wrap",
  "prost",
