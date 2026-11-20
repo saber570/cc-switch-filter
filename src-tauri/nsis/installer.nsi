@@ -43,6 +43,8 @@ ${StrLoc}
 !define WEBVIEW2APPGUID "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 
 !define MANUFACTURER "{{manufacturer}}"
+; Only used to detect an old installation and ask for manual removal.
+!define LEGACY_MANUFACTURER "saber570"
 !define PRODUCTNAME "{{product_name}}"
 !define VERSION "{{version}}"
 !define VERSIONWITHBUILD "{{version_with_build}}"
@@ -94,6 +96,7 @@ InstallDir "${PLACEHOLDER_INSTALL_DIR}"
 
 VIProductVersion "${VERSIONWITHBUILD}"
 VIAddVersionKey "ProductName" "${PRODUCTNAME}"
+VIAddVersionKey "CompanyName" "${MANUFACTURER}"
 VIAddVersionKey "FileDescription" "${PRODUCTNAME}"
 VIAddVersionKey "LegalCopyright" "${COPYRIGHT}"
 VIAddVersionKey "FileVersion" "${VERSION}"
@@ -197,7 +200,7 @@ Page custom PageReinstall PageLeaveReinstall
 ; A WiX installer stores the installation info in registry
 ; using a UUID and so we have to loop through all keys under
 ; `HKCU/HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall`
-; and check if `DisplayName` and `Publisher` keys match ${PRODUCTNAME} and ${MANUFACTURER}
+; and match the product name plus either the current or legacy publisher.
 ;
 ; This has a potential issue that there maybe another installation that matches
 ; our ${PRODUCTNAME} and ${MANUFACTURER} but wasn't installed by our WiX installer,
@@ -229,7 +232,10 @@ Function FindWixInstall
       ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1" "DisplayName"
       ReadRegStr $R1 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1" "Publisher"
     ${EndIf}
-    StrCmp "$R0$R1" "${PRODUCTNAME}${MANUFACTURER}" 0 wix_loop
+    StrCmp $R0 "${PRODUCTNAME}" 0 wix_loop
+    StrCmp $R1 "${MANUFACTURER}" wix_publisher_match
+    StrCmp $R1 "${LEGACY_MANUFACTURER}" 0 wix_loop
+  wix_publisher_match:
     ${If} $WixRegistryRoot == "HKCU"
       ReadRegStr $R0 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1" "UninstallString"
     ${Else}
@@ -240,6 +246,27 @@ Function FindWixInstall
     StrCmp $R0 0 0 wix_loop
     StrCpy $R6 "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1"
   wix_loop_done:
+FunctionEnd
+
+; The chow identity starts with a manual reinstall. Never replace an old
+; installation while its uninstaller still owns shortcuts and protocol keys.
+; Check the explicit identity marker, not a possibly reused publisher name.
+Function RequireCurrentInstallIdentity
+  ReadRegStr $R0 SHCTX "${UNINSTKEY}" "UninstallString"
+  ${If} $R0 == ""
+    Call FindWixInstall
+    ${If} $R6 == ""
+      Return
+    ${EndIf}
+  ${EndIf}
+  ReadRegStr $R0 SHCTX "${MANUPRODUCTKEY}" "AppIdentifier"
+  ${If} $R0 != "${BUNDLEID}"
+    IfSilent old_identity_abort
+    MessageBox MB_OK|MB_ICONSTOP "Please back up SwitchPlus data, close it, and uninstall the previous SwitchPlus before installing this build. Keep your data when uninstalling.$\r$\n$\r$\n请先备份数据、退出并卸载旧版 SwitchPlus，再安装此版本。卸载时请保留数据。"
+  old_identity_abort:
+    SetErrorLevel 2
+    Quit
+  ${EndIf}
 FunctionEnd
 
 Function PageReinstall
@@ -554,6 +581,8 @@ Function .onInit
 
   !insertmacro SetContext
 
+  Call RequireCurrentInstallIdentity
+
   ${If} $INSTDIR == "${PLACEHOLDER_INSTALL_DIR}"
     ; Set default install location
     !if "${INSTALLMODE}" == "perMachine"
@@ -749,6 +778,7 @@ Section Install
 
   ; Save $INSTDIR in registry for future installations
   WriteRegStr SHCTX "${MANUPRODUCTKEY}" "" $INSTDIR
+  WriteRegStr SHCTX "${MANUPRODUCTKEY}" "AppIdentifier" "${BUNDLEID}"
 
   !if "${INSTALLMODE}" == "both"
     ; Save install mode to be selected by default for the next installation such as updating

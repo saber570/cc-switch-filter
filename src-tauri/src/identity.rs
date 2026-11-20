@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 pub const APP_NAME: &str = "SwitchPlus";
 pub const DATA_DIR: &str = ".switchplus";
 
-pub const APP_IDENTIFIER: &str = "io.github.saber570.switchplus";
+pub const APP_IDENTIFIER: &str = "com.chow.switchplus";
 pub const DEFAULT_PROXY_PORT: u16 = 15731;
 
 fn legacy_component(path: &Path) -> bool {
@@ -195,9 +195,9 @@ mod tests {
         let config: serde_json::Value =
             serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
         assert_eq!(config["productName"], super::APP_NAME);
-        assert_eq!(config["identifier"], "io.github.saber570.switchplus");
+        assert_eq!(config["identifier"], super::APP_IDENTIFIER);
         assert_eq!(config["mainBinaryName"], "switchplus");
-        assert_eq!(config["bundle"]["publisher"], "saber570");
+        assert_eq!(config["bundle"]["publisher"], "chow");
         assert_eq!(
             config["bundle"]["windows"]["nsis"]["installMode"],
             "currentUser"

@@ -23,6 +23,9 @@ describe("SwitchPlus reproducible application identity", () => {
     const mac = checkBuildConfig(projectRoot, "darwin");
     expect(windows.icons).toEqual(mac.icons);
     expect(windows.config.identifier).toBe(mac.config.identifier);
+    expect(windows.config.identifier).toBe("com.chow.switchplus");
+    expect(windows.config.bundle.publisher).toBe("chow");
+    expect(mac.config.bundle.publisher).toBe("chow");
     expect(windows.config.bundle.targets).toEqual(["nsis"]);
     expect(mac.config.bundle.targets).toEqual(["app", "dmg"]);
   });

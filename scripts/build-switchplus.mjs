@@ -60,7 +60,7 @@ export function checkBuildConfig(
   };
   expect(config.productName === "SwitchPlus", "productName must be SwitchPlus");
   expect(
-    config.identifier === "io.github.saber570.switchplus",
+    config.identifier === "com.chow.switchplus",
     "installed application identifier changed",
   );
   expect(config.mainBinaryName === "switchplus", "executable name changed");
@@ -70,8 +70,8 @@ export function checkBuildConfig(
     "Cargo executable name changed",
   );
   expect(
-    config.bundle.publisher === "saber570",
-    "installer registry publisher changed",
+    config.bundle.publisher === "chow" && pkg.author === "chow",
+    "SwitchPlus author and publisher must be chow",
   );
   expect(
     config.version === pkg.version && config.version === cargoVersion,
@@ -88,6 +88,11 @@ export function checkBuildConfig(
   expect(
     config.bundle.windows.allowDowngrades === false,
     "downgrade protection must stay enabled",
+  );
+  expect(
+    config.bundle.windows.wix.upgradeCode ===
+      "e2d7a916-1ba3-4b5c-99c7-4a0606ba07b0",
+    "SwitchPlus MSI upgrade identity changed",
   );
   expect(
     config.bundle.windows.nsis.installerIcon === "icons/switchplus/icon.ico",
@@ -272,6 +277,8 @@ export function main(args = process.argv.slice(2)) {
     identifier: config.identifier,
     mainBinaryName: config.mainBinaryName,
     publisher: config.bundle.publisher,
+    windowsRegistryKey: `Software\\${config.bundle.publisher}\\${config.productName}`,
+    wixUpgradeCode: config.bundle.windows.wix.upgradeCode,
     bundles: config.bundle.targets,
     icons,
     defaultInstallPath:
@@ -281,7 +288,7 @@ export function main(args = process.argv.slice(2)) {
           ? "/Applications/SwitchPlus.app"
           : null,
     existingInstall:
-      "Reuse the saved installation path and existing SwitchPlus database/port.",
+      "Uninstall builds with the old application identifier first; keep .switchplus data. Later com.chow.switchplus builds reuse the saved installation path and database/port.",
     node: process.version,
     packageManager: json(join(root, "package.json")).packageManager,
     rust: readFileSync(join(root, "rust-toolchain.toml"), "utf8").match(
