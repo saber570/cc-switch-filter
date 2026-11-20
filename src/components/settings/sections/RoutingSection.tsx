@@ -6,6 +6,7 @@ import { toast } from "@/lib/toast";
 import { ChevronRight, Loader2 } from "lucide-react";
 import type { AppId } from "@/lib/api";
 import { proxyApi } from "@/lib/api/proxy";
+import { DEFAULT_PROXY_PORT } from "@/lib/brand";
 import { useProvidersQuery } from "@/lib/query";
 import {
   useGlobalProxyConfig,
@@ -101,7 +102,7 @@ export function RoutingSection({ onOpenApp }: RoutingSectionProps) {
   const { data: savedClientHost } = useProxyClientHost();
   const saveClientHostMutation = useSetProxyClientHost();
   const [address, setAddress] = useState("127.0.0.1");
-  const [port, setPort] = useState("15731");
+  const [port, setPort] = useState(String(DEFAULT_PROXY_PORT));
   const [addressError, setAddressError] = useState<string | null>(null);
   const [portError, setPortError] = useState<string | null>(null);
   const [clientHost, setClientHost] = useState("");

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "ignore": ["src/components/ui/**"],
+  "ignoreDependencies": ["@vitest/coverage-v8"],
+  "ignoreFiles": ["scripts/build-switchplus.d.mts"],
+  "ignoreBinaries": ["hdiutil", "rustc"]
+}
