@@ -20,7 +20,7 @@ fn switchplus_owns_its_state_and_rejects_upstream_identity() {
     .unwrap();
     fs::write(legacy.join("cc-switch.db"), b"upstream-database-sentinel").unwrap();
     fs::write(legacy.join("config.json"), b"upstream-config-sentinel").unwrap();
-    assert_eq!(identity::APP_IDENTIFIER, "io.github.saber570.switchplus");
+    assert_eq!(identity::APP_IDENTIFIER, "com.chow.switchplus");
     assert_eq!(identity::DEFAULT_PROXY_PORT, 15731);
     let ours = sandbox.path().join(".switchplus");
     assert_eq!(identity::device_dir(), ours);

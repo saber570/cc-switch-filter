@@ -1189,7 +1189,7 @@ pub fn run() {
                 #[cfg(target_os = "linux")]
                 {
                     // Use Tauri's path API to get correct path (includes app identifier)
-                    // tauri-plugin-deep-link writes to: ~/.local/share/io.github.saber570.switchplus/applications/switchplus-handler.desktop
+                    // tauri-plugin-deep-link writes to: ~/.local/share/com.chow.switchplus/applications/switchplus-handler.desktop
                     // Only register if .desktop file doesn't exist to avoid overwriting user customizations
                     let should_register = app
                         .path()

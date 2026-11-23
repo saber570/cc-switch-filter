@@ -8,7 +8,7 @@ export function checkBuildConfig(
 ): {
   config: {
     identifier: string;
-    bundle: { targets: string[] };
+    bundle: { targets: string[]; publisher: string };
   };
   icons: Record<string, string>;
   platform: string;

@@ -19,6 +19,10 @@
 明确保留的定制：SwitchPlus 名称/图标/标识/数据目录、安装路径及覆盖安装兼容、配置所有权保护、
 V9 始终启用及压缩兼容、禁用应用自身更新。隐私脱敏是上游独立功能，沿用上游默认设置，不等同于 V9。
 许可证、原作者版权、真实来源链接和必要的历史协议标记保留。
+作者和显示发布者统一为 `chow`；2026-11-20 改用应用标识 `com.chow.switchplus`、
+安装注册表 `Software\chow\SwitchPlus`，MSI UpgradeCode 固定为 `e2d7a916-1ba3-4b5c-99c7-4a0606ba07b0`。
+用户选择旧身份安装先备份、卸载，再重装；NSIS 检测缺少新身份标记的旧安装时停止并提示卸载。
+保留 `.switchplus` 数据目录和 SQL 恢复能力，新身份的后续版本支持覆盖安装，不能随上游重置。
 具体执行约束见根目录 [AGENTS.md](../AGENTS.md)。
 
 **普通合并不升级版本、不打包。只有用户明确要求升级版本号并打包时才执行。**
@@ -56,6 +60,16 @@ V9 始终启用及压缩兼容、禁用应用自身更新。隐私脱敏是上�
 
 合并更新前，先检查并提交需要保留的本地改动，确保工作区干净。
 源码压缩包不含 `.git`，持续维护应使用 Git 克隆的仓库，并将修改纳入提交。
+
+本仓库 Git 提交署名使用 `6chow6 <6chow6@6chow6.com>`，软件显示作者仍为 `chow`。
+换电脑或重新克隆后，在本仓库目录执行以下配置；只影响当前仓库，不改动全局身份或历史提交：
+
+```sh
+git config --local user.name 6chow6
+git config --local user.email 6chow6@6chow6.com
+git var GIT_AUTHOR_IDENT
+git var GIT_COMMITTER_IDENT
+```
 
 先检查是否为浅克隆。必要时补齐历史后再判断共同祖先，不能使用
 `--allow-unrelated-histories` 绕过共同历史检查。

@@ -11,6 +11,9 @@
     <?error Unsupported value of sys.BUILDARCH=$(sys.BUILDARCH)?>
 <?endif?>
 
+<!-- Fixed namespace for the chow application identity. Old builds must be uninstalled first. -->
+<?define SwitchPlusRegistryPublisher = "chow" ?>
+
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
     <Product
@@ -147,10 +150,10 @@
 
         <Property Id="INSTALLDIR">
           <!-- First attempt: Search for "InstallDir" -->
-          <RegistrySearch Id="PrevInstallDirWithName" Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="InstallDir" Type="raw" />
+          <RegistrySearch Id="PrevInstallDirWithName" Root="HKCU" Key="Software\\$(var.SwitchPlusRegistryPublisher)\\{{product_name}}" Name="InstallDir" Type="raw" />
 
           <!-- Second attempt: If the first fails, search for the default key value (this is how the nsis installer currently stores the path) -->
-          <RegistrySearch Id="PrevInstallDirNoName" Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Type="raw" />
+          <RegistrySearch Id="PrevInstallDirNoName" Root="HKCU" Key="Software\\$(var.SwitchPlusRegistryPublisher)\\{{product_name}}" Type="raw" />
         </Property>
 
         <!-- launch app checkbox -->
@@ -228,8 +231,9 @@
                 <!-- An MSI install can reuse a directory previously used by the portable build.
                      Remove its marker so the installed app can use the in-app updater. -->
                 <RemoveFile Id="RemovePortableMarker" Directory="INSTALLDIR" Name="portable.ini" On="install" />
-                <RegistryKey Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}">
+                <RegistryKey Root="HKCU" Key="Software\\$(var.SwitchPlusRegistryPublisher)\\{{product_name}}">
                     <RegistryValue Name="InstallDir" Type="string" Value="[INSTALLDIR]" KeyPath="yes" />
+                    <RegistryValue Name="AppIdentifier" Type="string" Value="{{bundle_id}}" />
                 </RegistryKey>
                 <!-- Change the Root to HKCU for perUser installations -->
                 {{#each deep_link_protocols as |protocol| ~}}
@@ -247,7 +251,7 @@
             </Component>
             <Component Id="Path" Guid="{{path_component_guid}}" Win64="$(var.Win64)">
                 <File Id="Path" Source="{{main_binary_path}}" KeyPath="no" Checksum="yes"/>
-                <RegistryValue Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="PathComponent" Type="integer" Value="1" KeyPath="yes" />
+                <RegistryValue Root="HKCU" Key="Software\\$(var.SwitchPlusRegistryPublisher)\\{{product_name}}" Name="PathComponent" Type="integer" Value="1" KeyPath="yes" />
                 {{#each file_associations as |association| ~}}
                 {{#each association.ext as |ext| ~}}
                 <ProgId Id="{{../../product_name}}.{{ext}}" Advertise="yes" Description="{{association.description}}">
@@ -281,12 +285,12 @@
             <Directory Id="SwitchPlusNoticesDir" Name="_up_">
                 <Component Id="SwitchPlusLicenseComponent" Guid="d2aca013-dd0b-5e0f-9dc5-20311d8d3bbe" Win64="$(var.Win64)">
                     <File Id="SwitchPlusLicense" Source="$(sys.SOURCEFILEDIR)..\..\_up_\LICENSE" Name="LICENSE" />
-                    <RegistryValue Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="License" Type="integer" Value="1" KeyPath="yes" />
+                    <RegistryValue Root="HKCU" Key="Software\\$(var.SwitchPlusRegistryPublisher)\\{{product_name}}" Name="License" Type="integer" Value="1" KeyPath="yes" />
                     <RemoveFolder Id="RemoveNoticesDir" On="uninstall" />
                 </Component>
                 <Component Id="SwitchPlusNoticesComponent" Guid="12cee937-598f-5c6a-887d-91b32786bcd6" Win64="$(var.Win64)">
                     <File Id="SwitchPlusThirdPartyNotices" Source="$(sys.SOURCEFILEDIR)..\..\_up_\THIRD_PARTY_NOTICES.md" Name="THIRD_PARTY_NOTICES.md" />
-                    <RegistryValue Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="ThirdPartyNotices" Type="integer" Value="1" KeyPath="yes" />
+                    <RegistryValue Root="HKCU" Key="Software\\$(var.SwitchPlusRegistryPublisher)\\{{product_name}}" Name="ThirdPartyNotices" Type="integer" Value="1" KeyPath="yes" />
                 </Component>
             </Directory>
             <Component Id="CMP_UninstallShortcut" Guid="*">
@@ -303,7 +307,7 @@
 							  On="uninstall" />
 
 				<RegistryValue Root="HKCU"
-							   Key="Software\\{{manufacturer}}\\{{product_name}}"
+							   Key="Software\\$(var.SwitchPlusRegistryPublisher)\\{{product_name}}"
 							   Name="Uninstaller Shortcut"
 							   Type="integer"
 							   Value="1"
@@ -321,7 +325,7 @@
                     <ShortcutProperty Key="System.AppUserModel.ID" Value="{{bundle_id}}"/>
                 </Shortcut>
                 <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
-                <RegistryValue Root="HKCU" Key="Software\\{{manufacturer}}\\{{product_name}}" Name="Start Menu Shortcut" Type="integer" Value="1" KeyPath="yes"/>
+                <RegistryValue Root="HKCU" Key="Software\\$(var.SwitchPlusRegistryPublisher)\\{{product_name}}" Name="Start Menu Shortcut" Type="integer" Value="1" KeyPath="yes"/>
            </Component>
         </DirectoryRef>
 

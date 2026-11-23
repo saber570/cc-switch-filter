@@ -3,7 +3,7 @@
   "productName": "SwitchPlus",
   "mainBinaryName": "switchplus",
   "version": "1.0.2",
-  "identifier": "io.github.saber570.switchplus",
+  "identifier": "com.chow.switchplus",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
@@ -59,13 +59,14 @@
         "template": "nsis/installer.nsi"
       },
       "wix": {
+        "upgradeCode": "e2d7a916-1ba3-4b5c-99c7-4a0606ba07b0",
         "template": "wix/per-user-main.wxs"
       }
     },
     "macOS": {
       "minimumSystemVersion": "12.0"
     },
-    "publisher": "saber570",
+    "publisher": "chow",
     "homepage": "https://github.com/saber570/cc-switch-filter",
     "resources": ["../LICENSE", "../THIRD_PARTY_NOTICES.md"]
   },
