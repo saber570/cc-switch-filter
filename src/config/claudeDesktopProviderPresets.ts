@@ -334,6 +334,25 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     icon: "pateway",
   },
   {
+    name: "Modelflare",
+    websiteUrl: "https://modelflare.dev",
+    apiKeyUrl: "https://modelflare.dev/sign-up",
+    category: "aggregator",
+    baseUrl: "https://modelflare.dev",
+    // 网关直接提供 claude-sonnet-5 / claude-opus-5 / claude-haiku-4-5 三个
+    // 路由 ID（modelflare.dev/api/pricing，2026-10-15），直连透传即可
+    mode: "direct",
+    apiFormat: "anthropic",
+    modelRoutes: passthroughRoutes(true),
+    endpointCandidates: [
+      "https://modelflare.dev",
+      "https://origin.modelflare.dev",
+    ],
+    isPartner: true,
+    partnerPromotionKey: "modelflare",
+    icon: "modelflare",
+  },
+  {
     name: "hao.ai",
     websiteUrl: "https://hao.ai",
     apiKeyUrl: "https://hao.ai/invite/DTBZS3OR",
@@ -351,6 +370,19 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     isPartner: true,
     partnerPromotionKey: "haoai",
     icon: "haoai",
+  },
+  {
+    name: "StringAI",
+    websiteUrl: "https://www.string.ink",
+    apiKeyUrl: "https://www.string.ink/register?ref=661AE533A60AF110",
+    category: "aggregator",
+    baseUrl: "https://www.string.ink",
+    mode: "direct",
+    apiFormat: "anthropic",
+    modelRoutes: passthroughRoutes(),
+    isPartner: true,
+    partnerPromotionKey: "stringai",
+    icon: "stringai",
   },
   {
     name: "FennoAI",
@@ -1089,25 +1121,6 @@ export const claudeDesktopProviderPresets: ClaudeDesktopProviderPreset[] = [
     isPartner: true,
     partnerPromotionKey: "xycai",
     icon: "xycai",
-  },
-  {
-    name: "Modelflare",
-    websiteUrl: "https://modelflare.dev",
-    apiKeyUrl: "https://modelflare.dev/sign-up",
-    category: "aggregator",
-    baseUrl: "https://modelflare.dev",
-    // 网关直接提供 claude-sonnet-5 / claude-opus-5 / claude-haiku-4-5 三个
-    // 路由 ID（modelflare.dev/api/pricing，2026-10-15），直连透传即可
-    mode: "direct",
-    apiFormat: "anthropic",
-    modelRoutes: passthroughRoutes(true),
-    endpointCandidates: [
-      "https://modelflare.dev",
-      "https://origin.modelflare.dev",
-    ],
-    isPartner: true,
-    partnerPromotionKey: "modelflare",
-    icon: "modelflare",
   },
   {
     name: "AllTokens",

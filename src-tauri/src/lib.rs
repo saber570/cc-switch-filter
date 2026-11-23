@@ -22,8 +22,10 @@ mod error;
 mod frontend_parity_tests;
 mod gemini_config;
 mod gemini_mcp;
+mod grok_auth;
 mod grok_config;
 pub mod hermes_config;
+mod host_open;
 pub mod identity;
 mod init_status;
 mod jsonc_document;
@@ -33,6 +35,8 @@ mod lightweight;
 #[cfg(target_os = "linux")]
 mod linux_fix;
 pub mod live;
+#[cfg(target_os = "macos")]
+mod macos_tray_window;
 mod mcode_config;
 mod mcp;
 pub mod mode;
@@ -70,19 +74,13 @@ pub use codex_config::{
     extract_codex_experimental_bearer_token, get_codex_auth_path, get_codex_config_path,
     read_codex_live_settings, write_codex_live_atomic,
 };
-pub use commands::open_provider_terminal;
 pub use commands::*;
 pub use config::{get_claude_mcp_path, get_claude_settings_path, read_json_file};
 pub use database::{Database, Profile};
-pub use deeplink::{import_provider_from_deeplink, parse_deeplink_url, DeepLinkImportRequest};
+pub use deeplink::{import_provider_from_deeplink, parse_deeplink_url};
 pub use error::AppError;
 pub use grok_config::get_grok_config_path;
-pub use mcp::{
-    import_from_claude, import_from_codex, import_from_gemini, import_from_grokbuild,
-    remove_server_from_claude, remove_server_from_codex, remove_server_from_gemini,
-    remove_server_from_grokbuild, sync_single_server_to_claude, sync_single_server_to_codex,
-    sync_single_server_to_gemini, sync_single_server_to_grokbuild,
-};
+pub use mcp::{import_from_claude, import_from_codex, sync_single_server_to_codex};
 pub use prompt::Prompt;
 pub use provider::{Provider, ProviderMeta};
 #[doc(hidden)]
@@ -91,11 +89,9 @@ pub use services::{
     profile::{ProfilePayload, ProfileScope, ProfileService, NO_ACTIVE_PROMPT},
     provider::{
         reapply_current_codex_official_live, reapply_current_codex_third_party_live, EditorSave,
-        EditorView,
     },
     skill::{migrate_skills_to_ssot, ImportSkillSelection},
-    ConfigService, EndpointLatency, McpService, PromptService, ProviderService, ProxyService,
-    SkillService, SpeedtestService,
+    ConfigService, McpService, PromptService, ProviderService, SkillService,
 };
 pub use settings::{update_settings, AppSettings};
 pub use store::AppState;
@@ -354,17 +350,7 @@ fn handle_deeplink_url(
 
     if focus_main_window {
         if let Some(window) = app.get_webview_window("main") {
-            #[cfg(target_os = "windows")]
-            {
-                let _ = window.set_skip_taskbar(false);
-            }
-            let _ = window.unminimize();
-            let _ = window.show();
-            let _ = window.set_focus();
-            #[cfg(target_os = "linux")]
-            {
-                linux_fix::nudge_main_window(window.clone(), "deeplink");
-            }
+            tray::reveal_main_window(&window, "deeplink");
             log::info!("✓ Window shown and focused");
         }
     }
@@ -473,20 +459,7 @@ fn handle_second_instance(app: &tauri::AppHandle, args: Vec<String>) {
 
     // Show and focus window regardless
     if let Some(window) = app.get_webview_window("main") {
-        // 防御性重置 Windows 的 skip_taskbar：single_instance 触发时，
-        // 原进程可能因 silent_startup / 关闭到托盘等处于 skip_taskbar(true) 状态，
-        // 仅 show() 不会重置该状态，会导致窗口可见但不在任务栏、最小化后消失。
-        #[cfg(target_os = "windows")]
-        {
-            let _ = window.set_skip_taskbar(false);
-        }
-        let _ = window.unminimize();
-        let _ = window.show();
-        let _ = window.set_focus();
-        #[cfg(target_os = "linux")]
-        {
-            linux_fix::nudge_main_window(window.clone(), "single-instance");
-        }
+        tray::reveal_main_window(&window, "single-instance");
     }
 }
 
@@ -548,6 +521,9 @@ pub fn run() {
                 && !crate::settings::get_settings().silent_startup
             {
                 let window = webview.window();
+                if let Some(main) = webview.app_handle().get_webview_window("main") {
+                    window_fit::fit_to_work_area(&main);
+                }
                 if window.show().is_ok() {
                     let _ = window.emit("main-window-visibility-changed", ());
                 }
@@ -581,19 +557,11 @@ pub fn run() {
 
                 if settings.minimize_to_tray_on_close {
                     api.prevent_close();
-                    if window.hide().is_ok() {
-                        // An already-unfocused window may emit no blur/resize.
-                        let _ = window.emit("main-window-visibility-changed", ());
-                    }
-                    log::info!("关闭请求已处理：最小化到托盘");
-                    #[cfg(target_os = "windows")]
-                    {
-                        let _ = window.set_skip_taskbar(true);
-                    }
                     #[cfg(target_os = "macos")]
-                    {
-                        tray::apply_tray_policy(window.app_handle(), false);
+                    if window.label() == "main" && macos_tray_window::close_to_tray(window) {
+                        return;
                     }
+                    tray::hide_main_to_tray(window);
                 } else {
                     api.prevent_close();
                     log::info!("关闭请求已处理：退出应用");
@@ -739,6 +707,7 @@ pub fn run() {
                         {
                             let _ = window.set_skip_taskbar(false);
                         }
+                        window_fit::fit_to_work_area(&window);
                         let _ = window.show();
                         let _ = window.set_focus();
                     }
@@ -1335,13 +1304,10 @@ pub fn run() {
 
             // 初始化 xAI OAuthManager (Grok API 反代)
             {
-                use crate::proxy::providers::xai_oauth_auth::XaiOAuthManager;
                 use commands::XaiOAuthState;
-                use tokio::sync::RwLock;
 
-                let app_config_dir = crate::config::get_app_config_dir();
-                let xai_oauth_manager = XaiOAuthManager::new(app_config_dir);
-                app.manage(XaiOAuthState(Arc::new(RwLock::new(xai_oauth_manager))));
+                let xai_oauth_manager = app.state::<AppState>().xai_oauth_manager.clone();
+                app.manage(XaiOAuthState(xai_oauth_manager));
                 log::info!("✓ XaiOAuthManager initialized");
             }
 
@@ -1835,6 +1801,7 @@ pub fn run() {
             commands::list_sessions,
             commands::sync_session_index,
             commands::search_session_content,
+            commands::cancel_session_content_search,
             commands::clear_session_index,
             commands::get_session_messages,
             commands::stream_session_messages,
@@ -2033,6 +2000,8 @@ pub fn run() {
         if matches!(event, RunEvent::Exit) {
             if !RESTART_REQUESTED.load(Ordering::SeqCst) {
                 cleanup_before_system_exit(app_handle);
+            } else {
+                checkpoint_before_restart(app_handle);
             }
             return;
         }
@@ -2043,20 +2012,7 @@ pub fn run() {
             // RunEvent::Opened（switchplus:// 链接）不在这里处理：deep-link 插件的 on_event 已把它
             // 转成 on_open_url 回调，这里再处理一遍会让同一条链接触发两次导入。
             if let RunEvent::Reopen { .. } = event {
-                if let Some(window) = app_handle.get_webview_window("main") {
-                    #[cfg(target_os = "windows")]
-                    {
-                        let _ = window.set_skip_taskbar(false);
-                    }
-                    let _ = window.unminimize();
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                    tray::apply_tray_policy(app_handle, true);
-                } else if crate::lightweight::is_lightweight_mode() {
-                    if let Err(e) = crate::lightweight::exit_lightweight_mode(app_handle) {
-                        log::error!("退出轻量模式重建窗口失败: {e}");
-                    }
-                }
+                tray::show_main_window(app_handle);
             }
         }
 
@@ -2087,6 +2043,9 @@ pub async fn cleanup_before_exit(app_handle: &tauri::AppHandle) {
             crate::services::provider::claude_direct::finish_tombstones_before_exit,
         )
         .await;
+        if let Err(error) = state.db.run_blocking(|db| db.checkpoint_wal()).await {
+            log::warn!("退出时 WAL checkpoint 失败: {error}");
+        }
         log::info!("退出清理完成：客户端已指回直连，代理已停止");
     }
 }
@@ -2418,6 +2377,14 @@ pub fn destroy_single_instance_lock(app_handle: &tauri::AppHandle) {
     tauri_plugin_single_instance::destroy(app_handle);
 }
 
+fn checkpoint_before_restart(app_handle: &tauri::AppHandle) {
+    if let Some(state) = app_handle.try_state::<store::AppState>() {
+        if let Err(error) = state.db.checkpoint_wal() {
+            log::warn!("重启时 WAL checkpoint 失败: {error}");
+        }
+    }
+}
+
 /// 清理托盘图标、释放 single-instance 锁后重启当前应用。
 ///
 /// 直接 spawn 新进程 + `exit(0)`（macOS 经 `open -n`，见 `relaunch_macos_bundle`），不经过事件
@@ -2429,6 +2396,7 @@ pub fn destroy_single_instance_lock(app_handle: &tauri::AppHandle) {
 /// 图标，而 macOS 的 NSStatusItem 操作要求主线程；`set_visible(false)` 走
 /// `run_item_main_thread` 代理，跨线程安全（见 `remove_tray_icon_before_exit`）。
 pub fn restart_process(app_handle: &tauri::AppHandle) -> ! {
+    checkpoint_before_restart(app_handle);
     remove_tray_icon_before_exit(app_handle);
     destroy_single_instance_lock(app_handle);
     let env = app_handle.env();

@@ -60,7 +60,10 @@ const moveButton = () =>
 
 describe("SkillsStorageSheet", () => {
   beforeEach(() => {
-    m.settings = { skillStorageLocation: "switch_plus", skillSyncMethod: "auto" };
+    m.settings = {
+      skillStorageLocation: "switch_plus",
+      skillSyncMethod: "auto",
+    };
     m.installed = [];
     m.autoSaveSettings.mockResolvedValue(undefined);
   });

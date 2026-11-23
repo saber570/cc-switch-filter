@@ -14,8 +14,7 @@ const CLAUDE_MODELS = [
   "claude-sonnet-5-5",
   "claude-fable-5-1",
 ];
-const API_KEY_URL =
-  "https://teamorouter.com/";
+const API_KEY_URL = "https://teamorouter.com/";
 
 function find<T extends { name: string }>(list: T[], name: string): T {
   const preset = list.find((item) => item.name === name);

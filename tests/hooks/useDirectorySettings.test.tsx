@@ -392,7 +392,9 @@ describe("useDirectorySettings", () => {
       await result.current.resetAppConfigDir();
     });
 
-    expect(result.current.resolvedDirs.appConfig).toBe("/home/mock/.switchplus");
+    expect(result.current.resolvedDirs.appConfig).toBe(
+      "/home/mock/.switchplus",
+    );
   });
 
   it("updates openclaw directory when browsing succeeds", async () => {

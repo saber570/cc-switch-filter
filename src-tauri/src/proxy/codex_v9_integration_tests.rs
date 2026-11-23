@@ -51,7 +51,8 @@ async fn send_compaction_test_request(
         AppType::Codex,
         http::Method::POST,
         "/responses".into(),
-        body,
+        body.clone(),
+        Bytes::from(serde_json::to_vec(&body).unwrap()),
         http::HeaderMap::new(),
         http::Extensions::new(),
         ResponsesEndpoint::Responses,
@@ -306,7 +307,8 @@ async fn codex_v9_defaults_filter_and_retry_through_real_http_forwarder() {
             AppType::Codex,
             http::Method::POST,
             "/v1/responses".into(),
-            body,
+            body.clone(),
+            Bytes::from(serde_json::to_vec(&body).unwrap()),
             http::HeaderMap::new(),
             http::Extensions::new(),
             ResponsesEndpoint::Responses,
@@ -332,6 +334,119 @@ async fn codex_v9_defaults_filter_and_retry_through_real_http_forwarder() {
         }
         server.abort();
     }
+}
+
+#[tokio::test]
+async fn codex_v9_keeps_filtered_history_across_failover_and_outer_retry() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    let seen = Arc::new(Mutex::new(Vec::<(String, Value)>::new()));
+    let records = seen.clone();
+    let app = axum::Router::new().fallback(axum::routing::post(
+        move |uri: http::Uri, Json(body): Json<Value>| {
+            let records = records.clone();
+            async move {
+                let mut calls = records.lock().await;
+                calls.push((uri.path().to_owned(), body));
+                if uri.path().starts_with("/first/") {
+                    return (
+                        StatusCode::SERVICE_UNAVAILABLE,
+                        Json(json!({"error":{"type":"server_error","message":"try next provider"}})),
+                    )
+                        .into_response();
+                }
+                let event = if calls.len() == 2 {
+                    json!({"type":"response.failed","response":{"error":{"code":"stream_incomplete"}}})
+                } else {
+                    json!({"type":"response.completed","response":{"id":"replayed_ok","status":"completed","output":[]}})
+                };
+                (
+                    [("content-type", "text/event-stream")],
+                    format!("event: {}\ndata: {event}\n\n", event["type"].as_str().unwrap()),
+                )
+                    .into_response()
+            }
+        },
+    ));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    let state = ProxyState::for_test(Arc::new(Database::memory().unwrap()));
+    for (index, id) in ["first", "second"].into_iter().enumerate() {
+        let mut provider = compaction_test_provider(addr, "openai_responses");
+        provider.id = id.into();
+        provider.name = id.into();
+        provider.sort_index = Some(index);
+        provider.settings_config["config"] = json!(format!(
+            "model_provider = \"switchplus\"\nmodel = \"test-model\"\n[model_providers.switchplus]\nbase_url = \"http://{addr}/{id}/v1\"\nwire_api = \"responses\"\n"
+        ));
+        state.db.save_provider(&AppType::Codex, &provider).unwrap();
+        state.db.add_to_failover_queue(&AppType::Codex, id).unwrap();
+    }
+    let mut config = state
+        .db
+        .get_proxy_config_for_app(&AppType::Codex)
+        .await
+        .unwrap();
+    config.auto_failover_enabled = true;
+    config.max_retries = 1;
+    state.db.update_proxy_config_for_app(config).await.unwrap();
+    let request = axum::http::Request::builder()
+        .method(http::Method::POST)
+        .uri("/v1/responses")
+        .header(http::header::CONTENT_TYPE, "application/json")
+        .body(axum::body::Body::from(
+            json!({
+                "model":"test-model", "stream":true, "store":true,
+                "reasoning":{"effort":"high"}, "include":["reasoning.encrypted_content"],
+                "input":[
+                    {"type":"reasoning","id":"rs_old","encrypted_content":"old reasoning"},
+                    {"type":"message","role":"user","id":"msg_old","content":"keep this question"}
+                ]
+            })
+            .to_string(),
+        ))
+        .unwrap();
+    let response = handle_responses_for_app(
+        state,
+        request,
+        AppType::Codex,
+        "Codex",
+        "codex",
+        ResponsesEndpoint::Responses,
+    )
+    .await
+    .unwrap();
+    let output = axum::body::to_bytes(response.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    assert!(String::from_utf8_lossy(&output).contains("replayed_ok"));
+    let calls = seen.lock().await;
+    assert_eq!(
+        calls
+            .iter()
+            .map(|(path, _)| path.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "/first/v1/responses",
+            "/second/v1/responses",
+            "/first/v1/responses",
+            "/second/v1/responses"
+        ]
+    );
+    for (path, body) in calls.iter() {
+        assert_eq!(body["model"], "test-model", "{path}");
+        assert_eq!(body["reasoning"]["effort"], "high", "{path}");
+        assert_eq!(body["store"], false, "{path}");
+        let input = body["input"].as_array().unwrap();
+        assert_eq!(input.len(), 1, "{path}: {body}");
+        assert!(input[0].get("id").is_none(), "{path}: {body}");
+        assert!(input[0].to_string().contains("keep this question"));
+        assert!(
+            !body.to_string().contains("encrypted_content"),
+            "{path}: {body}"
+        );
+    }
+    server.abort();
 }
 
 #[tokio::test]
