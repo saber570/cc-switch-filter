@@ -8,6 +8,124 @@ fn provider(id: &str) -> Provider {
 }
 
 #[test]
+fn website_check_toggle_preserves_other_fields_and_roundtrips() {
+    let db = Database::memory().unwrap();
+    db.save_provider(&AppType::Claude, &provider("p")).unwrap();
+    db.save_provider(&AppType::Codex, &provider("p")).unwrap();
+    let original = json!({"futureField":{"nested":"keep"},"usage_script":{"enabled":false,"language":"javascript","code":""}});
+    db.conn
+        .lock()
+        .unwrap()
+        .execute("UPDATE providers SET meta = ?1", [original.to_string()])
+        .unwrap();
+    for enabled in [true, false] {
+        db.set_website_check_enabled(&AppType::Claude, "p", enabled)
+            .unwrap();
+        let loaded = db
+            .get_provider_by_id("p", &AppType::Claude)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            loaded.meta.as_ref().unwrap().website_check_enabled,
+            Some(enabled)
+        );
+        assert_eq!(loaded.settings_config, provider("p").settings_config);
+        let roundtrip: Provider =
+            serde_json::from_value(serde_json::to_value(&loaded).unwrap()).unwrap();
+        assert_eq!(roundtrip.meta.unwrap().website_check_enabled, Some(enabled));
+        let raw: String = db
+            .conn
+            .lock()
+            .unwrap()
+            .query_row(
+                "SELECT meta FROM providers WHERE app_type='claude' AND id='p'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let mut meta: serde_json::Value = serde_json::from_str(&raw).unwrap();
+        assert_eq!(
+            meta.as_object_mut().unwrap().remove("websiteCheckEnabled"),
+            Some(json!(enabled))
+        );
+        assert_eq!(meta, original);
+        assert_eq!(
+            db.get_provider_by_id("p", &AppType::Codex)
+                .unwrap()
+                .unwrap()
+                .meta
+                .unwrap()
+                .website_check_enabled,
+            None
+        );
+    }
+    assert!(db
+        .set_website_check_enabled(&AppType::Claude, "missing", true)
+        .is_err());
+}
+
+#[test]
+fn website_check_opt_in_survives_database_backup_and_restart() {
+    let _home = crate::test_support::TestHome::new();
+    let db = Database::memory().unwrap();
+    let mut saved = provider("monitored");
+    saved.website_url = Some("https://example.com".into());
+    db.save_provider(&AppType::Claude, &saved).unwrap();
+    db.set_website_check_enabled(&AppType::Claude, &saved.id, true)
+        .unwrap();
+    let backup = db.export_sql_string().unwrap();
+    let restored = Database::memory().unwrap();
+    restored.import_sql_string(&backup).unwrap();
+    let loaded = restored
+        .get_provider_by_id(&saved.id, &AppType::Claude)
+        .unwrap()
+        .unwrap();
+    assert_eq!(loaded.meta.unwrap().website_check_enabled, Some(true));
+    assert_eq!(loaded.website_url, saved.website_url);
+}
+
+#[test]
+fn website_check_targets_include_only_opted_in_providers_across_apps() {
+    let db = Database::memory().unwrap();
+    for (app, id) in [
+        (AppType::Claude, "on"),
+        (AppType::Claude, "off"),
+        (AppType::Codex, "on"),
+        (AppType::Gemini, "broken"),
+    ] {
+        let mut p = provider(id);
+        p.website_url = Some("https://example.com".into());
+        db.save_provider(&app, &p).unwrap();
+    }
+    assert!(db.website_check_targets().unwrap().is_empty());
+    db.set_website_check_enabled(&AppType::Claude, "on", true)
+        .unwrap();
+    db.set_website_check_enabled(&AppType::Codex, "on", true)
+        .unwrap();
+    db.conn
+        .lock()
+        .unwrap()
+        .execute(
+            "UPDATE providers SET meta = 'broken' WHERE id = 'broken'",
+            [],
+        )
+        .unwrap();
+    let mut targets = db.website_check_targets().unwrap();
+    targets.sort();
+    assert_eq!(
+        targets,
+        vec![
+            ("claude".into(), "on".into(), "https://example.com".into()),
+            ("codex".into(), "on".into(), "https://example.com".into())
+        ]
+    );
+    db.set_website_check_enabled(&AppType::Claude, "on", false)
+        .unwrap();
+    db.delete_provider(&AppType::Codex, "on").unwrap();
+    assert!(db.website_check_targets().unwrap().is_empty());
+}
+
+#[test]
 fn provider_list_batches_endpoints_without_crossing_apps_or_changing_order() {
     let db = Database::memory().unwrap();
     let mut first = provider("z");

@@ -12,6 +12,7 @@ fn prepare(provider: &mut Provider) -> Result<(), AppError> {
     omp_config::validate_provider(&provider.id, &provider.settings_config)?;
     provider.in_failover_queue = false;
     provider.meta = provider.meta.take().map(|meta| ProviderMeta {
+        website_check_enabled: meta.website_check_enabled,
         usage_script: meta.usage_script,
         is_partner: meta.is_partner,
         partner_promotion_key: meta.partner_promotion_key,
@@ -161,6 +162,17 @@ mod tests {
             json!({"baseUrl":"https://example.com/v1","apiKey":"!literal credential","api":"openai-completions","models":[{"id":"a"}]}),
             None,
         )
+    }
+
+    #[test]
+    fn website_check_opt_in_survives_omp_metadata_cleanup() {
+        let mut provider = provider();
+        provider.meta = Some(ProviderMeta {
+            website_check_enabled: Some(true),
+            ..Default::default()
+        });
+        prepare(&mut provider).unwrap();
+        assert_eq!(provider.meta.unwrap().website_check_enabled, Some(true));
     }
     #[test]
     #[serial_test::serial]

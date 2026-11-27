@@ -5438,5 +5438,16 @@
     "hint": "CC Switch'in daha yeni bir sürümüyle kaydedilmiş olabilir. Veriler olduğu gibi korunur, düzenlenemez veya etkinleştirilemez; güncelleme verileri geri getirir ya da kaydı silebilirsiniz.",
     "confirmTitle": "Okunamayan kaydı sil",
     "confirmMessage": "“{{name}}” silinsin mi? Yalnızca bu CC Switch kaydı silinir; uygulamaların kendi yapılandırma dosyaları değişmez."
+  },
+  "websiteCheck": {
+    "toggle": "Web sitesi kontrolü (10 dakikada bir)",
+    "noUrl": "Önce Düzenle bölümünde web sitesi adresi girin",
+    "checking": "Web sitesi kontrol ediliyor",
+    "available": "Web sitesine erişilebiliyor",
+    "unavailable": "Web sitesine erişilemiyor",
+    "unknown": "Web sitesi durumu güncellenmeli",
+    "lastChecked": "Son kontrol: {{time}}",
+    "hint": "Web sitesini 10 dakikada bir kontrol eder; model API erişimini doğrulamaz. Şimdi kontrol etmek için tıklayın.",
+    "actionFailed": "Web sitesi kontrolü başarısız"
   }
 }

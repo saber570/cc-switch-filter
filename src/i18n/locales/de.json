@@ -5438,5 +5438,16 @@
     "hint": "Möglicherweise von einer neueren SwitchPlus-Version gespeichert. Die Daten bleiben unverändert erhalten und können nicht bearbeitet oder aktiviert werden; ein Update stellt sie wieder her, oder du löschst den Eintrag.",
     "confirmTitle": "Unlesbaren Eintrag löschen",
     "confirmMessage": "„{{name}}“ löschen? Nur dieser SwitchPlus-Eintrag wird entfernt; die Konfigurationsdateien der Apps bleiben unverändert."
+  },
+  "websiteCheck": {
+    "toggle": "Website prüfen (alle 10 Min.)",
+    "noUrl": "Zuerst unter Bearbeiten eine Website-URL angeben",
+    "checking": "Website wird geprüft",
+    "available": "Website erreichbar",
+    "unavailable": "Website nicht verfügbar",
+    "unknown": "Website-Status muss aktualisiert werden",
+    "lastChecked": "Zuletzt geprüft: {{time}}",
+    "hint": "Prüft die Website alle 10 Minuten, nicht die Modell-API. Zum erneuten Prüfen klicken.",
+    "actionFailed": "Website-Prüfung fehlgeschlagen"
   }
 }

@@ -68,6 +68,8 @@ import {
 } from "./OpenTerminalDialog";
 import type { CardChip, CardPresentation, CardTone } from "./presentation";
 import { appHas } from "@/config/appSpecs";
+import { useWebsiteCheck, validWebsiteUrl } from "@/hooks/useWebsiteCheck";
+import { WebsiteStatusDot } from "./WebsiteStatusDot";
 
 const copilotPlan = (data: unknown) => (data as CopilotQuota).plan;
 
@@ -237,6 +239,7 @@ export function ProviderCard({
 }: ProviderCardProps) {
   const { t } = useTranslation();
   const codexOfficialIdentity = resolveCodexOfficialIdentity(appId, provider);
+  const websiteCheck = useWebsiteCheck(provider, appId);
   const isBoundCodexOfficial = codexOfficialIdentity === "managed_account";
   const isCodexOauth =
     appId === "codex"
@@ -548,6 +551,14 @@ export function ProviderCard({
             >
               {provider.name}
             </h3>
+            {websiteCheck.enabled && (
+              <WebsiteStatusDot
+                status={websiteCheck.query.data}
+                error={websiteCheck.query.isError}
+                refreshing={websiteCheck.refresh.isPending}
+                onRefresh={() => websiteCheck.refresh.mutate()}
+              />
+            )}
             {presentation.chips.map((chip) => (
               <CardChipBadge key={chip.key} chip={chip} />
             ))}
@@ -855,6 +866,12 @@ export function ProviderCard({
             </div>
           </div>
           <ProviderCardActions
+            websiteCheck={{
+              enabled: websiteCheck.enabled,
+              pending: websiteCheck.toggle.isPending,
+              hasUrl: validWebsiteUrl(provider.websiteUrl),
+              onToggle: (next) => websiteCheck.toggle.mutate(next),
+            }}
             providerName={provider.name}
             presentation={presentation}
             onEdit={() => onEdit(provider)}

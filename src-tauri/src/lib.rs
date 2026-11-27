@@ -1372,6 +1372,12 @@ pub fn run() {
             }
 
 
+            // Website monitoring shares the initialized outbound proxy configuration.
+            {
+                let state = app.state::<AppState>();
+                state.website_monitor.start(state.db.clone());
+            }
+
             // 异常退出恢复 + 代理状态自动恢复
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -1797,6 +1803,9 @@ pub fn run() {
             commands::fetch_exchange_rates,
             // Stream health check
             commands::stream_check_provider,
+            commands::get_website_check_status,
+            commands::set_website_check_enabled,
+            commands::refresh_website_check,
             // Session manager
             commands::list_sessions,
             commands::sync_session_index,

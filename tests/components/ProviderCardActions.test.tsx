@@ -22,6 +22,62 @@ async function openMenu(presentation: CardPresentation) {
 }
 
 describe("ProviderCardActions — mode items in the more menu", () => {
+  it("shows the per-provider website switch, with the ten-minute interval", async () => {
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ProviderCardActions
+        providerName="Test"
+        presentation={{ chips: [], buttons: [] }}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        websiteCheck={{
+          enabled: false,
+          pending: false,
+          hasUrl: true,
+          onToggle,
+        }}
+      />,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "providerCard.action.more" }),
+    );
+    const toggle = screen.getByRole("menuitemcheckbox", {
+      name: "网站检测（每 10 分钟）",
+    });
+    expect(toggle).not.toBeChecked();
+    await user.click(toggle);
+    expect(onToggle).toHaveBeenCalledWith(true);
+  });
+
+  it("allows disabling a check even after its website URL was removed", async () => {
+    const onToggle = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ProviderCardActions
+        providerName="Test"
+        presentation={{ chips: [], buttons: [] }}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        websiteCheck={{
+          enabled: true,
+          pending: false,
+          hasUrl: false,
+          onToggle,
+        }}
+      />,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "providerCard.action.more" }),
+    );
+    const toggle = screen.getByRole("menuitemcheckbox", {
+      name: "网站检测（每 10 分钟）",
+    });
+    expect(toggle).not.toHaveAttribute("aria-disabled", "true");
+    await user.click(toggle);
+    expect(onToggle).toHaveBeenCalledWith(false);
+  });
+
   it("lists them first", async () => {
     const onSelect = vi.fn();
     const { user, menu } = await openMenu({

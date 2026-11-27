@@ -5438,5 +5438,16 @@
     "hint": "It may have been saved by a newer version of CC Switch. The stored data is kept as is and can't be edited or enabled; upgrading restores it, or you can delete it.",
     "confirmTitle": "Delete unreadable entry",
     "confirmMessage": "Delete “{{name}}”? Only this CC Switch record is removed; the apps' own config files are not changed."
+  },
+  "websiteCheck": {
+    "toggle": "Website checks (every 10 min)",
+    "noUrl": "Add a website URL in Edit first",
+    "checking": "Checking website",
+    "available": "Website accessible",
+    "unavailable": "Website unavailable",
+    "unknown": "Website status needs updating",
+    "lastChecked": "Last checked: {{time}}",
+    "hint": "Checks the website every 10 minutes; does not verify model API availability. Click to check now.",
+    "actionFailed": "Website check action failed"
   }
 }

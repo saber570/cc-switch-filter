@@ -5438,5 +5438,16 @@
     "hint": "可能由較新版本的 CC Switch 寫入。資料已原樣保留，無法編輯或啟用；升級後即可恢復，也可以刪除。",
     "confirmTitle": "刪除無法讀取的項目",
     "confirmMessage": "刪除「{{name}}」？只刪除 CC Switch 中的這筆記錄，不變更各應用自己的設定檔。"
+  },
+  "websiteCheck": {
+    "toggle": "網站檢測（每 10 分鐘）",
+    "noUrl": "請先在編輯中填寫網站地址",
+    "checking": "網站檢測中",
+    "available": "網站可存取",
+    "unavailable": "網站無法使用",
+    "unknown": "網站狀態待更新",
+    "lastChecked": "最近檢測：{{time}}",
+    "hint": "每 10 分鐘檢測網站；不代表模型介面可用。點擊立即重測。",
+    "actionFailed": "網站檢測操作失敗"
   }
 }

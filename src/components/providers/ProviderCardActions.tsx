@@ -25,6 +25,7 @@ import { DisabledReason } from "@/components/ui/help-tip";
 import { HoverTip } from "@/components/ui/hover-tip";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -65,6 +66,12 @@ const BUTTON_ICON: Record<string, LucideIcon> = {
 };
 
 interface ProviderCardActionsProps {
+  websiteCheck?: {
+    enabled: boolean;
+    pending: boolean;
+    hasUrl: boolean;
+    onToggle: (enabled: boolean) => void;
+  };
   providerName: string;
   presentation: CardPresentation;
   onEdit: () => void;
@@ -87,6 +94,7 @@ interface ProviderCardActionsProps {
  * 按钮一律纯图标 + HoverTip；有禁用原因时改由 DisabledReason 的说明卡报原因。
  */
 export function ProviderCardActions({
+  websiteCheck,
   providerName,
   presentation,
   onEdit,
@@ -221,6 +229,30 @@ export function ProviderCardActions({
               {isTesting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {t("provider.connectivityCheck")}
             </DropdownMenuItem>
+          )}
+          {websiteCheck && (
+            <>
+              <DropdownMenuCheckboxItem
+                checked={websiteCheck.enabled}
+                disabled={
+                  websiteCheck.pending ||
+                  (!websiteCheck.enabled && !websiteCheck.hasUrl)
+                }
+                onCheckedChange={websiteCheck.onToggle}
+                onSelect={(event) => event.preventDefault()}
+              >
+                {t("websiteCheck.toggle", {
+                  defaultValue: "网站检测（每 10 分钟）",
+                })}
+              </DropdownMenuCheckboxItem>
+              {!websiteCheck.hasUrl && (
+                <p className="m-0 px-2 py-1 text-caption text-fg-3">
+                  {t("websiteCheck.noUrl", {
+                    defaultValue: "请先在编辑中填写网站地址",
+                  })}
+                </p>
+              )}
+            </>
           )}
           {onConfigureUsage && (
             <DropdownMenuItem onSelect={onConfigureUsage}>

@@ -46,6 +46,44 @@ fn row_to_provider(row: &rusqlite::Row<'_>) -> rusqlite::Result<Provider> {
 }
 
 impl Database {
+    /// Only load opt-in website addresses, not credentials or full provider configs.
+    pub(crate) fn website_check_targets(&self) -> Result<Vec<(String, String, String)>, AppError> {
+        let conn = lock_conn!(self.conn);
+        let mut stmt = conn
+            .prepare_cached(
+                "SELECT app_type, id, COALESCE(website_url, '') FROM providers
+             WHERE CASE WHEN json_valid(meta)
+                 THEN json_extract(meta, '$.websiteCheckEnabled') = 1 ELSE 0 END",
+            )
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        let rows = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(|e| AppError::Database(e.to_string()))
+    }
+
+    /// Change only the monitor opt-in. Do not rewrite credentials, routes, or live files.
+    pub fn set_website_check_enabled(
+        &self,
+        app_type: &AppType,
+        id: &str,
+        enabled: bool,
+    ) -> Result<(), AppError> {
+        let conn = lock_conn!(self.conn);
+        let changed = conn
+            .execute(
+                "UPDATE providers SET meta = json_set(meta, '$.websiteCheckEnabled', json(?1))
+             WHERE app_type = ?2 AND id = ?3",
+                params![if enabled { "true" } else { "false" }, app_type, id],
+            )
+            .map_err(|e| AppError::Database(e.to_string()))?;
+        if changed == 0 {
+            return Err(AppError::Message(format!("供应商 {id} 不存在")));
+        }
+        Ok(())
+    }
+
     /// Detach Codex providers bound to these deleted local accounts, atomically.
     /// Only this device's account IDs are passed in: provider rows sync across
     /// devices, and a row bound to another device's account must stay bound.

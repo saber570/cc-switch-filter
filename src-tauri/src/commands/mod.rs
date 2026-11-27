@@ -35,6 +35,7 @@ mod stream_check;
 mod subscription;
 mod sync_support;
 mod terminal_launch;
+mod website_check;
 mod xai_oauth;
 
 mod s3_sync;
@@ -84,6 +85,7 @@ pub use skill::*;
 pub use stream_check::*;
 pub use subscription::*;
 pub use terminal_launch::*;
+pub use website_check::*;
 pub use xai_oauth::*;
 
 pub use s3_sync::*;

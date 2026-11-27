@@ -283,6 +283,7 @@ fn strip_unsupported_pi_metadata(provider: &mut Provider) {
         return;
     };
     provider.meta = Some(ProviderMeta {
+        website_check_enabled: meta.website_check_enabled,
         usage_script: meta.usage_script,
         is_partner: meta.is_partner,
         partner_promotion_key: meta.partner_promotion_key,
@@ -300,6 +301,17 @@ mod tests {
     use serial_test::serial;
     use std::fs;
     use std::sync::Arc;
+
+    #[test]
+    fn website_check_opt_in_survives_pi_metadata_cleanup() {
+        let mut provider = Provider::with_id("p".into(), "P".into(), json!({}), None);
+        provider.meta = Some(ProviderMeta {
+            website_check_enabled: Some(true),
+            ..Default::default()
+        });
+        strip_unsupported_pi_metadata(&mut provider);
+        assert_eq!(provider.meta.unwrap().website_check_enabled, Some(true));
+    }
 
     fn state() -> AppState {
         AppState::new(Arc::new(

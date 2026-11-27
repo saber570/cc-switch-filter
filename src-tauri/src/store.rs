@@ -7,6 +7,7 @@ use std::sync::Arc;
 /// 全局应用状态
 #[derive(Clone)]
 pub struct AppState {
+    pub website_monitor: Arc<crate::services::website_check::WebsiteMonitor>,
     pub db: Arc<Database>,
     pub proxy_service: ProxyService,
     pub usage_cache: Arc<UsageCache>,
@@ -28,6 +29,7 @@ impl AppState {
         let proxy_service = ProxyService::new(db.clone());
 
         Self {
+            website_monitor: Arc::new(Default::default()),
             db,
             proxy_service,
             usage_cache: Arc::new(UsageCache::new()),
